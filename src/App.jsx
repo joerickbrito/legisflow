@@ -28,6 +28,11 @@ import Normas from '@/pages/Normas';
 import Documentos from '@/pages/Documentos';
 import Transparencia from '@/pages/Transparencia';
 import Relatorios from '@/pages/Relatorios';
+import PainelEletronico from '@/pages/PainelEletronico.jsx';
+import Quorum from '@/pages/Quorum.jsx';
+import Emendas from '@/pages/Emendas.jsx';
+import ReuniaoComissao from '@/pages/ReuniaoComissao.jsx';
+import Oficios from '@/pages/Oficios.jsx';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
@@ -76,6 +81,11 @@ const AuthenticatedApp = () => {
           <Route path="/documentos" element={<Documentos />} />
           <Route path="/transparencia" element={<Transparencia />} />
           <Route path="/relatorios" element={<Relatorios />} />
+          <Route path="/painel-eletronico" element={<PainelEletronico />} />
+          <Route path="/quorum" element={<Quorum />} />
+          <Route path="/emendas" element={<Emendas />} />
+          <Route path="/reuniao-comissao" element={<ReuniaoComissao />} />
+          <Route path="/oficios" element={<Oficios />} />
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />

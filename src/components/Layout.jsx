@@ -4,7 +4,8 @@ import {
   LayoutDashboard, FileText, Calendar, Vote, Users, Building2,
   ScrollText, Inbox, ChevronLeft, ChevronRight, Menu, LogOut,
   Scale, Gavel, MessageSquare, BarChart3, Globe, BookOpen,
-  FolderOpen, ChevronDown, ChevronRight as ChevRight
+  FolderOpen, ChevronDown, ChevronRight as ChevRight,
+  Monitor, UserCheck, FileDiff, UsersRound, Mail
 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { cn } from '@/lib/utils';
@@ -22,7 +23,7 @@ const navGroups = [
       { path: '/casa-legislativa', icon: Building2, label: 'Casa Legislativa' },
       { path: '/legislaturas', icon: BookOpen, label: 'Legislaturas' },
       { path: '/parlamentares', icon: Users, label: 'Parlamentares' },
-      { path: '/partidos', icon: Scale, label: 'Partidos & Bancadas' },
+      { path: '/partidos', icon: Scale, label: 'Partidos' },
       { path: '/mesa-diretora', icon: Gavel, label: 'Mesa Diretora' },
       { path: '/comissoes', icon: Building2, label: 'Comissões' },
     ]
@@ -33,16 +34,21 @@ const navGroups = [
       { path: '/protocolo', icon: Inbox, label: 'Protocolo' },
       { path: '/proposicoes', icon: FolderOpen, label: 'Proposições' },
       { path: '/materias', icon: FileText, label: 'Matérias' },
+      { path: '/emendas', icon: FileDiff, label: 'Emendas' },
       { path: '/tramitacoes', icon: ChevRight, label: 'Tramitações' },
       { path: '/pareceres', icon: MessageSquare, label: 'Pareceres' },
       { path: '/audiencias', icon: Users, label: 'Audiências Públicas' },
+      { path: '/oficios', icon: Mail, label: 'Ofícios' },
     ]
   },
   {
     label: 'Sessões & Votação',
     items: [
       { path: '/sessoes', icon: Calendar, label: 'Sessões Plenárias' },
-      { path: '/votacao', icon: Vote, label: 'Painel de Votação', highlight: true },
+      { path: '/quorum', icon: UserCheck, label: 'Controle de Quórum' },
+      { path: '/reuniao-comissao', icon: UsersRound, label: 'Reuniões de Comissão' },
+      { path: '/votacao', icon: Vote, label: 'Registro de Votação' },
+      { path: '/painel-eletronico', icon: Monitor, label: 'Painel Eletrônico', highlight: true },
     ]
   },
   {
