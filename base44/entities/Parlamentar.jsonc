@@ -1,0 +1,54 @@
+{
+  "name": "Parlamentar",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string",
+      "description": "Nome completo do parlamentar"
+    },
+    "partido": {
+      "type": "string",
+      "description": "Partido pol\u00edtico"
+    },
+    "foto_url": {
+      "type": "string",
+      "description": "URL da foto"
+    },
+    "mandato_inicio": {
+      "type": "string",
+      "format": "date"
+    },
+    "mandato_fim": {
+      "type": "string",
+      "format": "date"
+    },
+    "cargo": {
+      "type": "string",
+      "enum": [
+        "Vereador",
+        "Presidente",
+        "Vice-Presidente",
+        "1\u00ba Secret\u00e1rio",
+        "2\u00ba Secret\u00e1rio"
+      ],
+      "default": "Vereador"
+    },
+    "ativo": {
+      "type": "boolean",
+      "default": true
+    },
+    "telefone": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "gabinete": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "nome",
+    "partido"
+  ]
+}

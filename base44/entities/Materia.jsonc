@@ -1,0 +1,81 @@
+{
+  "name": "Materia",
+  "type": "object",
+  "properties": {
+    "numero": {
+      "type": "string",
+      "description": "N\u00famero da mat\u00e9ria"
+    },
+    "ano": {
+      "type": "number",
+      "description": "Ano de apresenta\u00e7\u00e3o"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "Projeto de Lei",
+        "Projeto de Lei Complementar",
+        "Projeto de Resolu\u00e7\u00e3o",
+        "Requerimento",
+        "Indica\u00e7\u00e3o",
+        "Mo\u00e7\u00e3o",
+        "Emenda \u00e0 Lei Org\u00e2nica"
+      ],
+      "default": "Projeto de Lei"
+    },
+    "ementa": {
+      "type": "string",
+      "description": "Ementa/t\u00edtulo da mat\u00e9ria"
+    },
+    "texto_integral": {
+      "type": "string",
+      "description": "Texto completo da mat\u00e9ria"
+    },
+    "autor_id": {
+      "type": "string",
+      "description": "ID do parlamentar autor"
+    },
+    "autor_nome": {
+      "type": "string",
+      "description": "Nome do autor"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Em tramita\u00e7\u00e3o",
+        "Aprovada",
+        "Rejeitada",
+        "Arquivada",
+        "Retirada",
+        "Transformada em Norma"
+      ],
+      "default": "Em tramita\u00e7\u00e3o"
+    },
+    "data_apresentacao": {
+      "type": "string",
+      "format": "date"
+    },
+    "regime_tramitacao": {
+      "type": "string",
+      "enum": [
+        "Normal",
+        "Urg\u00eancia",
+        "Urg\u00eancia Urgent\u00edssima"
+      ],
+      "default": "Normal"
+    },
+    "comissao_destino": {
+      "type": "string"
+    },
+    "observacoes": {
+      "type": "string"
+    },
+    "arquivo_url": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tipo",
+    "ementa"
+  ]
+}

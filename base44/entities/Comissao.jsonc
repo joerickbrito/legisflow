@@ -1,0 +1,55 @@
+{
+  "name": "Comissao",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string"
+    },
+    "sigla": {
+      "type": "string"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "Permanente",
+        "Tempor\u00e1ria",
+        "Especial",
+        "Parlamentar de Inqu\u00e9rito"
+      ],
+      "default": "Permanente"
+    },
+    "descricao": {
+      "type": "string"
+    },
+    "membros": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "parlamentar_id": {
+            "type": "string"
+          },
+          "parlamentar_nome": {
+            "type": "string"
+          },
+          "cargo": {
+            "type": "string",
+            "enum": [
+              "Presidente",
+              "Vice-Presidente",
+              "Membro",
+              "Suplente"
+            ]
+          }
+        }
+      }
+    },
+    "ativa": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "nome"
+  ]
+}

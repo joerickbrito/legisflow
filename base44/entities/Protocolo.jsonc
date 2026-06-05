@@ -1,0 +1,58 @@
+{
+  "name": "Protocolo",
+  "type": "object",
+  "properties": {
+    "numero": {
+      "type": "string"
+    },
+    "ano": {
+      "type": "number"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "Of\u00edcio",
+        "Requerimento",
+        "Peti\u00e7\u00e3o",
+        "Memorando",
+        "Relat\u00f3rio",
+        "Outros"
+      ],
+      "default": "Of\u00edcio"
+    },
+    "assunto": {
+      "type": "string"
+    },
+    "remetente": {
+      "type": "string"
+    },
+    "data_recebimento": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Recebido",
+        "Em An\u00e1lise",
+        "Encaminhado",
+        "Arquivado",
+        "Respondido"
+      ],
+      "default": "Recebido"
+    },
+    "destino": {
+      "type": "string"
+    },
+    "observacoes": {
+      "type": "string"
+    },
+    "arquivo_url": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "assunto",
+    "remetente"
+  ]
+}

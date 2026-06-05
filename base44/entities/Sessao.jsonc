@@ -1,0 +1,89 @@
+{
+  "name": "Sessao",
+  "type": "object",
+  "properties": {
+    "numero": {
+      "type": "string"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "Ordin\u00e1ria",
+        "Extraordin\u00e1ria",
+        "Solene",
+        "Especial",
+        "Itinerante"
+      ],
+      "default": "Ordin\u00e1ria"
+    },
+    "data": {
+      "type": "string",
+      "format": "date"
+    },
+    "hora_inicio": {
+      "type": "string"
+    },
+    "hora_fim": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Agendada",
+        "Em Andamento",
+        "Encerrada",
+        "Cancelada"
+      ],
+      "default": "Agendada"
+    },
+    "pauta": {
+      "type": "array",
+      "description": "Mat\u00e9rias na pauta da sess\u00e3o",
+      "items": {
+        "type": "object",
+        "properties": {
+          "materia_id": {
+            "type": "string"
+          },
+          "materia_ementa": {
+            "type": "string"
+          },
+          "materia_tipo": {
+            "type": "string"
+          },
+          "ordem": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "presencas": {
+      "type": "array",
+      "description": "Lista de presen\u00e7as",
+      "items": {
+        "type": "object",
+        "properties": {
+          "parlamentar_id": {
+            "type": "string"
+          },
+          "parlamentar_nome": {
+            "type": "string"
+          },
+          "presente": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "ata": {
+      "type": "string"
+    },
+    "observacoes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tipo",
+    "data"
+  ]
+}

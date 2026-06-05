@@ -1,0 +1,53 @@
+{
+  "name": "NormaJuridica",
+  "type": "object",
+  "properties": {
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "Lei Ordin\u00e1ria",
+        "Lei Complementar",
+        "Lei Org\u00e2nica",
+        "Decreto Legislativo",
+        "Resolu\u00e7\u00e3o",
+        "Portaria"
+      ],
+      "default": "Lei Ordin\u00e1ria"
+    },
+    "numero": {
+      "type": "string"
+    },
+    "ano": {
+      "type": "number"
+    },
+    "ementa": {
+      "type": "string"
+    },
+    "data_publicacao": {
+      "type": "string",
+      "format": "date"
+    },
+    "materia_origem_id": {
+      "type": "string"
+    },
+    "texto_integral": {
+      "type": "string"
+    },
+    "arquivo_url": {
+      "type": "string"
+    },
+    "situacao": {
+      "type": "string",
+      "enum": [
+        "Vigente",
+        "Revogada",
+        "Suspensa"
+      ],
+      "default": "Vigente"
+    }
+  },
+  "required": [
+    "tipo",
+    "ementa"
+  ]
+}

@@ -1,0 +1,89 @@
+{
+  "name": "Votacao",
+  "type": "object",
+  "properties": {
+    "sessao_id": {
+      "type": "string"
+    },
+    "materia_id": {
+      "type": "string"
+    },
+    "materia_ementa": {
+      "type": "string"
+    },
+    "materia_tipo": {
+      "type": "string"
+    },
+    "tipo_votacao": {
+      "type": "string",
+      "enum": [
+        "Simb\u00f3lica",
+        "Nominal",
+        "Secreta"
+      ],
+      "default": "Simb\u00f3lica"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Aguardando",
+        "Em Vota\u00e7\u00e3o",
+        "Encerrada"
+      ],
+      "default": "Aguardando"
+    },
+    "votos": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "parlamentar_id": {
+            "type": "string"
+          },
+          "parlamentar_nome": {
+            "type": "string"
+          },
+          "voto": {
+            "type": "string",
+            "enum": [
+              "Sim",
+              "N\u00e3o",
+              "Absten\u00e7\u00e3o"
+            ]
+          },
+          "hora": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "resultado": {
+      "type": "string",
+      "enum": [
+        "Aprovada",
+        "Rejeitada",
+        "Em vota\u00e7\u00e3o",
+        "Aguardando"
+      ],
+      "default": "Aguardando"
+    },
+    "votos_sim": {
+      "type": "number",
+      "default": 0
+    },
+    "votos_nao": {
+      "type": "number",
+      "default": 0
+    },
+    "abstencoes": {
+      "type": "number",
+      "default": 0
+    },
+    "data_hora": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "materia_ementa"
+  ]
+}
