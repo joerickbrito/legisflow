@@ -1,0 +1,61 @@
+{
+  "name": "DocumentoAdministrativo",
+  "type": "object",
+  "properties": {
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "Of\u00edcio",
+        "Memorando",
+        "Circular",
+        "Portaria",
+        "Despacho",
+        "Resolu\u00e7\u00e3o Interna",
+        "Ato da Mesa"
+      ],
+      "default": "Of\u00edcio"
+    },
+    "numero": {
+      "type": "string"
+    },
+    "ano": {
+      "type": "number"
+    },
+    "assunto": {
+      "type": "string"
+    },
+    "texto": {
+      "type": "string"
+    },
+    "remetente": {
+      "type": "string"
+    },
+    "destinatario": {
+      "type": "string"
+    },
+    "data": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Rascunho",
+        "Emitido",
+        "Entregue",
+        "Arquivado"
+      ],
+      "default": "Rascunho"
+    },
+    "arquivo_url": {
+      "type": "string"
+    },
+    "protocolo_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tipo",
+    "assunto"
+  ]
+}

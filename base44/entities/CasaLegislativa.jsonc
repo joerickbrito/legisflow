@@ -1,0 +1,51 @@
+{
+  "name": "CasaLegislativa",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string"
+    },
+    "sigla": {
+      "type": "string"
+    },
+    "cnpj": {
+      "type": "string"
+    },
+    "endereco": {
+      "type": "string"
+    },
+    "cep": {
+      "type": "string"
+    },
+    "cidade": {
+      "type": "string"
+    },
+    "estado": {
+      "type": "string"
+    },
+    "telefone": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "site": {
+      "type": "string"
+    },
+    "brasao_url": {
+      "type": "string"
+    },
+    "logotipo_url": {
+      "type": "string"
+    },
+    "lei_organica_url": {
+      "type": "string"
+    },
+    "regimento_interno_url": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "nome"
+  ]
+}

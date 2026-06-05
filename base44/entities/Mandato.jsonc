@@ -1,0 +1,56 @@
+{
+  "name": "Mandato",
+  "type": "object",
+  "properties": {
+    "parlamentar_id": {
+      "type": "string"
+    },
+    "parlamentar_nome": {
+      "type": "string"
+    },
+    "partido_id": {
+      "type": "string"
+    },
+    "partido_sigla": {
+      "type": "string"
+    },
+    "legislatura_id": {
+      "type": "string"
+    },
+    "legislatura_numero": {
+      "type": "number"
+    },
+    "data_inicio": {
+      "type": "string",
+      "format": "date"
+    },
+    "data_fim": {
+      "type": "string",
+      "format": "date"
+    },
+    "tipo_afastamento": {
+      "type": "string",
+      "enum": [
+        "Nenhum",
+        "Licen\u00e7a Sa\u00fade",
+        "Licen\u00e7a Interesse Particular",
+        "Cargo no Executivo",
+        "Outros"
+      ],
+      "default": "Nenhum"
+    },
+    "suplente_id": {
+      "type": "string"
+    },
+    "suplente_nome": {
+      "type": "string"
+    },
+    "ativo": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "parlamentar_id"
+  ]
+}

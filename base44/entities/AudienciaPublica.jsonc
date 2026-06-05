@@ -1,0 +1,78 @@
+{
+  "name": "AudienciaPublica",
+  "type": "object",
+  "properties": {
+    "tema": {
+      "type": "string"
+    },
+    "descricao": {
+      "type": "string"
+    },
+    "data": {
+      "type": "string",
+      "format": "date"
+    },
+    "hora": {
+      "type": "string"
+    },
+    "local": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Agendada",
+        "Realizada",
+        "Cancelada"
+      ],
+      "default": "Agendada"
+    },
+    "convocados": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string"
+          },
+          "instituicao": {
+            "type": "string"
+          },
+          "confirmado": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "participantes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string"
+          },
+          "representando": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "ata": {
+      "type": "string"
+    },
+    "lista_presenca_url": {
+      "type": "string"
+    },
+    "materias_relacionadas": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "tema",
+    "data"
+  ]
+}

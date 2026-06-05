@@ -8,15 +8,26 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Layout from '@/components/Layout';
 
-// Page imports
+// Pages
 import Dashboard from '@/pages/Dashboard';
+import CasaLegislativa from '@/pages/CasaLegislativa';
+import Legislaturas from '@/pages/Legislaturas';
+import Parlamentares from '@/pages/Parlamentares';
+import Partidos from '@/pages/Partidos';
+import MesaDiretora from '@/pages/MesaDiretora';
+import Comissoes from '@/pages/Comissoes';
+import Protocolo from '@/pages/Protocolo';
+import Proposicoes from '@/pages/Proposicoes';
 import Materias from '@/pages/Materias';
+import Tramitacoes from '@/pages/Tramitacoes';
+import Pareceres from '@/pages/Pareceres';
+import Audiencias from '@/pages/Audiencias';
 import Sessoes from '@/pages/Sessoes';
 import Votacao from '@/pages/Votacao';
-import Parlamentares from '@/pages/Parlamentares';
-import Comissoes from '@/pages/Comissoes';
 import Normas from '@/pages/Normas';
-import Protocolo from '@/pages/Protocolo';
+import Documentos from '@/pages/Documentos';
+import Transparencia from '@/pages/Transparencia';
+import Relatorios from '@/pages/Relatorios';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
@@ -34,12 +45,8 @@ const AuthenticatedApp = () => {
   }
 
   if (authError) {
-    if (authError.type === 'user_not_registered') {
-      return <UserNotRegisteredError />;
-    } else if (authError.type === 'auth_required') {
-      navigateToLogin();
-      return null;
-    }
+    if (authError.type === 'user_not_registered') return <UserNotRegisteredError />;
+    if (authError.type === 'auth_required') { navigateToLogin(); return null; }
   }
 
   return (
@@ -51,13 +58,24 @@ const AuthenticatedApp = () => {
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         <Route element={<Layout />}>
           <Route path="/" element={<Dashboard />} />
+          <Route path="/casa-legislativa" element={<CasaLegislativa />} />
+          <Route path="/legislaturas" element={<Legislaturas />} />
+          <Route path="/parlamentares" element={<Parlamentares />} />
+          <Route path="/partidos" element={<Partidos />} />
+          <Route path="/mesa-diretora" element={<MesaDiretora />} />
+          <Route path="/comissoes" element={<Comissoes />} />
+          <Route path="/protocolo" element={<Protocolo />} />
+          <Route path="/proposicoes" element={<Proposicoes />} />
           <Route path="/materias" element={<Materias />} />
+          <Route path="/tramitacoes" element={<Tramitacoes />} />
+          <Route path="/pareceres" element={<Pareceres />} />
+          <Route path="/audiencias" element={<Audiencias />} />
           <Route path="/sessoes" element={<Sessoes />} />
           <Route path="/votacao" element={<Votacao />} />
-          <Route path="/parlamentares" element={<Parlamentares />} />
-          <Route path="/comissoes" element={<Comissoes />} />
           <Route path="/normas" element={<Normas />} />
-          <Route path="/protocolo" element={<Protocolo />} />
+          <Route path="/documentos" element={<Documentos />} />
+          <Route path="/transparencia" element={<Transparencia />} />
+          <Route path="/relatorios" element={<Relatorios />} />
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />

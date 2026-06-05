@@ -1,0 +1,65 @@
+{
+  "name": "Tramitacao",
+  "type": "object",
+  "properties": {
+    "materia_id": {
+      "type": "string"
+    },
+    "materia_numero": {
+      "type": "string"
+    },
+    "materia_ementa": {
+      "type": "string"
+    },
+    "unidade_tramitacao_origem": {
+      "type": "string"
+    },
+    "unidade_tramitacao_destino": {
+      "type": "string"
+    },
+    "data": {
+      "type": "string",
+      "format": "date"
+    },
+    "hora": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Em Tramita\u00e7\u00e3o",
+        "Devolvida",
+        "Aprovada",
+        "Rejeitada",
+        "Arquivada",
+        "Aguardando Delibera\u00e7\u00e3o",
+        "Prazo Vencido"
+      ],
+      "default": "Em Tramita\u00e7\u00e3o"
+    },
+    "texto_acao": {
+      "type": "string"
+    },
+    "urgente": {
+      "type": "boolean",
+      "default": false
+    },
+    "turno": {
+      "type": "string",
+      "enum": [
+        "\u00danico",
+        "1\u00ba Turno",
+        "2\u00ba Turno",
+        "3\u00ba Turno"
+      ],
+      "default": "\u00danico"
+    },
+    "usuario_nome": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "materia_id",
+    "unidade_tramitacao_destino"
+  ]
+}

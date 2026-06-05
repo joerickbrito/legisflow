@@ -10,7 +10,8 @@
         "Lei Org\u00e2nica",
         "Decreto Legislativo",
         "Resolu\u00e7\u00e3o",
-        "Portaria"
+        "Portaria",
+        "Emenda \u00e0 Lei Org\u00e2nica"
       ],
       "default": "Lei Ordin\u00e1ria"
     },
@@ -23,14 +24,18 @@
     "ementa": {
       "type": "string"
     },
+    "texto_articulado": {
+      "type": "string"
+    },
     "data_publicacao": {
       "type": "string",
       "format": "date"
     },
-    "materia_origem_id": {
-      "type": "string"
+    "data_vigencia": {
+      "type": "string",
+      "format": "date"
     },
-    "texto_integral": {
+    "materia_origem_id": {
       "type": "string"
     },
     "arquivo_url": {
@@ -41,9 +46,29 @@
       "enum": [
         "Vigente",
         "Revogada",
-        "Suspensa"
+        "Revogada Parcialmente",
+        "Suspensa",
+        "N\u00e3o Vigente"
       ],
       "default": "Vigente"
+    },
+    "normas_que_revoga": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "normas_que_altera": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "normas_que_complementa": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     }
   },
   "required": [

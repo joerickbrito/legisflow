@@ -1,0 +1,30 @@
+{
+  "name": "Legislatura",
+  "type": "object",
+  "properties": {
+    "numero": {
+      "type": "number"
+    },
+    "data_inicio": {
+      "type": "string",
+      "format": "date"
+    },
+    "data_fim": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Ativa",
+        "Encerrada"
+      ],
+      "default": "Ativa"
+    }
+  },
+  "required": [
+    "numero",
+    "data_inicio",
+    "data_fim"
+  ]
+}

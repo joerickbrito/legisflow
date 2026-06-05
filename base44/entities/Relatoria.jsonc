@@ -1,0 +1,49 @@
+{
+  "name": "Relatoria",
+  "type": "object",
+  "properties": {
+    "materia_id": {
+      "type": "string"
+    },
+    "materia_ementa": {
+      "type": "string"
+    },
+    "comissao_id": {
+      "type": "string"
+    },
+    "comissao_nome": {
+      "type": "string"
+    },
+    "relator_id": {
+      "type": "string"
+    },
+    "relator_nome": {
+      "type": "string"
+    },
+    "data_designacao": {
+      "type": "string",
+      "format": "date"
+    },
+    "data_encerramento": {
+      "type": "string",
+      "format": "date"
+    },
+    "prazo": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Ativa",
+        "Encerrada",
+        "Substitu\u00edda"
+      ],
+      "default": "Ativa"
+    }
+  },
+  "required": [
+    "materia_id",
+    "relator_id"
+  ]
+}

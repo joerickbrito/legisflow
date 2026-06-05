@@ -2,118 +2,166 @@ import { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, FileText, Calendar, Vote, Users, Building2,
-  ScrollText, Inbox, ChevronLeft, ChevronRight, Menu, X, Bell, LogOut
+  ScrollText, Inbox, ChevronLeft, ChevronRight, Menu, LogOut,
+  Scale, Gavel, MessageSquare, BarChart3, Globe, BookOpen,
+  FolderOpen, ChevronDown, ChevronRight as ChevRight
 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-const navItems = [
-  { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { path: '/materias', icon: FileText, label: 'Matérias' },
-  { path: '/sessoes', icon: Calendar, label: 'Sessões' },
-  { path: '/votacao', icon: Vote, label: 'Votação', highlight: true },
-  { path: '/parlamentares', icon: Users, label: 'Parlamentares' },
-  { path: '/comissoes', icon: Building2, label: 'Comissões' },
-  { path: '/normas', icon: ScrollText, label: 'Normas Jurídicas' },
-  { path: '/protocolo', icon: Inbox, label: 'Protocolo' },
+const navGroups = [
+  {
+    label: 'Principal',
+    items: [
+      { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
+    ]
+  },
+  {
+    label: 'Estrutura',
+    items: [
+      { path: '/casa-legislativa', icon: Building2, label: 'Casa Legislativa' },
+      { path: '/legislaturas', icon: BookOpen, label: 'Legislaturas' },
+      { path: '/parlamentares', icon: Users, label: 'Parlamentares' },
+      { path: '/partidos', icon: Scale, label: 'Partidos & Bancadas' },
+      { path: '/mesa-diretora', icon: Gavel, label: 'Mesa Diretora' },
+      { path: '/comissoes', icon: Building2, label: 'Comissões' },
+    ]
+  },
+  {
+    label: 'Processo Legislativo',
+    items: [
+      { path: '/protocolo', icon: Inbox, label: 'Protocolo' },
+      { path: '/proposicoes', icon: FolderOpen, label: 'Proposições' },
+      { path: '/materias', icon: FileText, label: 'Matérias' },
+      { path: '/tramitacoes', icon: ChevRight, label: 'Tramitações' },
+      { path: '/pareceres', icon: MessageSquare, label: 'Pareceres' },
+      { path: '/audiencias', icon: Users, label: 'Audiências Públicas' },
+    ]
+  },
+  {
+    label: 'Sessões & Votação',
+    items: [
+      { path: '/sessoes', icon: Calendar, label: 'Sessões Plenárias' },
+      { path: '/votacao', icon: Vote, label: 'Painel de Votação', highlight: true },
+    ]
+  },
+  {
+    label: 'Normas & Documentos',
+    items: [
+      { path: '/normas', icon: ScrollText, label: 'Normas Jurídicas' },
+      { path: '/documentos', icon: FolderOpen, label: 'Documentos Admin.' },
+    ]
+  },
+  {
+    label: 'Transparência',
+    items: [
+      { path: '/transparencia', icon: Globe, label: 'Portal Transparência' },
+      { path: '/relatorios', icon: BarChart3, label: 'Relatórios' },
+    ]
+  },
 ];
 
 export default function Layout() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState(navGroups.map(() => true));
   const location = useLocation();
+
+  function toggleGroup(i) {
+    setExpandedGroups(eg => eg.map((v, idx) => idx === i ? !v : v));
+  }
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
-      {/* Mobile overlay */}
       {mobileOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
-          onClick={() => setMobileOpen(false)}
-        />
+        <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={() => setMobileOpen(false)} />
       )}
 
-      {/* Sidebar */}
       <aside className={cn(
         "fixed md:relative z-50 flex flex-col h-full transition-all duration-300 ease-in-out",
-        "bg-sidebar text-sidebar-foreground shadow-2xl",
+        "bg-sidebar text-sidebar-foreground shadow-2xl border-r border-sidebar-border",
         collapsed ? "w-16" : "w-64",
         mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
       )}>
         {/* Logo */}
-        <div className={cn("flex items-center px-4 py-5 border-b border-sidebar-border", collapsed ? "justify-center" : "justify-between")}>
+        <div className={cn("flex items-center px-4 py-4 border-b border-sidebar-border flex-shrink-0", collapsed ? "justify-center" : "justify-between")}>
           {!collapsed && (
             <div>
-              <div className="text-sidebar-primary font-heading font-bold text-lg leading-tight">Câmara</div>
-              <div className="text-sidebar-foreground/60 text-xs font-body">Sistema Legislativo</div>
+              <div className="text-sidebar-primary font-heading font-bold text-base leading-tight">SisLegis</div>
+              <div className="text-sidebar-foreground/50 text-[11px] font-body mt-0.5">Sistema Legislativo</div>
             </div>
           )}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="hidden md:flex p-1.5 rounded-lg hover:bg-sidebar-accent transition-colors text-sidebar-foreground/60 hover:text-sidebar-foreground"
+            className="hidden md:flex p-1.5 rounded-lg hover:bg-sidebar-accent transition-colors text-sidebar-foreground/50 hover:text-sidebar-foreground"
           >
-            {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+            {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
           </button>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
-          {navItems.map((item) => {
-            const active = location.pathname === item.path;
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                onClick={() => setMobileOpen(false)}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
-                  active
-                    ? "bg-sidebar-primary text-white shadow-lg shadow-blue-900/30"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
-                  item.highlight && !active && "ring-1 ring-sidebar-primary/40"
-                )}
-                title={collapsed ? item.label : undefined}
-              >
-                <item.icon size={20} className={cn("flex-shrink-0", item.highlight && !active && "text-sidebar-primary")} />
-                {!collapsed && (
-                  <span className="text-sm font-medium truncate">{item.label}</span>
-                )}
-                {!collapsed && item.highlight && !active && (
-                  <span className="ml-auto text-[10px] bg-sidebar-primary/20 text-sidebar-primary px-1.5 py-0.5 rounded-full font-semibold">AO VIVO</span>
-                )}
-              </Link>
-            );
-          })}
+        {/* Nav */}
+        <nav className="flex-1 overflow-y-auto py-2 space-y-0.5 px-1.5">
+          {navGroups.map((group, gi) => (
+            <div key={gi} className="mb-1">
+              {!collapsed && (
+                <button
+                  onClick={() => toggleGroup(gi)}
+                  className="flex items-center justify-between w-full px-2 py-1.5 text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/40 hover:text-sidebar-foreground/60 transition-colors"
+                >
+                  {group.label}
+                  {expandedGroups[gi] ? <ChevronDown size={10} /> : <ChevRight size={10} />}
+                </button>
+              )}
+              {(collapsed || expandedGroups[gi]) && group.items.map((item) => {
+                const active = location.pathname === item.path;
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    onClick={() => setMobileOpen(false)}
+                    className={cn(
+                      "flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all duration-150 group text-sm",
+                      active
+                        ? "bg-sidebar-primary text-white shadow-md"
+                        : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                      item.highlight && !active && "ring-1 ring-sidebar-primary/50"
+                    )}
+                    title={collapsed ? item.label : undefined}
+                  >
+                    <item.icon size={16} className={cn("flex-shrink-0", item.highlight && !active && "text-sidebar-primary")} />
+                    {!collapsed && <span className="truncate font-medium">{item.label}</span>}
+                    {!collapsed && item.highlight && !active && (
+                      <span className="ml-auto text-[9px] bg-sidebar-primary/25 text-sidebar-primary px-1.5 py-0.5 rounded-full font-bold tracking-wide">LIVE</span>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </nav>
 
-        {/* Footer */}
-        <div className="px-2 py-3 border-t border-sidebar-border">
+        <div className="px-1.5 py-2 border-t border-sidebar-border flex-shrink-0">
           <button
             onClick={() => base44.auth.logout()}
             className={cn(
-              "flex items-center gap-3 px-3 py-2.5 rounded-lg w-full transition-colors",
-              "text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+              "flex items-center gap-2.5 px-2.5 py-2 rounded-lg w-full transition-colors text-sm",
+              "text-sidebar-foreground/40 hover:bg-sidebar-accent hover:text-sidebar-foreground"
             )}
           >
-            <LogOut size={18} className="flex-shrink-0" />
-            {!collapsed && <span className="text-sm">Sair</span>}
+            <LogOut size={15} className="flex-shrink-0" />
+            {!collapsed && <span>Sair</span>}
           </button>
         </div>
       </aside>
 
-      {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Top bar (mobile) */}
         <header className="md:hidden flex items-center justify-between px-4 py-3 bg-card border-b border-border">
           <button onClick={() => setMobileOpen(true)} className="p-2 rounded-lg hover:bg-muted">
             <Menu size={20} />
           </button>
-          <span className="font-heading font-semibold text-foreground">Sistema Legislativo</span>
+          <span className="font-heading font-semibold text-foreground text-sm">SisLegis</span>
           <div className="w-8" />
         </header>
-
-        {/* Page content */}
         <main className="flex-1 overflow-y-auto">
           <Outlet />
         </main>

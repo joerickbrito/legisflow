@@ -1,0 +1,30 @@
+{
+  "name": "SessaoLegislativa",
+  "type": "object",
+  "properties": {
+    "numero": {
+      "type": "number"
+    },
+    "ano": {
+      "type": "number"
+    },
+    "data_inicio": {
+      "type": "string",
+      "format": "date"
+    },
+    "data_fim": {
+      "type": "string",
+      "format": "date"
+    },
+    "legislatura_id": {
+      "type": "string"
+    },
+    "legislatura_numero": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "numero",
+    "ano"
+  ]
+}

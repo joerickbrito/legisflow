@@ -1,5 +1,5 @@
 {
-  "name": "Comissao",
+  "name": "Bancada",
   "type": "object",
   "properties": {
     "nome": {
@@ -11,27 +11,13 @@
     "tipo": {
       "type": "string",
       "enum": [
-        "Permanente",
-        "Tempor\u00e1ria",
-        "CPI",
-        "Especial",
-        "Mista"
+        "Partid\u00e1ria",
+        "Suprapartid\u00e1ria"
       ],
-      "default": "Permanente"
-    },
-    "objetivo": {
-      "type": "string"
+      "default": "Partid\u00e1ria"
     },
     "legislatura_id": {
       "type": "string"
-    },
-    "data_criacao": {
-      "type": "string",
-      "format": "date"
-    },
-    "data_encerramento": {
-      "type": "string",
-      "format": "date"
     },
     "membros": {
       "type": "array",
@@ -45,16 +31,6 @@
             "type": "string"
           },
           "cargo": {
-            "type": "string",
-            "enum": [
-              "Presidente",
-              "Vice-Presidente",
-              "Relator",
-              "Membro",
-              "Suplente"
-            ]
-          },
-          "partido_sigla": {
             "type": "string"
           }
         }

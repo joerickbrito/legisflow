@@ -1,0 +1,52 @@
+{
+  "name": "Parecer",
+  "type": "object",
+  "properties": {
+    "materia_id": {
+      "type": "string"
+    },
+    "materia_ementa": {
+      "type": "string"
+    },
+    "relatoria_id": {
+      "type": "string"
+    },
+    "comissao_id": {
+      "type": "string"
+    },
+    "comissao_nome": {
+      "type": "string"
+    },
+    "relator_id": {
+      "type": "string"
+    },
+    "relator_nome": {
+      "type": "string"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "Favor\u00e1vel",
+        "Contr\u00e1rio",
+        "Favor\u00e1vel com Emendas",
+        "Pela Inconstitucionalidade",
+        "Pela Constitucionalidade"
+      ],
+      "default": "Favor\u00e1vel"
+    },
+    "texto": {
+      "type": "string"
+    },
+    "data": {
+      "type": "string",
+      "format": "date"
+    },
+    "arquivo_url": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "materia_id",
+    "tipo"
+  ]
+}

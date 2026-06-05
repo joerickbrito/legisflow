@@ -1,0 +1,34 @@
+{
+  "name": "Partido",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string"
+    },
+    "sigla": {
+      "type": "string"
+    },
+    "numero": {
+      "type": "string"
+    },
+    "logo_url": {
+      "type": "string"
+    },
+    "data_fundacao": {
+      "type": "string",
+      "format": "date"
+    },
+    "data_extincao": {
+      "type": "string",
+      "format": "date"
+    },
+    "ativo": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "nome",
+    "sigla"
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "name": "MesaDiretora",
+  "type": "object",
+  "properties": {
+    "legislatura_id": {
+      "type": "string"
+    },
+    "legislatura_numero": {
+      "type": "number"
+    },
+    "data_inicio": {
+      "type": "string",
+      "format": "date"
+    },
+    "data_fim": {
+      "type": "string",
+      "format": "date"
+    },
+    "presidente_id": {
+      "type": "string"
+    },
+    "presidente_nome": {
+      "type": "string"
+    },
+    "vice_presidente_id": {
+      "type": "string"
+    },
+    "vice_presidente_nome": {
+      "type": "string"
+    },
+    "primeiro_secretario_id": {
+      "type": "string"
+    },
+    "primeiro_secretario_nome": {
+      "type": "string"
+    },
+    "segundo_secretario_id": {
+      "type": "string"
+    },
+    "segundo_secretario_nome": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Ativa",
+        "Encerrada"
+      ],
+      "default": "Ativa"
+    }
+  },
+  "required": []
+}

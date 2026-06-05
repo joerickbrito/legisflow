@@ -5,6 +5,9 @@
     "sessao_id": {
       "type": "string"
     },
+    "sessao_numero": {
+      "type": "string"
+    },
     "materia_id": {
       "type": "string"
     },
@@ -14,21 +17,26 @@
     "materia_tipo": {
       "type": "string"
     },
+    "materia_numero": {
+      "type": "string"
+    },
     "tipo_votacao": {
       "type": "string",
       "enum": [
         "Simb\u00f3lica",
         "Nominal",
-        "Secreta"
+        "Secreta",
+        "Eletr\u00f4nica"
       ],
-      "default": "Simb\u00f3lica"
+      "default": "Nominal"
     },
     "status": {
       "type": "string",
       "enum": [
         "Aguardando",
         "Em Vota\u00e7\u00e3o",
-        "Encerrada"
+        "Encerrada",
+        "Cancelada"
       ],
       "default": "Aguardando"
     },
@@ -48,7 +56,9 @@
             "enum": [
               "Sim",
               "N\u00e3o",
-              "Absten\u00e7\u00e3o"
+              "Absten\u00e7\u00e3o",
+              "Ausente",
+              "Impedido"
             ]
           },
           "hora": {
@@ -63,7 +73,8 @@
         "Aprovada",
         "Rejeitada",
         "Em vota\u00e7\u00e3o",
-        "Aguardando"
+        "Aguardando",
+        "Cancelada"
       ],
       "default": "Aguardando"
     },
@@ -79,7 +90,21 @@
       "type": "number",
       "default": 0
     },
-    "data_hora": {
+    "ausentes": {
+      "type": "number",
+      "default": 0
+    },
+    "impedidos": {
+      "type": "number",
+      "default": 0
+    },
+    "quorum_necessario": {
+      "type": "number"
+    },
+    "data_hora_inicio": {
+      "type": "string"
+    },
+    "data_hora_fim": {
       "type": "string"
     }
   },

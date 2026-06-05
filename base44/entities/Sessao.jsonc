@@ -26,19 +26,30 @@
     "hora_fim": {
       "type": "string"
     },
+    "local": {
+      "type": "string"
+    },
     "status": {
       "type": "string",
       "enum": [
         "Agendada",
-        "Em Andamento",
+        "Aberta",
+        "Em Expediente",
+        "Em Ordem do Dia",
+        "Suspensa",
         "Encerrada",
         "Cancelada"
       ],
       "default": "Agendada"
     },
+    "sessao_legislativa_id": {
+      "type": "string"
+    },
+    "legislatura_id": {
+      "type": "string"
+    },
     "pauta": {
       "type": "array",
-      "description": "Mat\u00e9rias na pauta da sess\u00e3o",
       "items": {
         "type": "object",
         "properties": {
@@ -51,15 +62,20 @@
           "materia_tipo": {
             "type": "string"
           },
+          "materia_numero": {
+            "type": "string"
+          },
           "ordem": {
             "type": "number"
+          },
+          "votada": {
+            "type": "boolean"
           }
         }
       }
     },
     "presencas": {
       "type": "array",
-      "description": "Lista de presen\u00e7as",
       "items": {
         "type": "object",
         "properties": {
@@ -71,6 +87,37 @@
           },
           "presente": {
             "type": "boolean"
+          },
+          "hora_chegada": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "oradores": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "parlamentar_id": {
+            "type": "string"
+          },
+          "parlamentar_nome": {
+            "type": "string"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "Pequeno Expediente",
+              "Grande Expediente",
+              "Explica\u00e7\u00e3o Pessoal"
+            ]
+          },
+          "tempo_segundos": {
+            "type": "number"
+          },
+          "tema": {
+            "type": "string"
           }
         }
       }
@@ -80,6 +127,9 @@
     },
     "observacoes": {
       "type": "string"
+    },
+    "quorum_abertura": {
+      "type": "number"
     }
   },
   "required": [

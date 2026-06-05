@@ -1,28 +1,11 @@
 {
-  "name": "Comissao",
+  "name": "FrentesParlamentares",
   "type": "object",
   "properties": {
     "nome": {
       "type": "string"
     },
-    "sigla": {
-      "type": "string"
-    },
-    "tipo": {
-      "type": "string",
-      "enum": [
-        "Permanente",
-        "Tempor\u00e1ria",
-        "CPI",
-        "Especial",
-        "Mista"
-      ],
-      "default": "Permanente"
-    },
-    "objetivo": {
-      "type": "string"
-    },
-    "legislatura_id": {
+    "descricao": {
       "type": "string"
     },
     "data_criacao": {
@@ -45,16 +28,6 @@
             "type": "string"
           },
           "cargo": {
-            "type": "string",
-            "enum": [
-              "Presidente",
-              "Vice-Presidente",
-              "Relator",
-              "Membro",
-              "Suplente"
-            ]
-          },
-          "partido_sigla": {
             "type": "string"
           }
         }
