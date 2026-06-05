@@ -1,0 +1,71 @@
+{
+  "name": "Oficio",
+  "type": "object",
+  "properties": {
+    "numero": {
+      "type": "string"
+    },
+    "ano": {
+      "type": "number"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "Interno",
+        "Externo"
+      ],
+      "default": "Externo"
+    },
+    "direcao": {
+      "type": "string",
+      "enum": [
+        "Enviado",
+        "Recebido"
+      ],
+      "default": "Enviado"
+    },
+    "assunto": {
+      "type": "string"
+    },
+    "remetente": {
+      "type": "string"
+    },
+    "destinatario": {
+      "type": "string"
+    },
+    "data": {
+      "type": "string",
+      "format": "date"
+    },
+    "texto": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Rascunho",
+        "Enviado",
+        "Recebido",
+        "Respondido",
+        "Arquivado"
+      ],
+      "default": "Rascunho"
+    },
+    "resposta_oficio_id": {
+      "type": "string"
+    },
+    "protocolo_id": {
+      "type": "string"
+    },
+    "arquivo_url": {
+      "type": "string"
+    },
+    "observacoes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "assunto",
+    "destinatario"
+  ]
+}

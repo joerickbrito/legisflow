@@ -1,0 +1,84 @@
+{
+  "name": "ReuniaoComissao",
+  "type": "object",
+  "properties": {
+    "comissao_id": {
+      "type": "string"
+    },
+    "comissao_nome": {
+      "type": "string"
+    },
+    "numero": {
+      "type": "string"
+    },
+    "data": {
+      "type": "string",
+      "format": "date"
+    },
+    "hora_inicio": {
+      "type": "string"
+    },
+    "hora_fim": {
+      "type": "string"
+    },
+    "local": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Agendada",
+        "Realizada",
+        "Cancelada"
+      ],
+      "default": "Agendada"
+    },
+    "pauta": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "materia_id": {
+            "type": "string"
+          },
+          "materia_ementa": {
+            "type": "string"
+          },
+          "ordem": {
+            "type": "number"
+          },
+          "deliberacao": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "presencas": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "parlamentar_id": {
+            "type": "string"
+          },
+          "parlamentar_nome": {
+            "type": "string"
+          },
+          "presente": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "ata": {
+      "type": "string"
+    },
+    "observacoes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "comissao_id",
+    "data"
+  ]
+}

@@ -1,0 +1,73 @@
+{
+  "name": "Quorum",
+  "type": "object",
+  "properties": {
+    "sessao_id": {
+      "type": "string"
+    },
+    "sessao_numero": {
+      "type": "string"
+    },
+    "data": {
+      "type": "string",
+      "format": "date"
+    },
+    "total_parlamentares": {
+      "type": "number"
+    },
+    "presentes": {
+      "type": "number"
+    },
+    "ausentes": {
+      "type": "number"
+    },
+    "licenciados": {
+      "type": "number"
+    },
+    "quorum_minimo": {
+      "type": "number"
+    },
+    "quorum_atingido": {
+      "type": "boolean",
+      "default": false
+    },
+    "registro_presencas": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "parlamentar_id": {
+            "type": "string"
+          },
+          "parlamentar_nome": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "Presente",
+              "Ausente",
+              "Licenciado",
+              "Suplente"
+            ]
+          },
+          "suplente_id": {
+            "type": "string"
+          },
+          "suplente_nome": {
+            "type": "string"
+          },
+          "hora_chegada": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "observacoes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "sessao_id"
+  ]
+}

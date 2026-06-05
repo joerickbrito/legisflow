@@ -1,0 +1,63 @@
+{
+  "name": "Emenda",
+  "type": "object",
+  "properties": {
+    "materia_id": {
+      "type": "string"
+    },
+    "materia_ementa": {
+      "type": "string"
+    },
+    "numero": {
+      "type": "string"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "Supressiva",
+        "Modificativa",
+        "Aditiva",
+        "Substitutiva",
+        "Substitutivo Global"
+      ],
+      "default": "Modificativa"
+    },
+    "ementa": {
+      "type": "string"
+    },
+    "texto": {
+      "type": "string"
+    },
+    "justificativa": {
+      "type": "string"
+    },
+    "autor_id": {
+      "type": "string"
+    },
+    "autor_nome": {
+      "type": "string"
+    },
+    "data_apresentacao": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Em an\u00e1lise",
+        "Aprovada",
+        "Rejeitada",
+        "Retirada"
+      ],
+      "default": "Em an\u00e1lise"
+    },
+    "arquivo_url": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "materia_id",
+    "tipo",
+    "ementa"
+  ]
+}
