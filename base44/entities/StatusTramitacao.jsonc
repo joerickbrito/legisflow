@@ -1,0 +1,33 @@
+{
+  "name": "StatusTramitacao",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "nome": {
+      "type": "string"
+    },
+    "descricao": {
+      "type": "string"
+    },
+    "cor": {
+      "type": "string"
+    },
+    "ordem": {
+      "type": "number",
+      "default": 0
+    },
+    "ativo": {
+      "type": "boolean",
+      "default": true
+    },
+    "final": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "nome"
+  ]
+}

@@ -5,7 +5,7 @@ import {
   ScrollText, Inbox, ChevronLeft, ChevronRight, Menu, LogOut,
   Scale, Gavel, MessageSquare, BarChart3, Globe, BookOpen,
   FolderOpen, ChevronDown, ChevronRight as ChevRight,
-  Monitor, UserCheck, FileDiff, UsersRound, Mail, Shield, Settings
+  Monitor, UserCheck, FileDiff, UsersRound, Mail, Shield, Settings, SlidersHorizontal
 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useTenant, ROLE_LABELS } from '@/lib/TenantContext';
@@ -29,6 +29,7 @@ const getNavGroups = (isSuperAdmin, isAdminCamara, userRole) => {
       items: [
         { path: '/gerenciar-camaras', icon: Building2, label: 'Câmaras', highlight: true },
         { path: '/gerenciar-usuarios', icon: Shield, label: 'Usuários' },
+        { path: '/configuracoes', icon: SlidersHorizontal, label: 'Configurações' },
         { path: '/auditoria', icon: ScrollText, label: 'Auditoria' },
       ]
     });
@@ -41,6 +42,7 @@ const getNavGroups = (isSuperAdmin, isAdminCamara, userRole) => {
       items: [
         { path: '/gerenciar-usuarios', icon: Users, label: 'Usuários' },
         { path: '/casa-legislativa', icon: Building2, label: 'Casa Legislativa' },
+        { path: '/configuracoes', icon: SlidersHorizontal, label: 'Configurações' },
         { path: '/auditoria', icon: ScrollText, label: 'Auditoria' },
       ]
     });

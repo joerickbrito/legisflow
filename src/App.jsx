@@ -37,6 +37,7 @@ import Oficios from '@/pages/Oficios.jsx';
 import GerenciarCamaras from '@/pages/GerenciarCamaras';
 import GerenciarUsuarios from '@/pages/GerenciarUsuarios';
 import Auditoria from '@/pages/Auditoria';
+import Configuracoes from '@/pages/Configuracoes';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
@@ -93,6 +94,7 @@ const AuthenticatedApp = () => {
           <Route path="/gerenciar-camaras" element={<GerenciarCamaras />} />
           <Route path="/gerenciar-usuarios" element={<GerenciarUsuarios />} />
           <Route path="/auditoria" element={<Auditoria />} />
+          <Route path="/configuracoes" element={<Configuracoes />} />
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />

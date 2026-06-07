@@ -1,0 +1,26 @@
+{
+  "name": "TipoAutor",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "nome": {
+      "type": "string"
+    },
+    "descricao": {
+      "type": "string"
+    },
+    "ativo": {
+      "type": "boolean",
+      "default": true
+    },
+    "ordem": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "nome"
+  ]
+}
