@@ -1,17 +1,47 @@
 {
+  "name": "User",
+  "type": "object",
   "properties": {
     "role": {
       "type": "string",
-      "description": "The role of the user in the app",
       "enum": [
-        "admin",
-        "user"
-      ]
+        "SUPER_ADMIN",
+        "ADMIN_CAMARA",
+        "SECRETARIA_LEGISLATIVA",
+        "PROTOCOLO",
+        "PRESIDENTE",
+        "COMISSAO",
+        "RELATOR",
+        "VEREADOR",
+        "CONSULTA_PUBLICA"
+      ],
+      "default": "VEREADOR"
+    },
+    "tenant_id": {
+      "type": "string"
+    },
+    "telefone": {
+      "type": "string"
+    },
+    "cargo": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Ativo",
+        "Inativo",
+        "Bloqueado",
+        "Pendente"
+      ],
+      "default": "Ativo"
+    },
+    "senha_temporaria": {
+      "type": "boolean",
+      "default": false
+    },
+    "camara_nome": {
+      "type": "string"
     }
-  },
-  "required": [
-    "role"
-  ],
-  "name": "User",
-  "type": "object"
+  }
 }

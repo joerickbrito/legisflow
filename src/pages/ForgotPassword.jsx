@@ -4,8 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Mail, ArrowLeft, Loader2 } from "lucide-react";
-import AuthLayout from "@/components/AuthLayout";
+import { Mail, Loader2, Scale, ArrowLeft, CheckCircle } from "lucide-react";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -17,8 +16,8 @@ export default function ForgotPassword() {
     setLoading(true);
     try {
       await base44.auth.resetPasswordRequest(email);
-    } catch {
-      // Always show success regardless
+    } catch (e) {
+      // Always show success per security best practices
     } finally {
       setLoading(false);
       setSent(true);
@@ -26,51 +25,65 @@ export default function ForgotPassword() {
   };
 
   return (
-    <AuthLayout
-      icon={Mail}
-      title="Reset password"
-      subtitle="We'll send you a link to reset it"
-      footer={
-        <Link to="/login" className="text-primary font-medium hover:underline">
-          <ArrowLeft className="w-3 h-3 inline mr-1" />Back to log in
-        </Link>
-      }
-    >
-      {sent ? (
-        <p className="text-sm text-foreground text-center">
-          If an account exists with that email, you'll receive a password reset link shortly.
-        </p>
-      ) : (
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email address</Label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
-              <Input
-                id="email"
-                type="email"
-                autoComplete="email"
-                autoFocus
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="pl-10 h-12"
-                required
-              />
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-600 shadow-lg mb-4">
+            <Scale className="w-8 h-8 text-white" />
           </div>
-          <Button type="submit" className="w-full h-12 font-medium" disabled={loading}>
-            {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Sending...
-              </>
-            ) : (
-              "Send reset link"
-            )}
-          </Button>
-        </form>
-      )}
-    </AuthLayout>
+          <h1 className="text-3xl font-heading font-bold text-white">SisLegis</h1>
+          <p className="text-blue-300 text-sm mt-1">Sistema Legislativo Municipal</p>
+        </div>
+
+        <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 shadow-2xl">
+          {sent ? (
+            <div className="text-center space-y-4">
+              <CheckCircle className="w-12 h-12 text-green-400 mx-auto" />
+              <h2 className="text-xl font-semibold text-white">E-mail Enviado</h2>
+              <p className="text-slate-400 text-sm">
+                Se o e-mail estiver cadastrado, você receberá as instruções de recuperação em breve.
+              </p>
+              <Link to="/login">
+                <Button variant="outline" className="w-full border-white/20 text-slate-300 hover:bg-white/10">
+                  <ArrowLeft className="w-4 h-4 mr-2" /> Voltar ao login
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <>
+              <div className="mb-6">
+                <h2 className="text-xl font-semibold text-white">Recuperar Senha</h2>
+                <p className="text-slate-400 text-sm mt-1">Informe seu e-mail para receber o link de recuperação</p>
+              </div>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="email" className="text-slate-300 text-sm">E-mail</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="seu@email.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="pl-10 h-11 bg-white/10 border-white/20 text-white placeholder:text-slate-500 focus:border-blue-400"
+                      required
+                    />
+                  </div>
+                </div>
+                <Button type="submit" className="w-full h-11 bg-blue-600 hover:bg-blue-500" disabled={loading}>
+                  {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Enviando...</> : "Enviar Link de Recuperação"}
+                </Button>
+              </form>
+              <div className="mt-4 text-center">
+                <Link to="/login" className="text-sm text-blue-400 hover:text-blue-300 hover:underline flex items-center justify-center gap-1">
+                  <ArrowLeft className="w-3 h-3" /> Voltar ao login
+                </Link>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

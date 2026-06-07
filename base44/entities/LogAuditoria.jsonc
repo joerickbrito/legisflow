@@ -1,0 +1,40 @@
+{
+  "name": "LogAuditoria",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "usuario_id": {
+      "type": "string"
+    },
+    "usuario_nome": {
+      "type": "string"
+    },
+    "acao": {
+      "type": "string"
+    },
+    "modulo": {
+      "type": "string"
+    },
+    "registro_id": {
+      "type": "string"
+    },
+    "descricao": {
+      "type": "string"
+    },
+    "dados_anteriores": {
+      "type": "string"
+    },
+    "dados_novos": {
+      "type": "string"
+    },
+    "ip": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "acao",
+    "modulo"
+  ]
+}

@@ -4,6 +4,7 @@ import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
+import { TenantProvider } from '@/lib/TenantContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Layout from '@/components/Layout';
@@ -33,6 +34,9 @@ import Quorum from '@/pages/Quorum.jsx';
 import Emendas from '@/pages/Emendas.jsx';
 import ReuniaoComissao from '@/pages/ReuniaoComissao.jsx';
 import Oficios from '@/pages/Oficios.jsx';
+import GerenciarCamaras from '@/pages/GerenciarCamaras';
+import GerenciarUsuarios from '@/pages/GerenciarUsuarios';
+import Auditoria from '@/pages/Auditoria';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
@@ -86,6 +90,9 @@ const AuthenticatedApp = () => {
           <Route path="/emendas" element={<Emendas />} />
           <Route path="/reuniao-comissao" element={<ReuniaoComissao />} />
           <Route path="/oficios" element={<Oficios />} />
+          <Route path="/gerenciar-camaras" element={<GerenciarCamaras />} />
+          <Route path="/gerenciar-usuarios" element={<GerenciarUsuarios />} />
+          <Route path="/auditoria" element={<Auditoria />} />
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />
@@ -98,7 +105,9 @@ function App() {
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
         <Router>
-          <AuthenticatedApp />
+          <TenantProvider>
+            <AuthenticatedApp />
+          </TenantProvider>
         </Router>
         <Toaster />
       </QueryClientProvider>

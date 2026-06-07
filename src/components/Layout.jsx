@@ -5,73 +5,114 @@ import {
   ScrollText, Inbox, ChevronLeft, ChevronRight, Menu, LogOut,
   Scale, Gavel, MessageSquare, BarChart3, Globe, BookOpen,
   FolderOpen, ChevronDown, ChevronRight as ChevRight,
-  Monitor, UserCheck, FileDiff, UsersRound, Mail
+  Monitor, UserCheck, FileDiff, UsersRound, Mail, Shield, Settings
 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import { useTenant, ROLE_LABELS } from '@/lib/TenantContext';
+import { useAuth } from '@/lib/AuthContext';
 import { cn } from '@/lib/utils';
 
-const navGroups = [
-  {
-    label: 'Principal',
-    items: [
-      { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
-    ]
-  },
-  {
-    label: 'Estrutura',
-    items: [
-      { path: '/casa-legislativa', icon: Building2, label: 'Casa Legislativa' },
-      { path: '/legislaturas', icon: BookOpen, label: 'Legislaturas' },
-      { path: '/parlamentares', icon: Users, label: 'Parlamentares' },
-      { path: '/partidos', icon: Scale, label: 'Partidos' },
-      { path: '/mesa-diretora', icon: Gavel, label: 'Mesa Diretora' },
-      { path: '/comissoes', icon: Building2, label: 'Comissões' },
-    ]
-  },
-  {
-    label: 'Processo Legislativo',
-    items: [
-      { path: '/protocolo', icon: Inbox, label: 'Protocolo' },
-      { path: '/proposicoes', icon: FolderOpen, label: 'Proposições' },
-      { path: '/materias', icon: FileText, label: 'Matérias' },
-      { path: '/emendas', icon: FileDiff, label: 'Emendas' },
-      { path: '/tramitacoes', icon: ChevRight, label: 'Tramitações' },
-      { path: '/pareceres', icon: MessageSquare, label: 'Pareceres' },
-      { path: '/audiencias', icon: Users, label: 'Audiências Públicas' },
-      { path: '/oficios', icon: Mail, label: 'Ofícios' },
-    ]
-  },
-  {
-    label: 'Sessões & Votação',
-    items: [
-      { path: '/sessoes', icon: Calendar, label: 'Sessões Plenárias' },
-      { path: '/quorum', icon: UserCheck, label: 'Controle de Quórum' },
-      { path: '/reuniao-comissao', icon: UsersRound, label: 'Reuniões de Comissão' },
-      { path: '/votacao', icon: Vote, label: 'Registro de Votação' },
-      { path: '/painel-eletronico', icon: Monitor, label: 'Painel Eletrônico', highlight: true },
-    ]
-  },
-  {
-    label: 'Normas & Documentos',
-    items: [
-      { path: '/normas', icon: ScrollText, label: 'Normas Jurídicas' },
-      { path: '/documentos', icon: FolderOpen, label: 'Documentos Admin.' },
-    ]
-  },
-  {
+const getNavGroups = (isSuperAdmin, isAdminCamara, userRole) => {
+  const groups = [
+    {
+      label: 'Principal',
+      items: [
+        { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
+      ]
+    },
+  ];
+
+  // Super Admin exclusive
+  if (isSuperAdmin) {
+    groups.push({
+      label: 'Super Admin',
+      items: [
+        { path: '/gerenciar-camaras', icon: Building2, label: 'Câmaras', highlight: true },
+        { path: '/gerenciar-usuarios', icon: Shield, label: 'Usuários' },
+        { path: '/auditoria', icon: ScrollText, label: 'Auditoria' },
+      ]
+    });
+  }
+
+  // Admin Câmara
+  if (isAdminCamara && !isSuperAdmin) {
+    groups.push({
+      label: 'Administração',
+      items: [
+        { path: '/gerenciar-usuarios', icon: Users, label: 'Usuários' },
+        { path: '/casa-legislativa', icon: Building2, label: 'Casa Legislativa' },
+        { path: '/auditoria', icon: ScrollText, label: 'Auditoria' },
+      ]
+    });
+  }
+
+  // Estrutura (todos exceto consulta pública)
+  if (userRole !== 'CONSULTA_PUBLICA') {
+    groups.push({
+      label: 'Estrutura',
+      items: [
+        { path: '/legislaturas', icon: BookOpen, label: 'Legislaturas' },
+        { path: '/parlamentares', icon: Users, label: 'Parlamentares' },
+        { path: '/partidos', icon: Scale, label: 'Partidos' },
+        { path: '/mesa-diretora', icon: Gavel, label: 'Mesa Diretora' },
+        { path: '/comissoes', icon: Building2, label: 'Comissões' },
+      ]
+    });
+
+    groups.push({
+      label: 'Processo Legislativo',
+      items: [
+        { path: '/protocolo', icon: Inbox, label: 'Protocolo' },
+        { path: '/proposicoes', icon: FolderOpen, label: 'Proposições' },
+        { path: '/materias', icon: FileText, label: 'Matérias' },
+        { path: '/emendas', icon: FileDiff, label: 'Emendas' },
+        { path: '/tramitacoes', icon: ChevRight, label: 'Tramitações' },
+        { path: '/pareceres', icon: MessageSquare, label: 'Pareceres' },
+        { path: '/audiencias', icon: Users, label: 'Audiências Públicas' },
+        { path: '/oficios', icon: Mail, label: 'Ofícios' },
+      ]
+    });
+
+    groups.push({
+      label: 'Sessões & Votação',
+      items: [
+        { path: '/sessoes', icon: Calendar, label: 'Sessões Plenárias' },
+        { path: '/quorum', icon: UserCheck, label: 'Controle de Quórum' },
+        { path: '/reuniao-comissao', icon: UsersRound, label: 'Reuniões de Comissão' },
+        { path: '/votacao', icon: Vote, label: 'Registro de Votação' },
+        { path: '/painel-eletronico', icon: Monitor, label: 'Painel Eletrônico', highlight: true },
+      ]
+    });
+
+    groups.push({
+      label: 'Normas & Documentos',
+      items: [
+        { path: '/normas', icon: ScrollText, label: 'Normas Jurídicas' },
+        { path: '/documentos', icon: FolderOpen, label: 'Documentos Admin.' },
+      ]
+    });
+  }
+
+  groups.push({
     label: 'Transparência',
     items: [
       { path: '/transparencia', icon: Globe, label: 'Portal Transparência' },
       { path: '/relatorios', icon: BarChart3, label: 'Relatórios' },
     ]
-  },
-];
+  });
+
+  return groups;
+};
 
 export default function Layout() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [expandedGroups, setExpandedGroups] = useState(navGroups.map(() => true));
   const location = useLocation();
+  const { isSuperAdmin, isAdminCamara, userRole, camara, ROLE_LABELS: RL } = useTenant();
+  const { user } = useAuth();
+
+  const navGroups = getNavGroups(isSuperAdmin, isAdminCamara, userRole);
+  const [expandedGroups, setExpandedGroups] = useState(navGroups.map(() => true));
 
   function toggleGroup(i) {
     setExpandedGroups(eg => eg.map((v, idx) => idx === i ? !v : v));
@@ -92,18 +133,30 @@ export default function Layout() {
         {/* Logo */}
         <div className={cn("flex items-center px-4 py-4 border-b border-sidebar-border flex-shrink-0", collapsed ? "justify-center" : "justify-between")}>
           {!collapsed && (
-            <div>
-              <div className="text-sidebar-primary font-heading font-bold text-base leading-tight">SisLegis</div>
-              <div className="text-sidebar-foreground/50 text-[11px] font-body mt-0.5">Sistema Legislativo</div>
+            <div className="min-w-0">
+              <div className="text-sidebar-primary font-heading font-bold text-base leading-tight truncate">
+                {camara?.sigla || camara?.nome || 'SisLegis'}
+              </div>
+              <div className="text-sidebar-foreground/50 text-[10px] font-body mt-0.5 truncate">
+                {isSuperAdmin ? 'Super Admin' : (camara?.nome || 'Sistema Legislativo')}
+              </div>
             </div>
           )}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="hidden md:flex p-1.5 rounded-lg hover:bg-sidebar-accent transition-colors text-sidebar-foreground/50 hover:text-sidebar-foreground"
+            className="hidden md:flex p-1.5 rounded-lg hover:bg-sidebar-accent transition-colors text-sidebar-foreground/50 hover:text-sidebar-foreground flex-shrink-0"
           >
             {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
           </button>
         </div>
+
+        {/* User info */}
+        {!collapsed && user && (
+          <div className="px-4 py-2.5 border-b border-sidebar-border/50 bg-sidebar-accent/30">
+            <p className="text-xs font-medium text-sidebar-foreground truncate">{user.full_name || user.email}</p>
+            <p className="text-[10px] text-sidebar-foreground/50 truncate">{ROLE_LABELS[userRole] || userRole}</p>
+          </div>
+        )}
 
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto py-2 space-y-0.5 px-1.5">
@@ -165,7 +218,7 @@ export default function Layout() {
           <button onClick={() => setMobileOpen(true)} className="p-2 rounded-lg hover:bg-muted">
             <Menu size={20} />
           </button>
-          <span className="font-heading font-semibold text-foreground text-sm">SisLegis</span>
+          <span className="font-heading font-semibold text-foreground text-sm">{camara?.sigla || 'SisLegis'}</span>
           <div className="w-8" />
         </header>
         <main className="flex-1 overflow-y-auto">

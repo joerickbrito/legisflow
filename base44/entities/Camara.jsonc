@@ -1,0 +1,66 @@
+{
+  "name": "Camara",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string"
+    },
+    "sigla": {
+      "type": "string"
+    },
+    "cnpj": {
+      "type": "string"
+    },
+    "endereco": {
+      "type": "string"
+    },
+    "cidade": {
+      "type": "string"
+    },
+    "estado": {
+      "type": "string"
+    },
+    "telefone": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "site": {
+      "type": "string"
+    },
+    "brasao_url": {
+      "type": "string"
+    },
+    "logotipo_url": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Ativa",
+        "Suspensa",
+        "Inativa"
+      ],
+      "default": "Ativa"
+    },
+    "plano": {
+      "type": "string",
+      "enum": [
+        "B\u00e1sico",
+        "Profissional",
+        "Enterprise"
+      ],
+      "default": "B\u00e1sico"
+    },
+    "total_vereadores": {
+      "type": "number"
+    },
+    "observacoes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "nome"
+  ]
+}
