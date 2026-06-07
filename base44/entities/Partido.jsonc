@@ -2,6 +2,9 @@
   "name": "Partido",
   "type": "object",
   "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
     "nome": {
       "type": "string"
     },

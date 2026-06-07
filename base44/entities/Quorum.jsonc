@@ -2,6 +2,9 @@
   "name": "Quorum",
   "type": "object",
   "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
     "sessao_id": {
       "type": "string"
     },

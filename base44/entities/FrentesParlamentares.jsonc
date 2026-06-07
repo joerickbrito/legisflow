@@ -2,6 +2,9 @@
   "name": "FrentesParlamentares",
   "type": "object",
   "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
     "nome": {
       "type": "string"
     },

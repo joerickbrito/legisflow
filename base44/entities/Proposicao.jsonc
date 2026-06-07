@@ -2,6 +2,9 @@
   "name": "Proposicao",
   "type": "object",
   "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
     "tipo": {
       "type": "string",
       "enum": [

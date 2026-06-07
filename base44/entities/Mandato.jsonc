@@ -2,6 +2,9 @@
   "name": "Mandato",
   "type": "object",
   "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
     "parlamentar_id": {
       "type": "string"
     },

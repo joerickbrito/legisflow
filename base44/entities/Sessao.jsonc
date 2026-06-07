@@ -2,6 +2,9 @@
   "name": "Sessao",
   "type": "object",
   "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
     "numero": {
       "type": "string"
     },

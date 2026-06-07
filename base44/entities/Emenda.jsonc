@@ -2,6 +2,9 @@
   "name": "Emenda",
   "type": "object",
   "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
     "materia_id": {
       "type": "string"
     },

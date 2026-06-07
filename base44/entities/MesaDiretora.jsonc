@@ -2,6 +2,9 @@
   "name": "MesaDiretora",
   "type": "object",
   "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
     "legislatura_id": {
       "type": "string"
     },
