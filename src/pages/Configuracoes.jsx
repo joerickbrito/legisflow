@@ -1,201 +1,311 @@
-import { useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { useState } from 'react';
 import { useTenant } from '@/lib/TenantContext';
 import PageHeader from '@/components/PageHeader';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Settings, Plus, Pencil, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { SlidersHorizontal, ChevronDown, ChevronRight } from 'lucide-react';
+import TabelaAuxiliarEditor from '@/components/configuracoes/TabelaAuxiliarEditor';
+import { cn } from '@/lib/utils';
 
-const TABELAS = [
-  { key: 'TipoMateria', label: 'Tipos de Matéria', desc: 'Ex: Projeto de Lei, Indicação, Moção...', campos: ['nome', 'sigla', 'descricao'] },
-  { key: 'TipoDocumento', label: 'Tipos de Documento', desc: 'Ex: Ofício, Memorando, Ata...', campos: ['nome', 'descricao'] },
-  { key: 'TipoNorma', label: 'Tipos de Norma', desc: 'Ex: Lei Ordinária, Decreto Legislativo...', campos: ['nome', 'sigla', 'descricao'] },
-  { key: 'TipoAutor', label: 'Tipos de Autor', desc: 'Ex: Parlamentar, Executivo, Cidadão...', campos: ['nome', 'descricao'] },
-  { key: 'StatusTramitacao', label: 'Status de Tramitação', desc: 'Ex: Em análise, Em comissão, Aprovada...', campos: ['nome', 'cor', 'descricao'] },
+// Definição centralizada de todas as tabelas auxiliares agrupadas por módulo
+const GRUPOS = [
+  {
+    label: 'Proposições',
+    tabelas: [
+      {
+        key: 'TipoProposicao',
+        label: 'Tipos de Proposição',
+        desc: 'Tipos de proposta que podem ser protocoladas pelos autores.',
+        campos: ['nome', 'sigla', 'descricao'],
+        padroes: ['Projeto de Lei', 'Projeto de Lei Complementar', 'Projeto de Resolução', 'Projeto de Decreto Legislativo', 'Requerimento', 'Indicação', 'Moção', 'Emenda', 'Substitutivo'],
+      },
+      {
+        key: 'TipoAutor',
+        label: 'Tipos de Autor',
+        desc: 'Categorias de autores que podem apresentar proposições.',
+        campos: ['nome', 'descricao'],
+        padroes: ['Parlamentar', 'Comissão', 'Mesa Diretora', 'Presidente', 'Prefeito', 'Executivo Municipal', 'Tribunal de Contas', 'Ministério Público', 'Cidadão', 'Entidade', 'Outro'],
+      },
+    ]
+  },
+  {
+    label: 'Matéria Legislativa',
+    tabelas: [
+      {
+        key: 'TipoMateria',
+        label: 'Tipos de Matéria',
+        desc: 'Classificação das matérias legislativas tramitantes.',
+        campos: ['nome', 'sigla', 'descricao'],
+        padroes: [
+          { nome: 'Projeto de Lei', sigla: 'PL' },
+          { nome: 'Projeto de Lei Complementar', sigla: 'PLC' },
+          { nome: 'Projeto de Resolução', sigla: 'PR' },
+          { nome: 'Projeto de Decreto Legislativo', sigla: 'PDL' },
+          { nome: 'Indicação', sigla: 'IND' },
+          { nome: 'Requerimento', sigla: 'REQ' },
+          { nome: 'Moção', sigla: 'MOC' },
+          { nome: 'Emenda à Lei Orgânica', sigla: 'ELO' },
+        ],
+      },
+      {
+        key: 'OrigemMateria',
+        label: 'Origens de Matéria',
+        desc: 'Origem das matérias submetidas à câmara.',
+        campos: ['nome', 'descricao'],
+        padroes: ['Legislativo', 'Executivo', 'Comissão', 'Mesa Diretora', 'Popular', 'Judiciário'],
+      },
+      {
+        key: 'RegimeTramitacao',
+        label: 'Regimes de Tramitação',
+        desc: 'Define a urgência e prioridade no processo de tramitação.',
+        campos: ['nome', 'descricao'],
+        padroes: ['Ordinário', 'Urgente', 'Urgentíssimo'],
+      },
+      {
+        key: 'TipoDocumento',
+        label: 'Tipos de Documento',
+        desc: 'Tipos de documentos que podem ser anexados às matérias.',
+        campos: ['nome', 'sigla', 'descricao'],
+        padroes: ['Parecer', 'Ata', 'Ofício', 'Relatório', 'Memorando', 'Contrato'],
+      },
+    ]
+  },
+  {
+    label: 'Tramitação',
+    tabelas: [
+      {
+        key: 'StatusTramitacao',
+        label: 'Status de Tramitação',
+        desc: 'Estados possíveis durante o processo de tramitação de matérias.',
+        campos: ['nome', 'cor', 'descricao'],
+        padroes: [
+          { nome: 'Protocolada', cor: '#6b7280' },
+          { nome: 'Recebida', cor: '#3b82f6' },
+          { nome: 'Em análise', cor: '#f59e0b' },
+          { nome: 'Em comissão', cor: '#8b5cf6' },
+          { nome: 'Com parecer', cor: '#06b6d4' },
+          { nome: 'Em pauta', cor: '#f97316' },
+          { nome: 'Em votação', cor: '#ef4444' },
+          { nome: 'Aprovada', cor: '#22c55e' },
+          { nome: 'Rejeitada', cor: '#dc2626' },
+          { nome: 'Arquivada', cor: '#9ca3af' },
+          { nome: 'Sancionada', cor: '#16a34a' },
+          { nome: 'Promulgada', cor: '#15803d' },
+        ],
+      },
+      {
+        key: 'UnidadeTramitacao',
+        label: 'Unidades de Tramitação',
+        desc: 'Setores/unidades pelos quais os processos podem tramitar.',
+        campos: ['nome', 'sigla', 'descricao'],
+        padroes: [
+          { nome: 'Secretaria Legislativa', sigla: 'SECLEG' },
+          { nome: 'Presidência', sigla: 'PRES' },
+          { nome: 'Procuradoria', sigla: 'PROC' },
+          { nome: 'Comissão de Constituição e Justiça', sigla: 'CCJ' },
+          { nome: 'Comissão de Finanças', sigla: 'CFI' },
+          { nome: 'Plenário', sigla: 'PLEN' },
+        ],
+      },
+      {
+        key: 'Orgao',
+        label: 'Órgãos',
+        desc: 'Órgãos internos e externos vinculados à câmara.',
+        campos: ['nome', 'sigla', 'descricao'],
+        padroes: [
+          { nome: 'Mesa Diretora', sigla: 'MESA' },
+          { nome: 'Comissão de Constituição e Justiça', sigla: 'CCJ' },
+          { nome: 'Comissão de Finanças e Orçamento', sigla: 'CFO' },
+          { nome: 'Comissão de Saúde e Educação', sigla: 'CSE' },
+        ],
+      },
+    ]
+  },
+  {
+    label: 'Parlamentares',
+    tabelas: [
+      {
+        key: 'TipoAfastamento',
+        label: 'Tipos de Afastamento',
+        desc: 'Motivos pelos quais um parlamentar pode se afastar do mandato.',
+        campos: ['nome', 'descricao'],
+        padroes: ['Licença Saúde', 'Licença Particular', 'Licença Maternidade', 'Afastamento Judicial', 'Cargo no Executivo', 'Renúncia', 'Outros'],
+      },
+    ]
+  },
+  {
+    label: 'Comissões',
+    tabelas: [
+      {
+        key: 'TipoComissao',
+        label: 'Tipos de Comissão',
+        desc: 'Categorias de comissões parlamentares.',
+        campos: ['nome', 'sigla', 'descricao'],
+        padroes: [
+          { nome: 'Permanente', sigla: 'PERM' },
+          { nome: 'Temporária', sigla: 'TEMP' },
+          { nome: 'Especial', sigla: 'ESP' },
+          { nome: 'CPI', sigla: 'CPI' },
+          { nome: 'Processante', sigla: 'PROC' },
+        ],
+      },
+      {
+        key: 'CargoComissao',
+        label: 'Cargos em Comissão',
+        desc: 'Cargos que os parlamentares podem exercer dentro de comissões.',
+        campos: ['nome', 'descricao'],
+        padroes: ['Presidente', 'Vice-Presidente', 'Relator', 'Membro', 'Suplente'],
+      },
+    ]
+  },
+  {
+    label: 'Mesa Diretora',
+    tabelas: [
+      {
+        key: 'CargoMesa',
+        label: 'Cargos da Mesa Diretora',
+        desc: 'Cargos que compõem a Mesa Diretora da câmara.',
+        campos: ['nome', 'descricao'],
+        padroes: ['Presidente', 'Vice-Presidente', '1º Secretário', '2º Secretário', '1º Suplente de Secretário', '2º Suplente de Secretário'],
+      },
+    ]
+  },
+  {
+    label: 'Sessões Plenárias',
+    tabelas: [
+      {
+        key: 'TipoSessao',
+        label: 'Tipos de Sessão',
+        desc: 'Classificação das sessões plenárias.',
+        campos: ['nome', 'descricao'],
+        padroes: ['Ordinária', 'Extraordinária', 'Solene', 'Especial', 'Itinerante'],
+      },
+      {
+        key: 'TipoExpediente',
+        label: 'Tipos de Expediente',
+        desc: 'Fases do expediente durante sessões plenárias.',
+        campos: ['nome', 'descricao'],
+        padroes: ['Pequeno Expediente', 'Grande Expediente', 'Ordem do Dia', 'Explicação Pessoal'],
+      },
+      {
+        key: 'TipoResultadoVotacao',
+        label: 'Resultados de Votação',
+        desc: 'Possíveis resultados de uma votação plenária.',
+        campos: ['nome', 'descricao'],
+        padroes: ['Aprovado', 'Rejeitado', 'Retirado de Pauta', 'Prejudicado', 'Adiado'],
+      },
+    ]
+  },
+  {
+    label: 'Normas Jurídicas',
+    tabelas: [
+      {
+        key: 'TipoNorma',
+        label: 'Tipos de Norma',
+        desc: 'Classificação das normas jurídicas publicadas.',
+        campos: ['nome', 'sigla', 'descricao'],
+        padroes: [
+          { nome: 'Lei Ordinária', sigla: 'LO' },
+          { nome: 'Lei Complementar', sigla: 'LC' },
+          { nome: 'Decreto Legislativo', sigla: 'DL' },
+          { nome: 'Resolução', sigla: 'RES' },
+          { nome: 'Emenda à Lei Orgânica', sigla: 'ELO' },
+          { nome: 'Portaria', sigla: 'PORT' },
+        ],
+      },
+      {
+        key: 'TipoVinculoNorma',
+        label: 'Tipos de Vínculo entre Normas',
+        desc: 'Como uma norma pode se relacionar com outra.',
+        campos: ['nome', 'descricao'],
+        padroes: ['Revoga', 'Altera', 'Regulamenta', 'Complementa', 'Suspende'],
+      },
+    ]
+  },
+  {
+    label: 'Documentos Administrativos',
+    tabelas: [
+      {
+        key: 'TipoDocumentoAdministrativo',
+        label: 'Tipos de Documento Administrativo',
+        desc: 'Classificação dos documentos administrativos internos.',
+        campos: ['nome', 'sigla', 'descricao'],
+        padroes: [
+          { nome: 'Ofício', sigla: 'OF' },
+          { nome: 'Memorando', sigla: 'MEM' },
+          { nome: 'Contrato', sigla: 'CONT' },
+          { nome: 'Edital', sigla: 'EDT' },
+          { nome: 'Convite', sigla: 'CONV' },
+          { nome: 'Portaria', sigla: 'PORT' },
+          { nome: 'Balancete', sigla: 'BAL' },
+          { nome: 'Relatório', sigla: 'REL' },
+        ],
+      },
+    ]
+  },
 ];
 
 export default function Configuracoes() {
-  const { tenantId, isAdminCamara } = useTenant();
-  const [abaAtiva, setAbaAtiva] = useState('TipoMateria');
-  const [registros, setRegistros] = useState([]);
-  const [showForm, setShowForm] = useState(false);
-  const [editando, setEditando] = useState(null);
-  const [form, setForm] = useState({ nome: '', sigla: '', descricao: '', cor: '#3b82f6' });
+  const { isAdminCamara } = useTenant();
+  const [grupoAberto, setGrupoAberto] = useState(0);
+  const [tabelaAtiva, setTabelaAtiva] = useState(GRUPOS[0].tabelas[0]);
 
-  const tabela = TABELAS.find(t => t.key === abaAtiva);
-
-  useEffect(() => { loadRegistros(); }, [abaAtiva, tenantId]);
-
-  async function loadRegistros() {
-    const filter = tenantId ? { tenant_id: tenantId } : {};
-    const data = await base44.entities[abaAtiva].filter(filter, 'ordem', 100);
-    setRegistros(data);
+  if (!isAdminCamara) {
+    return (
+      <div className="p-12 text-center">
+        <SlidersHorizontal size={40} className="mx-auto text-muted-foreground mb-3" />
+        <p className="text-muted-foreground font-medium">Acesso restrito a administradores.</p>
+      </div>
+    );
   }
-
-  async function salvar() {
-    const payload = { ...form, tenant_id: tenantId || '', ativo: true };
-    if (editando) await base44.entities[abaAtiva].update(editando.id, payload);
-    else await base44.entities[abaAtiva].create(payload);
-    setShowForm(false);
-    loadRegistros();
-  }
-
-  async function toggleAtivo(r) {
-    await base44.entities[abaAtiva].update(r.id, { ativo: !r.ativo });
-    loadRegistros();
-  }
-
-  async function excluir(r) {
-    if (!confirm(`Excluir "${r.nome}"?`)) return;
-    await base44.entities[abaAtiva].delete(r.id);
-    loadRegistros();
-  }
-
-  function openNew() {
-    setEditando(null);
-    setForm({ nome: '', sigla: '', descricao: '', cor: '#3b82f6' });
-    setShowForm(true);
-  }
-
-  function openEdit(r) {
-    setEditando(r);
-    setForm({ nome: r.nome || '', sigla: r.sigla || '', descricao: r.descricao || '', cor: r.cor || '#3b82f6' });
-    setShowForm(true);
-  }
-
-  if (!isAdminCamara) return (
-    <div className="p-6 text-center text-muted-foreground">Acesso restrito a administradores.</div>
-  );
 
   return (
-    <div className="p-6 md:p-8 max-w-5xl mx-auto space-y-6">
+    <div className="p-6 md:p-8 h-full">
       <PageHeader
-        icon={Settings}
-        title="Configurações do Sistema"
-        subtitle="Tabelas auxiliares configuráveis — sem necessidade de alterar código"
-        action={<Button onClick={openNew} className="gap-2"><Plus size={16} /> Novo Item</Button>}
+        icon={SlidersHorizontal}
+        title="Tabelas Auxiliares"
+        subtitle="Configure os parâmetros do sistema sem necessidade de alterações no código."
       />
 
-      {/* Abas das tabelas */}
-      <div className="flex flex-wrap gap-2">
-        {TABELAS.map(t => (
-          <button
-            key={t.key}
-            onClick={() => setAbaAtiva(t.key)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${abaAtiva === t.key ? 'bg-primary text-primary-foreground shadow' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      {tabela && (
-        <div className="bg-muted/30 border border-border rounded-xl p-4">
-          <p className="text-sm text-muted-foreground">{tabela.desc}</p>
-        </div>
-      )}
-
-      {/* Lista */}
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
-        <div className="px-5 py-3 border-b border-border flex items-center justify-between">
-          <h2 className="font-semibold text-foreground">{tabela?.label}</h2>
-          <span className="text-xs text-muted-foreground">{registros.length} item(s)</span>
-        </div>
-        <div className="divide-y divide-border">
-          {registros.length === 0 && (
-            <div className="p-8 text-center text-muted-foreground text-sm">
-              Nenhum item cadastrado. Clique em "Novo Item" para adicionar.
-            </div>
-          )}
-          {registros.map(r => (
-            <div key={r.id} className="flex items-center gap-4 px-5 py-3">
-              {abaAtiva === 'StatusTramitacao' && r.cor && (
-                <div className="w-4 h-4 rounded-full flex-shrink-0 border border-border" style={{ backgroundColor: r.cor }} />
-              )}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">{r.nome}</span>
-                  {r.sigla && <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded font-mono">{r.sigla}</span>}
-                  {!r.ativo && <Badge variant="secondary" className="text-xs">Inativo</Badge>}
-                </div>
-                {r.descricao && <p className="text-xs text-muted-foreground mt-0.5">{r.descricao}</p>}
-              </div>
-              <div className="flex items-center gap-1 flex-shrink-0">
-                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(r)}>
-                  <Pencil size={13} />
-                </Button>
-                <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground" onClick={() => toggleAtivo(r)} title={r.ativo ? 'Desativar' : 'Ativar'}>
-                  {r.ativo ? <ToggleRight size={15} className="text-green-600" /> : <ToggleLeft size={15} />}
-                </Button>
-                <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => excluir(r)}>
-                  <Trash2 size={13} />
-                </Button>
-              </div>
+      <div className="flex gap-6 mt-4" style={{ minHeight: 'calc(100vh - 200px)' }}>
+        {/* Sidebar de navegação */}
+        <aside className="w-64 flex-shrink-0 space-y-1">
+          {GRUPOS.map((grupo, gi) => (
+            <div key={gi}>
+              <button
+                onClick={() => setGrupoAberto(grupoAberto === gi ? -1 : gi)}
+                className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-semibold text-foreground hover:bg-muted transition-colors"
+              >
+                <span>{grupo.label}</span>
+                {grupoAberto === gi ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+              </button>
+              {grupoAberto === gi && grupo.tabelas.map(t => (
+                <button
+                  key={t.key}
+                  onClick={() => setTabelaAtiva(t)}
+                  className={cn(
+                    'w-full text-left px-4 py-1.5 rounded-lg text-sm transition-colors ml-2',
+                    tabelaAtiva?.key === t.key
+                      ? 'bg-primary text-primary-foreground font-medium'
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  )}
+                >
+                  {t.label}
+                </button>
+              ))}
             </div>
           ))}
+        </aside>
+
+        {/* Área de edição */}
+        <div className="flex-1 min-w-0">
+          {tabelaAtiva ? (
+            <TabelaAuxiliarEditor key={tabelaAtiva.key} tabela={tabelaAtiva} />
+          ) : (
+            <div className="text-center text-muted-foreground p-12">
+              Selecione uma tabela no menu ao lado.
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Defaults iniciais */}
-      {registros.length === 0 && (
-        <div className="text-center">
-          <Button variant="outline" onClick={async () => {
-            const defaults = {
-              TipoMateria: ['Projeto de Lei', 'Projeto de Lei Complementar', 'Projeto de Resolução', 'Projeto de Decreto Legislativo', 'Indicação', 'Requerimento', 'Moção', 'Emenda', 'Substitutivo'],
-              TipoDocumento: ['Ofício', 'Memorando', 'Convite', 'Contrato', 'Edital', 'Relatório', 'Portaria', 'Parecer', 'Ata', 'Balancete'],
-              TipoNorma: ['Lei Ordinária', 'Lei Complementar', 'Decreto Legislativo', 'Resolução', 'Emenda à Lei Orgânica', 'Portaria'],
-              TipoAutor: ['Parlamentar', 'Comissão', 'Mesa Diretora', 'Presidente', 'Prefeito', 'Executivo Municipal', 'Tribunal de Contas', 'Ministério Público', 'Cidadão', 'Outro'],
-              StatusTramitacao: ['Protocolada', 'Recebida', 'Em análise', 'Em comissão', 'Com parecer', 'Em pauta', 'Em votação', 'Aprovada', 'Rejeitada', 'Arquivada', 'Sancionada', 'Promulgada'],
-            };
-            const itens = defaults[abaAtiva] || [];
-            for (let i = 0; i < itens.length; i++) {
-              await base44.entities[abaAtiva].create({ nome: itens[i], tenant_id: tenantId || '', ativo: true, ordem: i });
-            }
-            loadRegistros();
-          }}>
-            Carregar valores padrão
-          </Button>
-        </div>
-      )}
-
-      {/* Modal */}
-      <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader><DialogTitle className="font-heading">{editando ? 'Editar' : 'Novo'} {tabela?.label?.replace(/s$/, '')}</DialogTitle></DialogHeader>
-          <div className="space-y-4 py-2">
-            <div>
-              <label className="text-sm font-medium mb-1.5 block">Nome *</label>
-              <Input value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} placeholder="Ex: Projeto de Lei" />
-            </div>
-            {tabela?.campos.includes('sigla') && (
-              <div>
-                <label className="text-sm font-medium mb-1.5 block">Sigla</label>
-                <Input value={form.sigla} onChange={e => setForm(f => ({ ...f, sigla: e.target.value }))} placeholder="Ex: PL" maxLength={10} />
-              </div>
-            )}
-            {tabela?.campos.includes('cor') && (
-              <div>
-                <label className="text-sm font-medium mb-1.5 block">Cor</label>
-                <div className="flex items-center gap-3">
-                  <input type="color" value={form.cor} onChange={e => setForm(f => ({ ...f, cor: e.target.value }))} className="w-10 h-9 rounded cursor-pointer border border-border" />
-                  <Input value={form.cor} onChange={e => setForm(f => ({ ...f, cor: e.target.value }))} placeholder="#3b82f6" className="font-mono" />
-                </div>
-              </div>
-            )}
-            <div>
-              <label className="text-sm font-medium mb-1.5 block">Descrição</label>
-              <Textarea value={form.descricao} onChange={e => setForm(f => ({ ...f, descricao: e.target.value }))} rows={2} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
-            <Button onClick={salvar} disabled={!form.nome}>Salvar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

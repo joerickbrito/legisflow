@@ -143,7 +143,7 @@ export default function Materias() {
           <SelectTrigger className="w-52"><SelectValue placeholder="Tipo" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Todos os tipos</SelectItem>
-            {TIPOS.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+            {tiposMateria.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
