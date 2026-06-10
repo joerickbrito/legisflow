@@ -7,23 +7,31 @@
       "enum": [
         "SUPER_ADMIN",
         "ADMIN_CAMARA",
-        "SECRETARIA_LEGISLATIVA",
-        "PROTOCOLO",
+        "OPERADOR_GERAL",
         "PRESIDENTE",
-        "COMISSAO",
-        "RELATOR",
-        "VEREADOR",
-        "CONSULTA_PUBLICA"
+        "VEREADOR"
       ],
       "default": "VEREADOR"
     },
     "tenant_id": {
       "type": "string"
     },
+    "cpf": {
+      "type": "string"
+    },
     "telefone": {
       "type": "string"
     },
     "cargo": {
+      "type": "string"
+    },
+    "foto_url": {
+      "type": "string"
+    },
+    "partido_id": {
+      "type": "string"
+    },
+    "partido_sigla": {
       "type": "string"
     },
     "status": {
@@ -38,7 +46,7 @@
     },
     "senha_temporaria": {
       "type": "boolean",
-      "default": false
+      "default": true
     },
     "camara_nome": {
       "type": "string"
