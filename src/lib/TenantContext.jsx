@@ -117,11 +117,15 @@ export function TenantProvider({ children }) {
   };
 
   // Helper to add tenant_id to any filter object
+  // Returns null if user has no tenant and is not SUPER_ADMIN (unsafe to query)
   const withTenant = (filter = {}) => {
     if (isSuperAdmin) return filter; // Super admin sees all
-    if (!tenantId) return filter;
+    if (!tenantId) return null; // No tenant = block query
     return { ...filter, tenant_id: tenantId };
   };
+
+  // Use this in useEffects: if withTenant() returns null, skip the fetch
+  const canQuery = isSuperAdmin || !!tenantId;
 
   return (
     <TenantContext.Provider value={{
@@ -135,6 +139,7 @@ export function TenantProvider({ children }) {
       isOperadorGeral,
       isPresidente,
       withTenant,
+      canQuery,
       formatParlamentar,
       ROLES,
       ROLE_LABELS,
