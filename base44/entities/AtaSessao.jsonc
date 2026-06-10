@@ -1,0 +1,32 @@
+{
+  "name": "AtaSessao",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "numero": {
+      "type": "string"
+    },
+    "data": {
+      "type": "string",
+      "format": "date"
+    },
+    "sessao_id": {
+      "type": "string"
+    },
+    "sessao_numero": {
+      "type": "string"
+    },
+    "observacoes": {
+      "type": "string"
+    },
+    "arquivo_url": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "numero",
+    "data"
+  ]
+}

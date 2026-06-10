@@ -1,0 +1,27 @@
+{
+  "name": "PautaSessao",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "numero": {
+      "type": "string"
+    },
+    "sessao_id": {
+      "type": "string"
+    },
+    "sessao_numero": {
+      "type": "string"
+    },
+    "arquivo_url": {
+      "type": "string"
+    },
+    "observacoes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "numero"
+  ]
+}

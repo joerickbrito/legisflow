@@ -1,0 +1,53 @@
+{
+  "name": "EmendaImpositiva",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "numero": {
+      "type": "string"
+    },
+    "ano": {
+      "type": "number"
+    },
+    "data": {
+      "type": "string",
+      "format": "date"
+    },
+    "objeto": {
+      "type": "string"
+    },
+    "valor": {
+      "type": "number"
+    },
+    "vereador_id": {
+      "type": "string"
+    },
+    "vereador_nome": {
+      "type": "string"
+    },
+    "vereador_partido": {
+      "type": "string"
+    },
+    "vereador_telefone": {
+      "type": "string"
+    },
+    "vereador_email": {
+      "type": "string"
+    },
+    "vereador_foto_url": {
+      "type": "string"
+    },
+    "arquivo_url": {
+      "type": "string"
+    },
+    "observacoes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "numero",
+    "objeto"
+  ]
+}
