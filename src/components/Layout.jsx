@@ -5,7 +5,8 @@ import {
   ScrollText, Inbox, ChevronLeft, ChevronRight, Menu, LogOut,
   Scale, Gavel, MessageSquare, BarChart3, Globe, BookOpen,
   FolderOpen, ChevronDown, ChevronRight as ChevRight,
-  Monitor, UserCheck, FileDiff, UsersRound, Mail, Shield, Settings, SlidersHorizontal
+  Monitor, UserCheck, FileDiff, UsersRound, Mail, Shield, Settings, SlidersHorizontal,
+  Landmark, Stamp, ClipboardList, DollarSign, BookMarked
 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useTenant, ROLE_LABELS } from '@/lib/TenantContext';
@@ -89,6 +90,20 @@ const getNavGroups = (isSuperAdmin, isAdminCamara, userRole) => {
         { path: '/reuniao-comissao', icon: UsersRound, label: 'Reuniões de Comissão' },
         { path: '/votacao', icon: Vote, label: 'Registro de Votação' },
         { path: '/painel-eletronico', icon: Monitor, label: 'Painel Eletrônico', highlight: true },
+      ]
+    });
+
+    groups.push({
+      label: 'Documentos Legislativos',
+      items: [
+        { path: '/projetos-lei', icon: FileText, label: 'Projetos de Lei' },
+        { path: '/leis', icon: Landmark, label: 'Leis' },
+        { path: '/resolucoes', icon: ScrollText, label: 'Resoluções' },
+        { path: '/decretos', icon: Stamp, label: 'Decretos' },
+        { path: '/portarias', icon: BookMarked, label: 'Portarias' },
+        { path: '/emendas-impositivas', icon: DollarSign, label: 'Emendas Impositivas' },
+        { path: '/atas-sessoes', icon: BookOpen, label: 'Atas das Sessões' },
+        { path: '/pautas-sessoes', icon: ClipboardList, label: 'Pautas das Sessões' },
       ]
     });
 

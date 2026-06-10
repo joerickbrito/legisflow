@@ -34,6 +34,14 @@ import Quorum from '@/pages/Quorum.jsx';
 import Emendas from '@/pages/Emendas.jsx';
 import ReuniaoComissao from '@/pages/ReuniaoComissao.jsx';
 import Oficios from '@/pages/Oficios.jsx';
+import ProjetosLei from '@/pages/ProjetosLei.jsx';
+import Leis from '@/pages/Leis.jsx';
+import Resolucoes from '@/pages/Resolucoes.jsx';
+import Decretos from '@/pages/Decretos.jsx';
+import Portarias from '@/pages/Portarias.jsx';
+import EmendasImpositivas from '@/pages/EmendasImpositivas.jsx';
+import AtasSessoes from '@/pages/AtasSessoes.jsx';
+import PautasSessoes from '@/pages/PautasSessoes.jsx';
 import GerenciarCamaras from '@/pages/GerenciarCamaras';
 import GerenciarUsuarios from '@/pages/GerenciarUsuarios';
 import Auditoria from '@/pages/Auditoria';
@@ -91,6 +99,14 @@ const AuthenticatedApp = () => {
           <Route path="/emendas" element={<Emendas />} />
           <Route path="/reuniao-comissao" element={<ReuniaoComissao />} />
           <Route path="/oficios" element={<Oficios />} />
+          <Route path="/projetos-lei" element={<ProjetosLei />} />
+          <Route path="/leis" element={<Leis />} />
+          <Route path="/resolucoes" element={<Resolucoes />} />
+          <Route path="/decretos" element={<Decretos />} />
+          <Route path="/portarias" element={<Portarias />} />
+          <Route path="/emendas-impositivas" element={<EmendasImpositivas />} />
+          <Route path="/atas-sessoes" element={<AtasSessoes />} />
+          <Route path="/pautas-sessoes" element={<PautasSessoes />} />
           <Route path="/gerenciar-camaras" element={<GerenciarCamaras />} />
           <Route path="/gerenciar-usuarios" element={<GerenciarUsuarios />} />
           <Route path="/auditoria" element={<Auditoria />} />
