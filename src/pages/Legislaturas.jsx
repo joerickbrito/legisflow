@@ -14,7 +14,7 @@ export default function Legislaturas() {
   const [sessoesLeg, setSessoesLeg] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editando, setEditando] = useState(null);
-  const [form, setForm] = useState({ numero: '', data_inicio: '', data_fim: '', status: 'Ativa' });
+  const [form, setForm] = useState({ numero: '', ano_inicio: '', ano_fim: '', data_inicio: '', data_fim: '', data_eleicao: '', descricao: '', status: 'Ativa' });
   const [showSessaoForm, setShowSessaoForm] = useState(false);
   const [sessaoForm, setSessaoForm] = useState({ numero: '', ano: new Date().getFullYear(), data_inicio: '', data_fim: '', legislatura_id: '' });
 
@@ -30,8 +30,9 @@ export default function Legislaturas() {
   }
 
   async function salvarLeg() {
-    if (editando) await base44.entities.Legislatura.update(editando.id, { ...form, numero: Number(form.numero) });
-    else await base44.entities.Legislatura.create({ ...form, numero: Number(form.numero) });
+    const data = { ...form, numero: Number(form.numero), ano_inicio: form.ano_inicio ? Number(form.ano_inicio) : undefined, ano_fim: form.ano_fim ? Number(form.ano_fim) : undefined };
+    if (editando) await base44.entities.Legislatura.update(editando.id, data);
+    else await base44.entities.Legislatura.create(data);
     setShowForm(false); load();
   }
 
@@ -50,7 +51,7 @@ export default function Legislaturas() {
             <Button variant="outline" size="sm" onClick={() => setShowSessaoForm(true)} className="gap-1">
               <Plus size={15} /> Sessão Legislativa
             </Button>
-            <Button size="sm" onClick={() => { setEditando(null); setForm({ numero: '', data_inicio: '', data_fim: '', status: 'Ativa' }); setShowForm(true); }} className="gap-1">
+            <Button size="sm" onClick={() => { setEditando(null); setForm({ numero: '', ano_inicio: '', ano_fim: '', data_inicio: '', data_fim: '', data_eleicao: '', descricao: '', status: 'Ativa' }); setShowForm(true); }} className="gap-1">
               <Plus size={15} /> Legislatura
             </Button>
           </div>
@@ -69,13 +70,17 @@ export default function Legislaturas() {
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center font-heading font-bold text-primary">{l.numero}ª</div>
                     <div>
-                      <div className="font-semibold text-foreground">{l.numero}ª Legislatura</div>
-                      <div className="text-xs text-muted-foreground">{l.data_inicio} a {l.data_fim}</div>
+                      <div className="font-semibold text-foreground">{l.numero}ª Legislatura{(l.ano_inicio && l.ano_fim) ? ` — ${l.ano_inicio}/${l.ano_fim}` : ''}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {l.data_eleicao && <span>Eleição: {l.data_eleicao} · </span>}
+                        {l.data_inicio && `${l.data_inicio} a ${l.data_fim}`}
+                      </div>
+                      {l.descricao && <div className="text-xs text-muted-foreground italic">{l.descricao}</div>}
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <StatusBadge status={l.status} />
-                    <Button variant="outline" size="sm" onClick={() => { setEditando(l); setForm({ numero: l.numero, data_inicio: l.data_inicio, data_fim: l.data_fim, status: l.status }); setShowForm(true); }}>
+                    <Button variant="outline" size="sm" onClick={() => { setEditando(l); setForm({ numero: l.numero, ano_inicio: l.ano_inicio || '', ano_fim: l.ano_fim || '', data_inicio: l.data_inicio || '', data_fim: l.data_fim || '', data_eleicao: l.data_eleicao || '', descricao: l.descricao || '', status: l.status }); setShowForm(true); }}>
                       Editar
                     </Button>
                   </div>
@@ -99,11 +104,17 @@ export default function Legislaturas() {
         <DialogContent className="sm:max-w-sm">
           <DialogHeader><DialogTitle className="font-heading">{editando ? 'Editar' : 'Nova'} Legislatura</DialogTitle></DialogHeader>
           <div className="space-y-3 py-2">
-            <div><label className="text-sm font-medium mb-1.5 block">Número</label><Input type="number" value={form.numero} onChange={e => setForm(f => ({ ...f, numero: e.target.value }))} /></div>
+            <div><label className="text-sm font-medium mb-1.5 block">Número *</label><Input type="number" value={form.numero} onChange={e => setForm(f => ({ ...f, numero: e.target.value }))} placeholder="Ex: 19" /></div>
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="text-sm font-medium mb-1.5 block">Início</label><Input type="date" value={form.data_inicio} onChange={e => setForm(f => ({ ...f, data_inicio: e.target.value }))} /></div>
-              <div><label className="text-sm font-medium mb-1.5 block">Fim</label><Input type="date" value={form.data_fim} onChange={e => setForm(f => ({ ...f, data_fim: e.target.value }))} /></div>
+              <div><label className="text-sm font-medium mb-1.5 block">Ano de Início</label><Input type="number" value={form.ano_inicio} onChange={e => setForm(f => ({ ...f, ano_inicio: e.target.value }))} placeholder="2021" /></div>
+              <div><label className="text-sm font-medium mb-1.5 block">Ano de Fim</label><Input type="number" value={form.ano_fim} onChange={e => setForm(f => ({ ...f, ano_fim: e.target.value }))} placeholder="2024" /></div>
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="text-sm font-medium mb-1.5 block">Data de Início</label><Input type="date" value={form.data_inicio} onChange={e => setForm(f => ({ ...f, data_inicio: e.target.value }))} /></div>
+              <div><label className="text-sm font-medium mb-1.5 block">Data de Fim</label><Input type="date" value={form.data_fim} onChange={e => setForm(f => ({ ...f, data_fim: e.target.value }))} /></div>
+            </div>
+            <div><label className="text-sm font-medium mb-1.5 block">Data de Eleição</label><Input type="date" value={form.data_eleicao} onChange={e => setForm(f => ({ ...f, data_eleicao: e.target.value }))} /></div>
+            <div><label className="text-sm font-medium mb-1.5 block">Descrição</label><Input value={form.descricao} onChange={e => setForm(f => ({ ...f, descricao: e.target.value }))} placeholder="Ex: 19ª Legislatura — 2021 a 2024" /></div>
             <div>
               <label className="text-sm font-medium mb-1.5 block">Status</label>
               <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}>

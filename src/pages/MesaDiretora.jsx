@@ -15,21 +15,24 @@ export default function MesaDiretora() {
   const [mesas, setMesas] = useState([]);
   const [parlamentares, setParlamentares] = useState([]);
   const [legislaturas, setLegislaturas] = useState([]);
+  const [sessoesLeg, setSessoesLeg] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editando, setEditando] = useState(null);
-  const [form, setForm] = useState({ legislatura_id: '', legislatura_numero: '', data_inicio: '', data_fim: '', presidente_id: '', presidente_nome: '', vice_presidente_id: '', vice_presidente_nome: '', primeiro_secretario_id: '', primeiro_secretario_nome: '', segundo_secretario_id: '', segundo_secretario_nome: '', status: 'Ativa' });
+  const [form, setForm] = useState({ legislatura_id: '', legislatura_numero: '', sessao_legislativa_id: '', data_inicio: '', data_fim: '', presidente_id: '', presidente_nome: '', vice_presidente_id: '', vice_presidente_nome: '', primeiro_secretario_id: '', primeiro_secretario_nome: '', segundo_secretario_id: '', segundo_secretario_nome: '', status: 'Ativa' });
 
   useEffect(() => { load(); }, []);
 
   async function load() {
-    const [m, p, l] = await Promise.all([
+    const [m, p, l, sl] = await Promise.all([
       base44.entities.MesaDiretora.list('-created_date'),
       base44.entities.Parlamentar.filter({ ativo: true }),
       base44.entities.Legislatura.list(),
+      base44.entities.SessaoLegislativa.list('-ano'),
     ]);
     setMesas(m);
     setParlamentares(p);
     setLegislaturas(l);
+    setSessoesLeg(sl);
   }
 
   function setParlamentarCargo(cargo, id) {
@@ -62,7 +65,7 @@ export default function MesaDiretora() {
   return (
     <div className="p-6 md:p-8 max-w-4xl mx-auto space-y-6">
       <PageHeader icon={Gavel} title="Mesa Diretora" subtitle="Composição e histórico da Mesa Diretora"
-        action={<Button onClick={() => { setEditando(null); setForm({ legislatura_id: '', legislatura_numero: '', data_inicio: '', data_fim: '', presidente_id: '', presidente_nome: '', vice_presidente_id: '', vice_presidente_nome: '', primeiro_secretario_id: '', primeiro_secretario_nome: '', segundo_secretario_id: '', segundo_secretario_nome: '', status: 'Ativa' }); setShowForm(true); }} className="gap-2"><Plus size={16} /> Nova Mesa</Button>}
+        action={<Button onClick={() => { setEditando(null); setForm({ legislatura_id: '', legislatura_numero: '', sessao_legislativa_id: '', data_inicio: '', data_fim: '', presidente_id: '', presidente_nome: '', vice_presidente_id: '', vice_presidente_nome: '', primeiro_secretario_id: '', primeiro_secretario_nome: '', segundo_secretario_id: '', segundo_secretario_nome: '', status: 'Ativa' }); setShowForm(true); }} className="gap-2"><Plus size={16} /> Nova Mesa</Button>}
       />
 
       {mesas.length === 0 ? (
@@ -107,9 +110,20 @@ export default function MesaDiretora() {
           <div className="space-y-4 py-2">
             <div>
               <label className="text-sm font-medium mb-1.5 block">Legislatura</label>
-              <Select value={form.legislatura_id} onValueChange={v => setForm(f => ({ ...f, legislatura_id: v }))}>
+              <Select value={form.legislatura_id} onValueChange={v => { const leg = legislaturas.find(l => l.id === v); setForm(f => ({ ...f, legislatura_id: v, legislatura_numero: leg?.numero })); }}>
                 <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                <SelectContent>{legislaturas.map(l => <SelectItem key={l.id} value={l.id}>{l.numero}ª Legislatura</SelectItem>)}</SelectContent>
+                <SelectContent>{legislaturas.map(l => <SelectItem key={l.id} value={l.id}>{l.numero}ª Legislatura{l.ano_inicio ? ` (${l.ano_inicio}–${l.ano_fim})` : ''}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Sessão Legislativa</label>
+              <Select value={form.sessao_legislativa_id} onValueChange={v => setForm(f => ({ ...f, sessao_legislativa_id: v }))}>
+                <SelectTrigger><SelectValue placeholder="Selecione (opcional)..." /></SelectTrigger>
+                <SelectContent>
+                  {sessoesLeg
+                    .filter(s => !form.legislatura_id || s.legislatura_id === form.legislatura_id)
+                    .map(s => <SelectItem key={s.id} value={s.id}>{s.numero}ª Sessão — {s.ano}</SelectItem>)}
+                </SelectContent>
               </Select>
             </div>
             <div className="grid grid-cols-2 gap-3">

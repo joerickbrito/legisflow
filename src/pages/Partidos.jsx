@@ -16,8 +16,9 @@ export default function Partidos() {
   const [showForm, setShowForm] = useState(false);
   const [showBancada, setShowBancada] = useState(false);
   const [editando, setEditando] = useState(null);
-  const [form, setForm] = useState({ nome: '', sigla: '', numero: '', data_fundacao: '', ativo: true });
+  const [form, setForm] = useState({ nome: '', sigla: '', numero: '', cor_hex: '#1d4ed8', data_fundacao: '', ativo: true });
   const [bancadaForm, setBancadaForm] = useState({ nome: '', sigla: '', tipo: 'Partidária', membros: [] });
+
 
   useEffect(() => { load(); }, []);
 
@@ -75,7 +76,7 @@ export default function Partidos() {
                 <div key={p.id} onClick={() => { setEditando(p); setForm({ nome: p.nome, sigla: p.sigla, numero: p.numero || '', data_fundacao: p.data_fundacao || '', ativo: p.ativo !== false }); setShowForm(true); }}
                   className="bg-card border border-border rounded-xl p-4 cursor-pointer hover:shadow-md transition-shadow">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-accent rounded-xl flex items-center justify-center font-heading font-bold text-primary text-sm">{p.sigla}</div>
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center font-heading font-bold text-white text-sm" style={{ backgroundColor: p.cor_hex || '#1d4ed8' }}>{p.sigla}</div>
                     <div>
                       <div className="font-semibold text-foreground">{p.sigla}</div>
                       <div className="text-xs text-muted-foreground">{p.nome}</div>
@@ -120,8 +121,15 @@ export default function Partidos() {
           <div className="space-y-3 py-2">
             <div><label className="text-sm font-medium mb-1.5 block">Nome *</label><Input value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} /></div>
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="text-sm font-medium mb-1.5 block">Sigla *</label><Input value={form.sigla} onChange={e => setForm(f => ({ ...f, sigla: e.target.value }))} /></div>
-              <div><label className="text-sm font-medium mb-1.5 block">Número</label><Input value={form.numero} onChange={e => setForm(f => ({ ...f, numero: e.target.value }))} /></div>
+              <div><label className="text-sm font-medium mb-1.5 block">Sigla *</label><Input value={form.sigla} onChange={e => setForm(f => ({ ...f, sigla: e.target.value }))} maxLength={10} /></div>
+              <div><label className="text-sm font-medium mb-1.5 block">Número Eleitoral</label><Input value={form.numero} onChange={e => setForm(f => ({ ...f, numero: e.target.value }))} placeholder="Ex: 13" /></div>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Cor do Partido</label>
+              <div className="flex items-center gap-2">
+                <input type="color" value={form.cor_hex || '#1d4ed8'} onChange={e => setForm(f => ({ ...f, cor_hex: e.target.value }))} className="w-9 h-9 rounded border border-border cursor-pointer flex-shrink-0" />
+                <Input value={form.cor_hex || ''} onChange={e => setForm(f => ({ ...f, cor_hex: e.target.value }))} className="font-mono" placeholder="#1d4ed8" />
+              </div>
             </div>
             <div><label className="text-sm font-medium mb-1.5 block">Data de Fundação</label><Input type="date" value={form.data_fundacao} onChange={e => setForm(f => ({ ...f, data_fundacao: e.target.value }))} /></div>
           </div>

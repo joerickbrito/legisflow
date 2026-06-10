@@ -36,6 +36,10 @@
       "type": "string",
       "format": "date"
     },
+    "data_posse": {
+      "type": "string",
+      "format": "date"
+    },
     "sexo": {
       "type": "string",
       "enum": [
@@ -66,6 +70,32 @@
     },
     "partido_sigla": {
       "type": "string"
+    },
+    "legislatura_id": {
+      "type": "string"
+    },
+    "legislatura_numero": {
+      "type": "number"
+    },
+    "cargo": {
+      "type": "string"
+    },
+    "situacao": {
+      "type": "string",
+      "enum": [
+        "Ativo",
+        "Licenciado",
+        "Afastado"
+      ],
+      "default": "Ativo"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "Titular",
+        "Suplente"
+      ],
+      "default": "Titular"
     },
     "gabinete": {
       "type": "string"

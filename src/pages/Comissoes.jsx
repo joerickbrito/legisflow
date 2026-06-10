@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 
-const TIPOS = ['Permanente', 'Temporária', 'Especial', 'Parlamentar de Inquérito'];
+const TIPOS = ['Permanente', 'Temporária', 'CPI', 'Especial', 'Mista'];
 const CARGOS_MEMBRO = ['Presidente', 'Vice-Presidente', 'Membro', 'Suplente'];
 
 import PageHeader from '@/components/PageHeader';
@@ -19,7 +19,7 @@ export default function Comissoes() {
   const [parlamentares, setParlamentares] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editando, setEditando] = useState(null);
-  const emptyForm = { nome: '', sigla: '', tipo: 'Permanente', descricao: '', membros: [], ativa: true, tenant_id: tenantId || '' };
+  const emptyForm = { nome: '', sigla: '', tipo: 'Permanente', objetivo: '', data_criacao: '', data_encerramento: '', membros: [], ativa: true, tenant_id: tenantId || '' };
   const [form, setForm] = useState(emptyForm);
 
   useEffect(() => { loadData(); }, [tenantId]);
@@ -123,19 +123,44 @@ export default function Comissoes() {
               </Select>
             </div>
             <div>
-              <label className="text-sm font-medium mb-1.5 block">Descrição</label>
-              <Textarea value={form.descricao} onChange={e => setForm(f => ({ ...f, descricao: e.target.value }))} rows={2} />
+              <label className="text-sm font-medium mb-1.5 block">Objetivo / Descrição</label>
+              <Textarea value={form.objetivo || form.descricao || ''} onChange={e => setForm(f => ({ ...f, objetivo: e.target.value }))} rows={2} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="text-sm font-medium mb-1.5 block">Data de Criação</label><Input type="date" value={form.data_criacao} onChange={e => setForm(f => ({ ...f, data_criacao: e.target.value }))} /></div>
+              <div><label className="text-sm font-medium mb-1.5 block">Data de Encerramento</label><Input type="date" value={form.data_encerramento} onChange={e => setForm(f => ({ ...f, data_encerramento: e.target.value }))} /></div>
             </div>
             <div>
-              <label className="text-sm font-medium mb-1.5 block">Membros</label>
-              <div className="divide-y divide-border rounded-xl border border-border overflow-hidden max-h-48 overflow-y-auto">
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-sm font-medium">Membros</label>
+                <span className="text-xs text-muted-foreground">{form.membros.length} selecionado(s)</span>
+              </div>
+              <div className="divide-y divide-border rounded-xl border border-border overflow-hidden max-h-56 overflow-y-auto">
                 {parlamentares.map((p) => {
                   const membro = form.membros.find(m => m.parlamentar_id === p.id);
                   return (
-                    <div key={p.id} className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors ${membro ? 'bg-accent' : 'hover:bg-muted/40'}`} onClick={() => toggleMembro(p, 'Membro')}>
-                      <div className={`w-4 h-4 rounded border-2 flex-shrink-0 ${membro ? 'bg-primary border-primary' : 'border-border'}`} />
-                      <span className="text-sm flex-1">{p.nome}</span>
-                      {membro && <span className="text-xs text-primary font-medium">{membro.cargo}</span>}
+                    <div key={p.id} className={`flex items-center gap-3 px-3 py-2 transition-colors ${membro ? 'bg-accent' : 'hover:bg-muted/40'}`}>
+                      <div
+                        className={`w-4 h-4 rounded border-2 flex-shrink-0 cursor-pointer ${membro ? 'bg-primary border-primary' : 'border-border'}`}
+                        onClick={() => toggleMembro(p, 'Membro')}
+                      />
+                      <span className="text-sm flex-1 cursor-pointer" onClick={() => toggleMembro(p, 'Membro')}>
+                        {p.nome_parlamentar || p.nome}
+                        {p.partido_sigla && <span className="text-muted-foreground text-xs ml-1">({p.partido_sigla})</span>}
+                      </span>
+                      {membro && (
+                        <select
+                          value={membro.cargo}
+                          onClick={e => e.stopPropagation()}
+                          onChange={e => {
+                            const cargo = e.target.value;
+                            setForm(f => ({ ...f, membros: f.membros.map(m => m.parlamentar_id === p.id ? { ...m, cargo } : m) }));
+                          }}
+                          className="text-xs border border-border rounded px-1.5 py-0.5 bg-background text-foreground"
+                        >
+                          {CARGOS_MEMBRO.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                      )}
                     </div>
                   );
                 })}

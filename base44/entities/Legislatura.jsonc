@@ -8,6 +8,12 @@
     "numero": {
       "type": "number"
     },
+    "ano_inicio": {
+      "type": "number"
+    },
+    "ano_fim": {
+      "type": "number"
+    },
     "data_inicio": {
       "type": "string",
       "format": "date"
@@ -15,6 +21,13 @@
     "data_fim": {
       "type": "string",
       "format": "date"
+    },
+    "data_eleicao": {
+      "type": "string",
+      "format": "date"
+    },
+    "descricao": {
+      "type": "string"
     },
     "status": {
       "type": "string",
@@ -26,8 +39,6 @@
     }
   },
   "required": [
-    "numero",
-    "data_inicio",
-    "data_fim"
+    "numero"
   ]
 }

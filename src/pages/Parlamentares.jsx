@@ -18,6 +18,7 @@ export default function Parlamentares() {
   const { tenantId, isAdminCamara } = useTenant();
   const [parlamentares, setParlamentares] = useState([]);
   const [partidos, setPartidos] = useState([]);
+  const [legislaturas, setLegislaturas] = useState([]);
   const [busca, setBusca] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editando, setEditando] = useState(null);
@@ -26,6 +27,7 @@ export default function Parlamentares() {
     nome: '', nome_parlamentar: '', cpf: '', email: '', telefone: '',
     foto_url: '', partido_id: '', partido_sigla: '', cargo: 'Vereador',
     tipo: 'Titular', situacao: 'Ativo', data_posse: '', gabinete: '',
+    legislatura_id: '', legislatura_numero: '',
     ativo: true, tenant_id: tenantId || '',
   };
   const [form, setForm] = useState(emptyForm);
@@ -34,12 +36,14 @@ export default function Parlamentares() {
 
   async function loadData() {
     const filter = tenantId ? { tenant_id: tenantId } : {};
-    const [p, part] = await Promise.all([
+    const [p, part, legs] = await Promise.all([
       base44.entities.Parlamentar.filter(filter, 'nome', 100),
       base44.entities.Partido.filter(filter, 'sigla', 50).catch(() => []),
+      base44.entities.Legislatura.filter(filter, '-numero', 20).catch(() => []),
     ]);
     setParlamentares(p);
     setPartidos(part);
+    setLegislaturas(legs);
   }
 
   function openNew() { setEditando(null); setForm({ ...emptyForm, tenant_id: tenantId || '' }); setShowForm(true); }
@@ -234,6 +238,25 @@ export default function Parlamentares() {
                 <Input value={form.cpf} onChange={e => setForm(f => ({ ...f, cpf: e.target.value }))} placeholder="000.000.000-00" />
               </div>
             </div>
+
+            {legislaturas.length > 0 && (
+              <div>
+                <label className="text-sm font-medium mb-1.5 block">Legislatura Vinculada</label>
+                <Select value={form.legislatura_id} onValueChange={v => {
+                  const leg = legislaturas.find(l => l.id === v);
+                  setForm(f => ({ ...f, legislatura_id: v, legislatura_numero: leg?.numero || '' }));
+                }}>
+                  <SelectTrigger><SelectValue placeholder="Selecione a legislatura..." /></SelectTrigger>
+                  <SelectContent>
+                    {legislaturas.map(l => (
+                      <SelectItem key={l.id} value={l.id}>
+                        {l.numero}ª Legislatura{(l.ano_inicio && l.ano_fim) ? ` (${l.ano_inicio}–${l.ano_fim})` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
