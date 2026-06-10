@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useTenant } from '@/lib/TenantContext';
 import { MessageSquare, Plus, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,22 +14,24 @@ import EmptyState from '@/components/EmptyState';
 const TIPOS = ['Favorável', 'Contrário', 'Favorável com Emendas', 'Pela Inconstitucionalidade', 'Pela Constitucionalidade'];
 
 export default function Pareceres() {
+  const { tenantId, hasPermission, ROLES } = useTenant();
   const [pareceres, setPareceres] = useState([]);
   const [materias, setMaterias] = useState([]);
   const [comissoes, setComissoes] = useState([]);
   const [parlamentares, setParlamentares] = useState([]);
-  const [busca, setBusca] = useState([]);
+  const [busca, setBusca] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ materia_id: '', comissao_id: '', relator_id: '', tipo: 'Favorável', texto: '', data: '' });
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [tenantId]);
 
   async function load() {
+    const filter = tenantId ? { tenant_id: tenantId } : {};
     const [p, m, c, parl] = await Promise.all([
-      base44.entities.Parecer.list('-created_date', 50),
-      base44.entities.Materia.filter({ status: 'Em tramitação' }),
-      base44.entities.Comissao.filter({ ativa: true }),
-      base44.entities.Parlamentar.filter({ ativo: true }),
+      base44.entities.Parecer.filter(filter, '-created_date', 50),
+      base44.entities.Materia.filter({ ...filter, status: 'Em tramitação' }),
+      base44.entities.Comissao.filter({ ...filter, ativa: true }),
+      base44.entities.Parlamentar.filter({ ...filter, ativo: true }),
     ]);
     setPareceres(p);
     setMaterias(m);
@@ -42,9 +45,10 @@ export default function Pareceres() {
     const rel = parlamentares.find(p => p.id === form.relator_id);
     await base44.entities.Parecer.create({
       ...form,
+      tenant_id: tenantId || '',
       materia_ementa: mat?.ementa || '',
       comissao_nome: com?.nome || '',
-      relator_nome: rel?.nome || '',
+      relator_nome: rel?.nome || rel?.nome_parlamentar || '',
     });
     setShowForm(false);
     load();

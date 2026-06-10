@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Plus, Building2 } from 'lucide-react';
+import { useTenant } from '@/lib/TenantContext';
+import { Plus, Building2, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -10,19 +11,24 @@ import { Textarea } from '@/components/ui/textarea';
 const TIPOS = ['Permanente', 'Temporária', 'Especial', 'Parlamentar de Inquérito'];
 const CARGOS_MEMBRO = ['Presidente', 'Vice-Presidente', 'Membro', 'Suplente'];
 
+import PageHeader from '@/components/PageHeader';
+
 export default function Comissoes() {
+  const { tenantId, isAdminCamara } = useTenant();
   const [comissoes, setComissoes] = useState([]);
   const [parlamentares, setParlamentares] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editando, setEditando] = useState(null);
-  const [form, setForm] = useState({ nome: '', sigla: '', tipo: 'Permanente', descricao: '', membros: [], ativa: true });
+  const emptyForm = { nome: '', sigla: '', tipo: 'Permanente', descricao: '', membros: [], ativa: true, tenant_id: tenantId || '' };
+  const [form, setForm] = useState(emptyForm);
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadData(); }, [tenantId]);
 
   async function loadData() {
+    const filter = tenantId ? { tenant_id: tenantId } : {};
     const [c, p] = await Promise.all([
-      base44.entities.Comissao.list('-created_date', 50),
-      base44.entities.Parlamentar.filter({ ativo: true }),
+      base44.entities.Comissao.filter(filter, '-created_date', 50),
+      base44.entities.Parlamentar.filter({ ...filter, ativo: true }),
     ]);
     setComissoes(c);
     setParlamentares(p);
@@ -30,13 +36,13 @@ export default function Comissoes() {
 
   function openNew() {
     setEditando(null);
-    setForm({ nome: '', sigla: '', tipo: 'Permanente', descricao: '', membros: [], ativa: true });
+    setForm({ ...emptyForm, tenant_id: tenantId || '' });
     setShowForm(true);
   }
 
   function openEdit(c) {
     setEditando(c);
-    setForm({ nome: c.nome, sigla: c.sigla || '', tipo: c.tipo, descricao: c.descricao || '', membros: c.membros || [], ativa: c.ativa !== false });
+    setForm({ ...emptyForm, ...c });
     setShowForm(true);
   }
 
@@ -57,19 +63,18 @@ export default function Comissoes() {
 
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-heading font-bold text-foreground">Comissões</h1>
-          <p className="text-muted-foreground mt-1">{comissoes.filter(c => c.ativa !== false).length} ativa(s)</p>
-        </div>
-        <Button onClick={openNew} className="gap-2 shadow-lg shadow-primary/20"><Plus size={18} /> Nova Comissão</Button>
-      </div>
+      <PageHeader
+        icon={Building2}
+        title="Comissões"
+        subtitle={`${comissoes.filter(c => c.ativa !== false).length} ativa(s)`}
+        action={isAdminCamara && <Button onClick={openNew} className="gap-2 shadow-lg shadow-primary/20"><Plus size={16} /> Nova Comissão</Button>}
+      />
 
       {comissoes.length === 0 ? (
         <div className="bg-card border border-border rounded-3xl p-12 text-center">
           <Building2 size={40} className="mx-auto text-muted-foreground mb-3" />
           <p className="text-muted-foreground">Nenhuma comissão cadastrada.</p>
-          <Button onClick={openNew} variant="outline" className="mt-4 gap-2"><Plus size={16} /> Criar comissão</Button>
+          {isAdminCamara && <Button onClick={openNew} variant="outline" className="mt-4 gap-2"><Plus size={16} /> Criar comissão</Button>}
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">

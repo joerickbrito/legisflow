@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useTenant } from '@/lib/TenantContext';
 import { Plus, Calendar, Clock, Users, FileText, CheckSquare } from 'lucide-react';
+import PageHeader from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -10,26 +12,27 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 const TIPOS = ['Ordinária', 'Extraordinária', 'Solene', 'Especial', 'Itinerante'];
-const STATUS_OPTS = ['Agendada', 'Em Andamento', 'Encerrada', 'Cancelada'];
+const STATUS_OPTS = ['Agendada', 'Aberta', 'Em Expediente', 'Em Ordem do Dia', 'Suspensa', 'Encerrada', 'Cancelada'];
 
 export default function Sessoes() {
+  const { tenantId, isOperadorGeral } = useTenant();
   const [sessoes, setSessoes] = useState([]);
   const [parlamentares, setParlamentares] = useState([]);
   const [materias, setMaterias] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editando, setEditando] = useState(null);
   const [tabAtiva, setTabAtiva] = useState('info');
-  const [form, setForm] = useState({ tipo: 'Ordinária', data: '', hora_inicio: '', hora_fim: '', status: 'Agendada', observacoes: '', ata: '', pauta: [], presencas: [] });
+  const emptyForm = { tipo: 'Ordinária', data: '', hora_inicio: '', hora_fim: '', local: '', status: 'Agendada', observacoes: '', ata: '', pauta: [], presencas: [], tenant_id: tenantId || '' };
+  const [form, setForm] = useState(emptyForm);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  useEffect(() => { loadData(); }, [tenantId]);
 
   async function loadData() {
+    const filter = tenantId ? { tenant_id: tenantId } : {};
     const [s, p, m] = await Promise.all([
-      base44.entities.Sessao.list('-data', 50),
-      base44.entities.Parlamentar.filter({ ativo: true }),
-      base44.entities.Materia.filter({ status: 'Em tramitação' }),
+      base44.entities.Sessao.filter(filter, '-data', 50),
+      base44.entities.Parlamentar.filter({ ...filter, ativo: true }),
+      base44.entities.Materia.filter({ ...filter, status: 'Em tramitação' }),
     ]);
     setSessoes(s);
     setParlamentares(p);
@@ -38,23 +41,24 @@ export default function Sessoes() {
 
   function openNew() {
     setEditando(null);
-    setForm({ tipo: 'Ordinária', data: '', hora_inicio: '', hora_fim: '', status: 'Agendada', observacoes: '', ata: '', pauta: [], presencas: parlamentares.map(p => ({ parlamentar_id: p.id, parlamentar_nome: p.nome, presente: false })) });
+    setForm({ ...emptyForm, tenant_id: tenantId || '', presencas: parlamentares.map(p => ({ parlamentar_id: p.id, parlamentar_nome: p.nome_parlamentar || p.nome, presente: false })) });
     setTabAtiva('info');
     setShowForm(true);
   }
 
   function openEdit(s) {
     setEditando(s);
-    setForm({ tipo: s.tipo, data: s.data || '', hora_inicio: s.hora_inicio || '', hora_fim: s.hora_fim || '', status: s.status, observacoes: s.observacoes || '', ata: s.ata || '', pauta: s.pauta || [], presencas: s.presencas?.length ? s.presencas : parlamentares.map(p => ({ parlamentar_id: p.id, parlamentar_nome: p.nome, presente: false })) });
+    setForm({ ...emptyForm, ...s, presencas: s.presencas?.length ? s.presencas : parlamentares.map(p => ({ parlamentar_id: p.id, parlamentar_nome: p.nome_parlamentar || p.nome, presente: false })) });
     setTabAtiva('info');
     setShowForm(true);
   }
 
   async function salvar() {
+    const num = editando?.numero || String(sessoes.length + 1).padStart(3, '0');
     if (editando) {
       await base44.entities.Sessao.update(editando.id, form);
     } else {
-      await base44.entities.Sessao.create({ ...form, numero: String(sessoes.length + 1) });
+      await base44.entities.Sessao.create({ ...form, numero: num });
     }
     setShowForm(false);
     loadData();
@@ -81,15 +85,12 @@ export default function Sessoes() {
 
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-heading font-bold text-foreground">Sessões Plenárias</h1>
-          <p className="text-muted-foreground mt-1">{sessoes.length} sessão(ões) registrada(s)</p>
-        </div>
-        <Button onClick={openNew} className="gap-2 shadow-lg shadow-primary/20">
-          <Plus size={18} /> Nova Sessão
-        </Button>
-      </div>
+      <PageHeader
+        icon={Calendar}
+        title="Sessões Plenárias"
+        subtitle={`${sessoes.length} sessão(ões) registrada(s)`}
+        action={isOperadorGeral && <Button onClick={openNew} className="gap-2 shadow-lg shadow-primary/20"><Plus size={16} /> Nova Sessão</Button>}
+      />
 
       {/* Cards de sessões */}
       {sessoes.length === 0 ? (
@@ -165,7 +166,9 @@ export default function Sessoes() {
                     <label className="text-sm font-medium mb-1.5 block">Status</label>
                     <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>{STATUS_OPTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                      <SelectContent>
+                        {STATUS_OPTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                      </SelectContent>
                     </Select>
                   </div>
                 </div>
@@ -182,6 +185,10 @@ export default function Sessoes() {
                     <label className="text-sm font-medium mb-1.5 block">Hora de Fim</label>
                     <Input type="time" value={form.hora_fim} onChange={e => setForm(f => ({ ...f, hora_fim: e.target.value }))} />
                   </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-1.5 block">Local</label>
+                  <Input value={form.local} onChange={e => setForm(f => ({ ...f, local: e.target.value }))} placeholder="Plenário, Câmara Municipal..." />
                 </div>
                 <div>
                   <label className="text-sm font-medium mb-1.5 block">Observações</label>

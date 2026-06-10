@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useTenant } from '@/lib/TenantContext';
-import { FileText, Calendar, Users, ScrollText, Inbox, AlertCircle, ArrowRight, Clock, Vote, TrendingUp } from 'lucide-react';
+import { FileText, Calendar, Users, ScrollText, Inbox, AlertCircle, ArrowRight, Clock, Vote, TrendingUp, FolderOpen, Gavel } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import StatusBadge from '@/components/StatusBadge';
-import { format } from 'date-fns';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { format, isAfter, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export default function DashboardAdminCamara() {
@@ -39,6 +40,18 @@ export default function DashboardAdminCamara() {
     }
     load();
   }, [tenantId]);
+
+  // Chart data: matérias por status
+  const chartData = [
+    { name: 'Em Tramitação', value: data.materias?.filter(m => m.status === 'Em tramitação').length || 0, color: '#3b82f6' },
+    { name: 'Aguard. Votação', value: data.materias?.filter(m => m.status === 'Aguardando Votação').length || 0, color: '#f59e0b' },
+    { name: 'Aprovadas', value: data.materias?.filter(m => m.status === 'Aprovada').length || 0, color: '#22c55e' },
+    { name: 'Rejeitadas', value: data.materias?.filter(m => m.status === 'Rejeitada').length || 0, color: '#ef4444' },
+  ].filter(d => d.value > 0);
+
+  // Próximas sessões
+  const hoje = format(new Date(), 'yyyy-MM-dd');
+  const proximasSessoes = data.sessoes?.filter(s => s.data >= hoje && s.status !== 'Cancelada' && s.status !== 'Encerrada').slice(0, 3) || [];
 
   const cards = [
     { label: 'Matérias em Tramitação', value: data.materias?.filter(m => m.status === 'Em tramitação').length || 0, icon: FileText, color: 'text-blue-600 bg-blue-50', link: '/materias' },
@@ -127,9 +140,9 @@ export default function DashboardAdminCamara() {
         ))}
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid lg:grid-cols-3 gap-6">
         {/* Matérias recentes */}
-        <Card className="overflow-hidden">
+        <Card className="overflow-hidden lg:col-span-2">
           <div className="px-5 py-4 border-b border-border flex items-center justify-between">
             <h2 className="font-heading font-semibold text-foreground">Matérias Recentes</h2>
             <Link to="/materias" className="text-primary text-sm font-medium flex items-center gap-1 hover:gap-2 transition-all">
@@ -139,8 +152,8 @@ export default function DashboardAdminCamara() {
           <div className="divide-y divide-border">
             {data.materias?.length === 0 ? (
               <div className="p-6 text-center text-muted-foreground text-sm">Nenhuma matéria cadastrada.</div>
-            ) : data.materias?.slice(0, 5).map((m) => (
-              <Link key={m.id} to="/materias" className="flex items-center gap-3 px-5 py-3.5 hover:bg-muted/30 transition-colors">
+            ) : data.materias?.slice(0, 6).map((m) => (
+              <Link key={m.id} to="/materias" className="flex items-center gap-3 px-5 py-3 hover:bg-muted/30 transition-colors">
                 <FileText size={15} className="text-muted-foreground flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium text-foreground truncate">{m.ementa}</div>
@@ -152,29 +165,71 @@ export default function DashboardAdminCamara() {
           </div>
         </Card>
 
-        {/* Protocolos recentes */}
-        <Card className="overflow-hidden">
-          <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-            <h2 className="font-heading font-semibold text-foreground">Protocolos Recentes</h2>
-            <Link to="/protocolo" className="text-primary text-sm font-medium flex items-center gap-1 hover:gap-2 transition-all">
-              Ver todos <ArrowRight size={13} />
-            </Link>
-          </div>
-          <div className="divide-y divide-border">
-            {data.protocolos?.length === 0 ? (
-              <div className="p-6 text-center text-muted-foreground text-sm">Nenhum protocolo registrado.</div>
-            ) : data.protocolos?.map((p) => (
-              <Link key={p.id} to="/protocolo" className="flex items-center gap-3 px-5 py-3.5 hover:bg-muted/30 transition-colors">
-                <Inbox size={15} className="text-muted-foreground flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-foreground truncate">{p.assunto}</div>
-                  <div className="text-xs text-muted-foreground">{p.tipo_documento} · {p.interessado}</div>
+        {/* Painel lateral: gráfico + próximas sessões */}
+        <div className="space-y-4">
+          {/* Gráfico matérias por status */}
+          {chartData.length > 0 && (
+            <Card className="p-4">
+              <h3 className="font-heading font-semibold text-sm text-foreground mb-3">Matérias por Status</h3>
+              <ResponsiveContainer width="100%" height={140}>
+                <BarChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                  <XAxis dataKey="name" tick={{ fontSize: 9 }} />
+                  <YAxis tick={{ fontSize: 9 }} />
+                  <Tooltip />
+                  <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                    {chartData.map((entry, index) => (
+                      <Cell key={index} fill={entry.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </Card>
+          )}
+
+          {/* Próximas sessões */}
+          <Card className="overflow-hidden">
+            <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+              <h3 className="font-heading font-semibold text-sm text-foreground">Próximas Sessões</h3>
+              <Link to="/sessoes" className="text-primary text-xs font-medium flex items-center gap-1">Ver <ArrowRight size={11} /></Link>
+            </div>
+            <div className="divide-y divide-border">
+              {proximasSessoes.length === 0 ? (
+                <div className="p-4 text-center text-muted-foreground text-xs">Nenhuma sessão agendada.</div>
+              ) : proximasSessoes.map(s => (
+                <div key={s.id} className="px-4 py-3">
+                  <div className="text-xs font-semibold text-foreground">{s.tipo}</div>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                    <Calendar size={10} />
+                    {format(new Date(s.data + 'T12:00:00'), "dd/MM/yyyy", { locale: ptBR })}
+                    {s.hora_inicio && <span>· {s.hora_inicio}</span>}
+                  </div>
+                  {s.pauta?.length > 0 && <div className="text-[10px] text-muted-foreground mt-0.5">{s.pauta.length} matéria(s) em pauta</div>}
                 </div>
-                <StatusBadge status={p.status} />
-              </Link>
-            ))}
-          </div>
-        </Card>
+              ))}
+            </div>
+          </Card>
+
+          {/* Protocolos recentes */}
+          <Card className="overflow-hidden">
+            <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+              <h3 className="font-heading font-semibold text-sm text-foreground">Protocolos Recentes</h3>
+              <Link to="/protocolo" className="text-primary text-xs font-medium flex items-center gap-1">Ver <ArrowRight size={11} /></Link>
+            </div>
+            <div className="divide-y divide-border">
+              {data.protocolos?.length === 0 ? (
+                <div className="p-4 text-center text-muted-foreground text-xs">Nenhum protocolo.</div>
+              ) : data.protocolos?.map((p) => (
+                <Link key={p.id} to="/protocolo" className="flex items-center gap-2 px-4 py-2.5 hover:bg-muted/30 transition-colors">
+                  <Inbox size={13} className="text-muted-foreground flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-medium text-foreground truncate">{p.assunto}</div>
+                    <div className="text-[10px] text-muted-foreground">{p.tipo_documento} · {p.interessado}</div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </Card>
+        </div>
       </div>
     </div>
   );
