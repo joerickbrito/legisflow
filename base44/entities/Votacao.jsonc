@@ -11,6 +11,9 @@
     "sessao_numero": {
       "type": "string"
     },
+    "sessao_descricao": {
+      "type": "string"
+    },
     "materia_id": {
       "type": "string"
     },
@@ -26,10 +29,8 @@
     "tipo_votacao": {
       "type": "string",
       "enum": [
-        "Simb\u00f3lica",
         "Nominal",
-        "Secreta",
-        "Eletr\u00f4nica"
+        "Sigilosa"
       ],
       "default": "Nominal"
     },
@@ -38,6 +39,7 @@
       "enum": [
         "Aguardando",
         "Em Vota\u00e7\u00e3o",
+        "Aguardando Desempate",
         "Encerrada",
         "Cancelada"
       ],
@@ -54,18 +56,25 @@
           "parlamentar_nome": {
             "type": "string"
           },
+          "partido_sigla": {
+            "type": "string"
+          },
+          "foto_url": {
+            "type": "string"
+          },
           "voto": {
             "type": "string",
             "enum": [
               "Sim",
               "N\u00e3o",
-              "Absten\u00e7\u00e3o",
-              "Ausente",
-              "Impedido"
+              "Absten\u00e7\u00e3o"
             ]
           },
           "hora": {
             "type": "string"
+          },
+          "is_presidente": {
+            "type": "boolean"
           }
         }
       }
@@ -74,7 +83,9 @@
       "type": "string",
       "enum": [
         "Aprovada",
+        "Aprovada por Unanimidade",
         "Rejeitada",
+        "Empate",
         "Em vota\u00e7\u00e3o",
         "Aguardando",
         "Cancelada"
@@ -97,12 +108,21 @@
       "type": "number",
       "default": 0
     },
-    "impedidos": {
+    "timer_discurso": {
       "type": "number",
-      "default": 0
+      "default": 180
     },
-    "quorum_necessario": {
-      "type": "number"
+    "timer_aparte": {
+      "type": "number",
+      "default": 60
+    },
+    "timer_questao": {
+      "type": "number",
+      "default": 120
+    },
+    "timer_consideracoes": {
+      "type": "number",
+      "default": 60
     },
     "data_hora_inicio": {
       "type": "string"
