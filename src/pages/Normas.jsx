@@ -187,10 +187,6 @@ export default function Normas() {
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium mb-1.5 block">Texto Articulado / Integral</label>
-              <Textarea value={form.texto_articulado} onChange={e => setForm(f => ({ ...f, texto_articulado: e.target.value }))} rows={5} />
-            </div>
-            <div>
               <label className="text-sm font-medium mb-1.5 block">Arquivo PDF</label>
               <div className="flex items-center gap-3">
                 <label className="flex items-center gap-2 cursor-pointer bg-muted/40 border border-dashed border-border rounded-lg px-4 py-2 text-sm text-muted-foreground hover:bg-muted/60 transition-colors">
