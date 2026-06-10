@@ -12,6 +12,8 @@ import { useTenant, ROLE_LABELS } from '@/lib/TenantContext';
 import { useAuth } from '@/lib/AuthContext';
 import { cn } from '@/lib/utils';
 
+const OPERACIONAL_ROLES = ['SUPER_ADMIN', 'ADMIN_CAMARA', 'OPERADOR_GERAL', 'SECRETARIA_LEGISLATIVA', 'PROTOCOLO', 'PRESIDENTE'];
+
 const getNavGroups = (isSuperAdmin, isAdminCamara, userRole) => {
   const groups = [
     {
@@ -48,7 +50,7 @@ const getNavGroups = (isSuperAdmin, isAdminCamara, userRole) => {
     });
   }
 
-  // Estrutura (todos exceto consulta pública)
+  // Estrutura (todos exceto consulta pública e vereador simples)
   if (userRole !== 'CONSULTA_PUBLICA') {
     groups.push({
       label: 'Estrutura',
@@ -64,14 +66,18 @@ const getNavGroups = (isSuperAdmin, isAdminCamara, userRole) => {
     groups.push({
       label: 'Processo Legislativo',
       items: [
-        { path: '/protocolo', icon: Inbox, label: 'Protocolo' },
-        { path: '/proposicoes', icon: FolderOpen, label: 'Proposições' },
+        ...(OPERACIONAL_ROLES.includes(userRole) ? [
+          { path: '/protocolo', icon: Inbox, label: 'Protocolo' },
+          { path: '/proposicoes', icon: FolderOpen, label: 'Proposições' },
+        ] : []),
         { path: '/materias', icon: FileText, label: 'Matérias' },
-        { path: '/emendas', icon: FileDiff, label: 'Emendas' },
-        { path: '/tramitacoes', icon: ChevRight, label: 'Tramitações' },
-        { path: '/pareceres', icon: MessageSquare, label: 'Pareceres' },
-        { path: '/audiencias', icon: Users, label: 'Audiências Públicas' },
-        { path: '/oficios', icon: Mail, label: 'Ofícios' },
+        ...(OPERACIONAL_ROLES.includes(userRole) ? [
+          { path: '/emendas', icon: FileDiff, label: 'Emendas' },
+          { path: '/tramitacoes', icon: ChevRight, label: 'Tramitações' },
+          { path: '/pareceres', icon: MessageSquare, label: 'Pareceres' },
+          { path: '/audiencias', icon: Users, label: 'Audiências Públicas' },
+          { path: '/oficios', icon: Mail, label: 'Ofícios' },
+        ] : []),
       ]
     });
 

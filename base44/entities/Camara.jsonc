@@ -11,13 +11,16 @@
     "cnpj": {
       "type": "string"
     },
-    "endereco": {
+    "municipio": {
       "type": "string"
     },
     "cidade": {
       "type": "string"
     },
     "estado": {
+      "type": "string"
+    },
+    "endereco": {
       "type": "string"
     },
     "telefone": {
@@ -34,6 +37,10 @@
     },
     "logotipo_url": {
       "type": "string"
+    },
+    "cor_institucional": {
+      "type": "string",
+      "default": "#1d4ed8"
     },
     "status": {
       "type": "string",

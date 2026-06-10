@@ -64,9 +64,11 @@ export default function GerenciarUsuarios() {
     setOpen(false);
   };
 
-  const availableRoles = isSuperAdmin
-    ? Object.values(ROLES)
-    : Object.values(ROLES).filter(r => r !== ROLES.SUPER_ADMIN);
+  // Perfis principais conforme spec
+  const MAIN_ROLES = isSuperAdmin
+    ? ['SUPER_ADMIN', 'ADMIN_CAMARA', 'OPERADOR_GERAL', 'PRESIDENTE', 'VEREADOR']
+    : ['ADMIN_CAMARA', 'OPERADOR_GERAL', 'PRESIDENTE', 'VEREADOR'];
+  const availableRoles = MAIN_ROLES;
 
   const filtered = usuarios.filter(u =>
     u.full_name?.toLowerCase().includes(search.toLowerCase()) ||

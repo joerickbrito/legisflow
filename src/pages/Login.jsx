@@ -4,7 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LogIn, Mail, Lock, Loader2, Scale } from "lucide-react";
+import { LogIn, Mail, Lock, Loader2, Scale, Globe } from "lucide-react";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -105,7 +105,15 @@ export default function Login() {
             </Button>
           </form>
 
-          <p className="text-center text-slate-500 text-xs mt-6">
+          <div className="mt-6 pt-5 border-t border-white/10">
+            <Link to="/transparencia">
+              <button className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-white/5 border border-white/15 text-slate-300 hover:bg-white/10 hover:text-white transition-all text-sm font-medium">
+                <Globe size={15} className="text-blue-400" />
+                Acesso Público — Portal de Transparência
+              </button>
+            </Link>
+          </div>
+          <p className="text-center text-slate-500 text-xs mt-4">
             Acesso restrito. Usuários são cadastrados pelos administradores da Câmara.
           </p>
         </div>
