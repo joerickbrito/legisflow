@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, Plus, Pencil, Trash2, ExternalLink } from 'lucide-react';
+import FileUpload from '@/components/FileUpload';
 
 const STATUS_NORMA = ['Vigente', 'Revogada', 'Revogada Parcialmente', 'Suspensa', 'Não Vigente'];
 const statusColors = {
@@ -131,8 +132,7 @@ export default function NormaSimples({ tipo, icon: Icon, title, subtitle, addLab
               </Select>
             </div>
             <div className="col-span-2">
-              <label className="text-sm font-medium">URL do Arquivo (PDF)</label>
-              <Input value={form.arquivo_url || ''} onChange={e => set('arquivo_url', e.target.value)} placeholder="https://..." />
+              <FileUpload value={form.arquivo_url} onUploaded={url => set('arquivo_url', url)} label="Arquivo (PDF, DOC...)" />
             </div>
           </div>
           <div className="flex justify-end gap-2 mt-4">

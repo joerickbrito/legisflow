@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { FolderOpen, Plus, Search } from 'lucide-react';
+import FileUpload from '@/components/FileUpload';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -18,7 +19,7 @@ export default function Documentos() {
   const [busca, setBusca] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editando, setEditando] = useState(null);
-  const [form, setForm] = useState({ tipo: 'Ofício', numero: '', ano: new Date().getFullYear(), assunto: '', texto: '', remetente: '', destinatario: '', data: '', status: 'Rascunho' });
+  const [form, setForm] = useState({ tipo: 'Ofício', numero: '', ano: new Date().getFullYear(), assunto: '', texto: '', remetente: '', destinatario: '', data: '', status: 'Rascunho', arquivo_url: '' });
 
   useEffect(() => { load(); }, []);
 
@@ -28,6 +29,7 @@ export default function Documentos() {
   }
 
   async function salvar() {
+    if (!form.assunto) return;
     if (editando) await base44.entities.DocumentoAdministrativo.update(editando.id, form);
     else await base44.entities.DocumentoAdministrativo.create(form);
     setShowForm(false);
@@ -58,7 +60,7 @@ export default function Documentos() {
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <div className="divide-y divide-border">
             {filtrados.map(d => (
-              <div key={d.id} onClick={() => { setEditando(d); setForm({ tipo: d.tipo, numero: d.numero || '', ano: d.ano || new Date().getFullYear(), assunto: d.assunto, texto: d.texto || '', remetente: d.remetente || '', destinatario: d.destinatario || '', data: d.data || '', status: d.status }); setShowForm(true); }}
+              <div key={d.id} onClick={() => { setEditando(d); setForm({ tipo: d.tipo, numero: d.numero || '', ano: d.ano || new Date().getFullYear(), assunto: d.assunto, texto: d.texto || '', remetente: d.remetente || '', destinatario: d.destinatario || '', data: d.data || '', status: d.status, arquivo_url: d.arquivo_url || '' }); setShowForm(true); }}
                 className="flex items-center gap-4 px-6 py-4 hover:bg-muted/30 cursor-pointer">
                 <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center flex-shrink-0">
                   <FolderOpen size={17} className="text-primary" />
@@ -70,6 +72,7 @@ export default function Documentos() {
                   </div>
                   <div className="text-sm font-medium text-foreground mt-0.5 line-clamp-1">{d.assunto}</div>
                   {(d.remetente || d.destinatario) && <div className="text-xs text-muted-foreground mt-0.5">{d.remetente && `De: ${d.remetente}`}{d.destinatario && ` → Para: ${d.destinatario}`}</div>}
+                  {d.arquivo_url && <a href={d.arquivo_url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="text-xs text-primary flex items-center gap-1 mt-1 hover:underline"><span>📎 Ver anexo</span></a>}
                 </div>
                 <span className={`text-xs px-2.5 py-1 rounded-full font-semibold flex-shrink-0 ${statusColor[d.status]}`}>{d.status}</span>
               </div>
@@ -107,6 +110,7 @@ export default function Documentos() {
               <div><label className="text-sm font-medium mb-1.5 block">Destinatário</label><Input value={form.destinatario} onChange={e => setForm(f => ({ ...f, destinatario: e.target.value }))} /></div>
             </div>
             <div><label className="text-sm font-medium mb-1.5 block">Texto</label><Textarea value={form.texto} onChange={e => setForm(f => ({ ...f, texto: e.target.value }))} rows={6} /></div>
+            <div className="col-span-2"><FileUpload value={form.arquivo_url} onUploaded={url => setForm(f => ({ ...f, arquivo_url: url }))} label="Arquivo Anexo (PDF, DOC...)" /></div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>

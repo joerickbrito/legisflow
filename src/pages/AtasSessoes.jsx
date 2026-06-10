@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BookOpen, Plus, Search, Pencil, Trash2, ExternalLink } from 'lucide-react';
+import FileUpload from '@/components/FileUpload';
 
 const empty = { numero: '', data: '', sessao_id: '', sessao_numero: '', observacoes: '', arquivo_url: '' };
 
@@ -128,8 +129,7 @@ export default function AtasSessoes() {
               <textarea className="w-full border rounded-md px-3 py-2 text-sm min-h-[80px] bg-background" value={form.observacoes || ''} onChange={e => set('observacoes', e.target.value)} />
             </div>
             <div className="col-span-2">
-              <label className="text-sm font-medium">URL do Arquivo (PDF)</label>
-              <Input value={form.arquivo_url || ''} onChange={e => set('arquivo_url', e.target.value)} placeholder="https://..." />
+              <FileUpload value={form.arquivo_url} onUploaded={url => set('arquivo_url', url)} label="Arquivo (PDF, DOC...)" />
             </div>
           </div>
           <div className="flex justify-end gap-2 mt-4">

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useTenant } from '@/lib/TenantContext';
-import { Plus, ScrollText, Search, Upload } from 'lucide-react';
+import { Plus, ScrollText, Search, ExternalLink } from 'lucide-react';
+import FileUpload from '@/components/FileUpload';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -22,8 +23,6 @@ export default function Normas() {
   const [editando, setEditando] = useState(null);
   const emptyForm = { tipo: 'Lei Ordinária', numero: '', ano: new Date().getFullYear(), ementa: '', data_publicacao: '', data_vigencia: '', texto_articulado: '', situacao: 'Vigente', arquivo_url: '', tenant_id: tenantId || '' };
   const [form, setForm] = useState(emptyForm);
-  const [uploading, setUploading] = useState(false);
-
   useEffect(() => { loadData(); }, [tenantId]);
 
   async function loadData() {
@@ -42,15 +41,6 @@ export default function Normas() {
     setEditando(n);
     setForm({ ...emptyForm, ...n });
     setShowForm(true);
-  }
-
-  async function handleUpload(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    setForm(f => ({ ...f, arquivo_url: file_url }));
-    setUploading(false);
   }
 
   async function salvar() {
@@ -187,14 +177,7 @@ export default function Normas() {
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium mb-1.5 block">Arquivo PDF</label>
-              <div className="flex items-center gap-3">
-                <label className="flex items-center gap-2 cursor-pointer bg-muted/40 border border-dashed border-border rounded-lg px-4 py-2 text-sm text-muted-foreground hover:bg-muted/60 transition-colors">
-                  <Upload size={14} /> {uploading ? 'Enviando...' : form.arquivo_url ? 'Trocar arquivo' : 'Selecionar PDF'}
-                  <input type="file" accept=".pdf" onChange={handleUpload} className="hidden" />
-                </label>
-                {form.arquivo_url && <a href={form.arquivo_url} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline">Ver arquivo</a>}
-              </div>
+              <FileUpload value={form.arquivo_url} onUploaded={url => setForm(f => ({ ...f, arquivo_url: url }))} label="Arquivo (PDF, DOC...)" />
             </div>
           </div>
           <DialogFooter>

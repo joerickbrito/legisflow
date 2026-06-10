@@ -8,7 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FileText, Plus, Search, Pencil, Trash2 } from 'lucide-react';
+import { FileText, Plus, Search, Pencil, Trash2, ExternalLink } from 'lucide-react';
+import FileUpload from '@/components/FileUpload';
 
 const TIPOS = ['Projeto de Lei', 'Projeto de Lei Complementar', 'Emenda à Lei Orgânica'];
 const STATUS = ['Em tramitação', 'Aprovada', 'Rejeitada', 'Arquivada', 'Retirada', 'Transformada em Norma', 'Aguardando Votação'];
@@ -92,6 +93,11 @@ export default function ProjetosLei() {
                 </div>
                 <p className="text-sm text-muted-foreground line-clamp-2">{item.ementa}</p>
                 {item.autor_nome && <p className="text-xs text-muted-foreground mt-1">Autor: {item.autor_nome}</p>}
+                {item.arquivo_url && (
+                  <a href={item.arquivo_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary flex items-center gap-1 mt-1 hover:underline">
+                    <ExternalLink size={11} /> Ver documento
+                  </a>
+                )}
               </div>
               <div className="flex gap-1 flex-shrink-0">
                 <Button size="icon" variant="ghost" onClick={() => openEdit(item)}><Pencil size={14} /></Button>
@@ -163,8 +169,7 @@ export default function ProjetosLei() {
               <Input type="date" value={form.data_protocolo} onChange={e => set('data_protocolo', e.target.value)} />
             </div>
             <div className="col-span-2">
-              <label className="text-sm font-medium">URL do Arquivo (PDF)</label>
-              <Input value={form.arquivo_url} onChange={e => set('arquivo_url', e.target.value)} placeholder="https://..." />
+              <FileUpload value={form.arquivo_url} onUploaded={url => set('arquivo_url', url)} label="Arquivo (PDF, DOC...)" />
             </div>
             <div className="col-span-2">
               <label className="text-sm font-medium">Observações</label>
