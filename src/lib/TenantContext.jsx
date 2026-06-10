@@ -1,6 +1,7 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
+import { createAuditor } from '@/lib/auditoria';
 
 const TenantContext = createContext(null);
 
@@ -116,16 +117,31 @@ export function TenantProvider({ children }) {
     return `${nome} — ${partido_sigla}`;
   };
 
-  // Helper to add tenant_id to any filter object
-  // Returns null if user has no tenant and is not SUPER_ADMIN (unsafe to query)
-  const withTenant = (filter = {}) => {
-    if (isSuperAdmin) return filter; // Super admin sees all
-    if (!tenantId) return null; // No tenant = block query
+  // Helper to add tenant_id to any filter object.
+  // SECURITY: returns null if user has no tenant and is not SUPER_ADMIN — callers
+  // must check canQuery before calling any entity query.
+  const withTenant = useCallback((filter = {}) => {
+    if (isSuperAdmin) return filter; // Super admin sees all tenants
+    if (!tenantId) return null;      // No tenant → caller must skip the fetch
     return { ...filter, tenant_id: tenantId };
-  };
+  }, [isSuperAdmin, tenantId]);
+
+  // Hard guard: throws if called without a valid tenant (use in critical paths).
+  const requireTenant = useCallback((filter = {}) => {
+    if (!tenantId && !isSuperAdmin) {
+      throw new Error('[Security] Query attempted without tenant_id. Blocked.');
+    }
+    return withTenant(filter);
+  }, [isSuperAdmin, tenantId, withTenant]);
 
   // Use this in useEffects: if withTenant() returns null, skip the fetch
   const canQuery = isSuperAdmin || !!tenantId;
+
+  // Auditor pré-configurado com o tenant e usuário atuais
+  const audit = useCallback(
+    createAuditor(tenantId, user),
+    [tenantId, user]
+  );
 
   return (
     <TenantContext.Provider value={{
@@ -139,8 +155,10 @@ export function TenantProvider({ children }) {
       isOperadorGeral,
       isPresidente,
       withTenant,
+      requireTenant,
       canQuery,
       formatParlamentar,
+      audit,
       ROLES,
       ROLE_LABELS,
     }}>

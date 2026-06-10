@@ -11,8 +11,26 @@
     "usuario_nome": {
       "type": "string"
     },
-    "acao": {
+    "usuario_email": {
       "type": "string"
+    },
+    "acao": {
+      "type": "string",
+      "enum": [
+        "CRIAR",
+        "EDITAR",
+        "EXCLUIR",
+        "VISUALIZAR",
+        "LOGIN",
+        "LOGOUT",
+        "EXPORTAR",
+        "INICIAR_VOTACAO",
+        "ENCERRAR_VOTACAO",
+        "REGISTRAR_VOTO",
+        "PROTOCOLAR",
+        "TRAMITAR",
+        "OUTRA"
+      ]
     },
     "modulo": {
       "type": "string"
@@ -30,6 +48,12 @@
       "type": "string"
     },
     "ip": {
+      "type": "string"
+    },
+    "data_hora": {
+      "type": "string"
+    },
+    "user_agent": {
       "type": "string"
     }
   },
