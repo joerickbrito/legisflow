@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useTenant } from '@/lib/TenantContext';
-import { FileText, Calendar, Users, ScrollText, Inbox, AlertCircle, ArrowRight, Clock, Vote, TrendingUp, FolderOpen, Gavel } from 'lucide-react';
+import { FileText, Calendar, Users, ScrollText, Inbox, AlertCircle, ArrowRight, Clock, Vote, TrendingUp, FolderOpen, Gavel, Hourglass } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import StatusBadge from '@/components/StatusBadge';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
@@ -11,19 +11,20 @@ import { ptBR } from 'date-fns/locale';
 
 export default function DashboardAdminCamara() {
   const { tenantId, camara, withTenant } = useTenant();
-  const [data, setData] = useState({ materias: [], sessoes: [], parlamentares: [], normas: [], protocolos: [], votacaoAtiva: null });
+  const [data, setData] = useState({ materias: [], sessoes: [], parlamentares: [], normas: [], protocolos: [], votacaoAtiva: null, aguardandoVotacao: [] });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
       const filter = tenantId ? { tenant_id: tenantId } : {};
-      const [materias, sessoes, parlamentares, normas, protocolos, votacoes] = await Promise.all([
-        base44.entities.Materia.filter(filter, '-created_date', 20),
-        base44.entities.Sessao.filter(filter, '-data', 10),
+      const [materias, sessoes, parlamentares, normas, protocolos, votacoes, aguardandoVot] = await Promise.all([
+        base44.entities.Materia.filter(filter, '-created_date', 50),
+        base44.entities.Sessao.filter(filter, '-data', 20),
         base44.entities.Parlamentar.filter(filter),
         base44.entities.NormaJuridica.filter(filter),
-        base44.entities.Protocolo.filter(filter, '-created_date', 5),
+        base44.entities.Protocolo.filter(filter, '-created_date', 8),
         base44.entities.Votacao.filter({ ...filter, status: 'Em Votação' }),
+        base44.entities.Materia.filter({ ...filter, status: 'Aguardando Votação' }, '-created_date', 10),
       ]);
       const hoje = format(new Date(), 'yyyy-MM-dd');
       setData({
@@ -35,6 +36,7 @@ export default function DashboardAdminCamara() {
         protocolos,
         votacaoAtiva: votacoes[0] || null,
         urgentes: materias.filter(m => m.regime_tramitacao && m.regime_tramitacao !== 'Normal'),
+        aguardandoVotacao: aguardandoVot,
       });
       setLoading(false);
     }
@@ -209,7 +211,7 @@ export default function DashboardAdminCamara() {
             </div>
           </Card>
 
-          {/* Protocolos recentes */}
+              {/* Protocolos recentes */}
           <Card className="overflow-hidden">
             <div className="px-4 py-3 border-b border-border flex items-center justify-between">
               <h3 className="font-heading font-semibold text-sm text-foreground">Protocolos Recentes</h3>
@@ -231,6 +233,45 @@ export default function DashboardAdminCamara() {
           </Card>
         </div>
       </div>
+
+      {/* Projetos aguardando votação */}
+      {(data.aguardandoVotacao?.length > 0) && (
+        <Card className="overflow-hidden">
+          <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Hourglass size={16} className="text-amber-500" />
+              <h2 className="font-heading font-semibold text-foreground">Projetos Aguardando Votação</h2>
+              <span className="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full">{data.aguardandoVotacao.length}</span>
+            </div>
+            <Link to="/materias" className="text-primary text-sm font-medium flex items-center gap-1 hover:gap-2 transition-all">
+              Ver todas <ArrowRight size={13} />
+            </Link>
+          </div>
+          <div className="divide-y divide-border">
+            {data.aguardandoVotacao.map((m) => (
+              <Link key={m.id} to="/materias" className="flex items-center gap-3 px-5 py-3 hover:bg-muted/30 transition-colors">
+                <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center flex-shrink-0">
+                  <Gavel size={14} className="text-amber-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-foreground truncate">{m.ementa}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {m.tipo}{m.numero ? ` nº ${m.numero}` : ''}{m.autor_nome ? ` · ${m.autor_nome}` : ''}
+                    {m.regime_tramitacao && m.regime_tramitacao !== 'Normal' && (
+                      <span className="ml-1.5 bg-red-100 text-red-600 text-[10px] px-1.5 py-0.5 rounded-full font-semibold">{m.regime_tramitacao}</span>
+                    )}
+                  </div>
+                </div>
+                <Link to="/painel-eletronico">
+                  <div className="flex items-center gap-1 text-xs text-primary font-semibold bg-accent px-2.5 py-1 rounded-lg hover:bg-primary hover:text-white transition-colors flex-shrink-0">
+                    <Vote size={12} /> Votar
+                  </div>
+                </Link>
+              </Link>
+            ))}
+          </div>
+        </Card>
+      )}
     </div>
   );
 }
