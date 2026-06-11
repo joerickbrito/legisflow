@@ -69,5 +69,23 @@
   },
   "required": [
     "nome"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "SUPER_ADMIN"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "SUPER_ADMIN"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "SUPER_ADMIN"
+      }
+    }
+  }
 }
