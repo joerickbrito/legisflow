@@ -256,3 +256,57 @@ export const PERFIS_PARTIDO_OBRIGATORIO = ['VEREADOR', 'PRESIDENTE'];
 
 // Perfis que exigem foto
 export const PERFIS_FOTO_OBRIGATORIA = ['VEREADOR', 'PRESIDENTE'];
+
+// ============================================================
+// MAPEAMENTO MENU → PERMISSÃO
+// Cada rota do menu lateral mapeia para a chave de permissão
+// necessária para exibi-la. Rotas sem mapeamento = sempre visíveis.
+// SUPER_ADMIN ignora este filtro e vê tudo.
+// ============================================================
+export const MENU_PERMISSION_MAP = {
+  '/gerenciar-usuarios': 'usuarios_visualizar',
+  '/configuracoes': 'usuarios_gerenciar_permissoes',
+  '/auditoria': 'auditoria_logs',
+
+  '/projetos-lei': 'projetos_lei_visualizar',
+  '/leis': 'leis_visualizar',
+  '/resolucoes': 'resolucoes_visualizar',
+  '/decretos': 'decretos_visualizar',
+  '/portarias': 'portarias_visualizar',
+  '/emendas-impositivas': 'emendas_visualizar',
+  '/emendas': 'emendas_visualizar',
+  '/atas-sessoes': 'atas_visualizar',
+  '/pautas-sessoes': 'pautas_visualizar',
+
+  '/sessoes': 'sessoes_visualizar',
+  '/quorum': 'sessoes_presenca',
+  '/votacao': 'painel_votar',
+  '/painel-eletronico': 'painel_votar',
+  '/reuniao-comissao': 'sessoes_visualizar',
+
+  '/audiencias': 'audiencias_visualizar',
+  '/documentos': 'documentos_visualizar',
+  '/oficios': 'documentos_visualizar',
+
+  '/normas': 'leis_visualizar',
+  '/relatorios': 'relatorios_acessar',
+};
+
+/**
+ * Verifica se um item do menu deve ser exibido.
+ * @param {object} user — objeto do usuário (deve conter .role e .permissoes)
+ * @param {string} path — rota do item
+ * @returns {boolean}
+ */
+export function canShowMenuItem(user, path) {
+  if (!user) return false;
+  // SUPER_ADMIN vê tudo
+  if (user.role === 'SUPER_ADMIN') return true;
+
+  const permKey = MENU_PERMISSION_MAP[path];
+  if (!permKey) return true; // sem mapeamento = sempre visível
+
+  // Usa permissoes do usuário; se não definidas, fallback para o padrão do perfil
+  const permissoes = user.permissoes || DEFAULT_PERMISSIONS[user.role] || {};
+  return !!permissoes[permKey];
+}
