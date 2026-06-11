@@ -11,10 +11,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Users, Plus, Search, Upload, UserCircle, Shield } from "lucide-react";
+import { Users, Plus, Search, Upload, UserCircle, Shield, KeyRound, Loader2 } from "lucide-react";
 
-const STATUS_OPTIONS = ["Ativo", "Inativo", "Bloqueado", "Pendente"];
-const STATUS_COLOR = { Ativo: "default", Inativo: "secondary", Bloqueado: "destructive", Pendente: "outline" };
+const STATUS_OPTIONS = ["Pendente de Ativação", "Ativo", "Inativo", "Bloqueado", "Pendente"];
+const STATUS_COLOR = { "Pendente de Ativação": "outline", Ativo: "default", Inativo: "secondary", Bloqueado: "destructive", Pendente: "outline" };
 const ROLE_BADGE_COLOR = {
   ADMIN_CAMARA: 'bg-blue-100 text-blue-700',
   OPERADOR_GERAL: 'bg-indigo-100 text-indigo-700',
@@ -43,6 +43,21 @@ export default function GerenciarUsuarios() {
   const [editing, setEditing] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [resetandoSenha, setResetandoSenha] = useState(null); // id do usuário sendo resetado
+
+  const handleResetarSenha = async (e, u) => {
+    e.stopPropagation();
+    if (!confirm(`Deseja redefinir a senha de ${u.full_name || u.email}?\n\nUm e-mail de redefinição será enviado e o usuário precisará trocar a senha no próximo acesso.`)) return;
+    setResetandoSenha(u.id);
+    try {
+      await base44.functions.invoke('resetarSenhaAdmin', { email: u.email });
+      await loadUsuarios();
+    } catch (err) {
+      alert('Erro ao redefinir senha: ' + (err?.response?.data?.error || err.message));
+    } finally {
+      setResetandoSenha(null);
+    }
+  };
 
   const emptyForm = {
     email: "", full_name: "", cpf: "", telefone: "", cargo: "",
@@ -226,11 +241,25 @@ export default function GerenciarUsuarios() {
                   <p className="text-xs text-muted-foreground truncate">{u.email}</p>
                   {u.cargo && <p className="text-xs text-muted-foreground">{u.cargo}</p>}
                 </div>
-                <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-                  <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${ROLE_BADGE_COLOR[u.role] || 'bg-muted text-muted-foreground'}`}>
-                    {PERFIL_LABELS[u.role] || u.role}
-                  </span>
-                  <Badge variant={STATUS_COLOR[u.status] || "secondary"} className="text-[10px]">{u.status || 'Ativo'}</Badge>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {isSuperAdmin && u.role === 'ADMIN_CAMARA' && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                      onClick={(e) => handleResetarSenha(e, u)}
+                      disabled={resetandoSenha === u.id}
+                      title="Redefinir senha do administrador"
+                    >
+                      {resetandoSenha === u.id ? <Loader2 size={12} className="animate-spin" /> : <KeyRound size={12} />}
+                    </Button>
+                  )}
+                  <div className="flex flex-col items-end gap-1.5">
+                    <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${ROLE_BADGE_COLOR[u.role] || 'bg-muted text-muted-foreground'}`}>
+                      {PERFIL_LABELS[u.role] || u.role}
+                    </span>
+                    <Badge variant={STATUS_COLOR[u.status] || "secondary"} className="text-[10px]">{u.status || 'Ativo'}</Badge>
+                  </div>
                 </div>
               </div>
             </CardContent>

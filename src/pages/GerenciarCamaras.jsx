@@ -8,12 +8,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, Plus, Search, Users, Upload, MapPin, CheckCircle2, Copy, AlertCircle } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Building2, Plus, Search, Users, Upload, MapPin, CheckCircle2, Copy, AlertCircle, ChevronDown, ChevronUp, Eye, EyeOff } from "lucide-react";
 
 const REQUIRED_FIELDS = ['nome', 'municipio', 'estado', 'cnpj', 'email', 'telefone'];
 
 function isFormValid(form) {
   return REQUIRED_FIELDS.every(f => form[f]?.trim?.() || form[f]);
+}
+
+function isAdminValid(admin) {
+  return admin.nome?.trim() && admin.email?.trim() && admin.senha?.trim() && admin.senha.length >= 6 && admin.senha === admin.confirmarSenha;
 }
 
 export default function GerenciarCamaras() {
@@ -22,20 +27,29 @@ export default function GerenciarCamaras() {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
-  // After-creation modal
   const [createdInfo, setCreatedInfo] = useState(null);
+
+  // Accordion para seções do formulário
+  const [secaoExpandida, setSecaoExpandida] = useState("camara");
 
   const emptyForm = {
     nome: "", sigla: "", cnpj: "", municipio: "", estado: "",
     telefone: "", email: "", site: "", cor_institucional: "#1d4ed8",
-    brasao_url: "", status: "Ativa", plano: "Básico",
+    brasao_url: "", logotipo_url: "", status: "Ativa", plano: "Básico",
     total_vereadores: 9, observacoes: "",
-    // Admin padrão
-    admin_email: "",
   };
   const [form, setForm] = useState(emptyForm);
+
+  const emptyAdmin = {
+    nome: "", email: "", senha: "", confirmarSenha: "", enviarEmail: false,
+  };
+  const [admin, setAdmin] = useState(emptyAdmin);
+  const [showSenha, setShowSenha] = useState(false);
+
+  // Upload states
+  const [uploadingBrasao, setUploadingBrasao] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
 
   useEffect(() => {
     if (isSuperAdmin) base44.entities.Camara.list("-created_date", 200).then(setCamaras);
@@ -45,51 +59,96 @@ export default function GerenciarCamaras() {
     <div className="p-6 text-center text-muted-foreground">Acesso restrito ao Master Admin.</div>
   );
 
-  const openNew = () => { setEditing(null); setForm(emptyForm); setOpen(true); };
-  const openEdit = (c) => { setEditing(c); setForm({ ...emptyForm, ...c }); setOpen(true); };
+  const openNew = () => { setEditing(null); setForm(emptyForm); setAdmin(emptyAdmin); setSecaoExpandida("camara"); setOpen(true); };
+  const openEdit = (c) => { setEditing(c); setForm({ ...emptyForm, ...c }); setAdmin(emptyAdmin); setSecaoExpandida("camara"); setOpen(true); };
 
-  async function handleBrasaoUpload(e) {
+  async function handleUpload(e, tipo) {
     const file = e.target.files?.[0];
     if (!file) return;
-    setUploading(true);
+    if (tipo === 'brasao') setUploadingBrasao(true); else setUploadingLogo(true);
     const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    setForm(f => ({ ...f, brasao_url: file_url }));
-    setUploading(false);
+    setForm(f => ({ ...f, [tipo === 'brasao' ? 'brasao_url' : 'logotipo_url']: file_url }));
+    if (tipo === 'brasao') setUploadingBrasao(false); else setUploadingLogo(false);
   }
 
   const handleSave = async () => {
     setSaving(true);
     try {
       if (editing) {
-        // Update existing câmara
-        const { admin_email, ...camaraData } = form;
-        await base44.entities.Camara.update(editing.id, camaraData);
+        // Edição de câmara existente — sem criar admin
+        await base44.entities.Camara.update(editing.id, form);
         setCamaras(await base44.entities.Camara.list("-created_date", 200));
         setOpen(false);
       } else {
-        // Create new câmara
-        const { admin_email, ...camaraData } = form;
-        const novaCamara = await base44.entities.Camara.create(camaraData);
+        // Validação do admin
+        if (!isAdminValid(admin)) {
+          alert("Preencha todos os dados do administrador corretamente. A senha deve ter no mínimo 6 caracteres e as senhas devem ser iguais.");
+          setSaving(false);
+          return;
+        }
 
-        // Invite admin padrão — uses the câmara's id as tenant_id
-        const adminEmailFinal = admin_email?.trim() || form.email;
-        let adminConvite = null;
+        // 1. Criar câmara
+        const novaCamara = await base44.entities.Camara.create(form);
+
+        // 2. Convidar usuário admin
+        let usuarioCriado = null;
+        let inviteOk = false;
         try {
-          await base44.users.inviteUser(adminEmailFinal, "user");
-          adminConvite = { email: adminEmailFinal };
+          await base44.users.inviteUser(admin.email, "user");
+          inviteOk = true;
+
+          // Buscar o usuário recém-convidado para atualizar campos customizados
+          const allUsers = await base44.entities.User.list();
+          const found = allUsers.find(u => u.email === admin.email);
+          if (found) {
+            usuarioCriado = found;
+            await base44.entities.User.update(found.id, {
+              role: 'ADMIN_CAMARA',
+              tenant_id: novaCamara.id,
+              status: 'Pendente de Ativação',
+              senha_temporaria: true,
+              camara_nome: novaCamara.nome,
+            });
+          }
         } catch (err) {
-          console.warn("Erro ao convidar admin:", err);
+          console.warn("Erro ao criar admin:", err);
+        }
+
+        // 3. Enviar e-mail com credenciais (opcional)
+        if (admin.enviarEmail && admin.email) {
+          try {
+            await base44.integrations.Core.SendEmail({
+              to: admin.email,
+              subject: `SisLegis — Credenciais de Acesso — ${novaCamara.nome}`,
+              body: [
+                `Olá ${admin.nome},`,
+                ``,
+                `Suas credenciais de acesso ao SisLegis foram criadas:`,
+                ``,
+                `Câmara: ${novaCamara.nome}`,
+                `Login: ${admin.email}`,
+                `Senha temporária: ${admin.senha}`,
+                ``,
+                `Acesse o sistema e altere sua senha no primeiro acesso.`,
+                ``,
+                `Atenciosamente,`,
+                `Equipe SisLegis`
+              ].join('\n')
+            });
+          } catch (err) {
+            console.warn("Erro ao enviar e-mail:", err);
+          }
         }
 
         setCamaras(await base44.entities.Camara.list("-created_date", 200));
         setOpen(false);
 
-        // Show summary to Master Admin
         setCreatedInfo({
           camara: novaCamara,
-          adminEmail: adminEmailFinal,
+          adminEmail: admin.email,
+          adminNome: admin.nome,
           tenantId: novaCamara.id,
-          success: !!adminConvite,
+          inviteOk,
         });
       }
     } finally {
@@ -189,7 +248,7 @@ export default function GerenciarCamaras() {
         )}
       </div>
 
-      {/* Form Dialog */}
+      {/* ============ FORM DIALOG ============ */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -198,136 +257,222 @@ export default function GerenciarCamaras() {
           </DialogHeader>
 
           <div className="space-y-4 py-1">
-            {/* Brasão + Nome + Cor */}
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0">
-                <label className="text-xs text-muted-foreground block mb-1.5">
-                  Brasão <span className="text-destructive">*</span>
-                </label>
-                <div className="relative w-20 h-20 rounded-xl border-2 border-dashed border-border flex items-center justify-center bg-muted/30 overflow-hidden cursor-pointer hover:border-primary/50 transition-colors">
-                  {form.brasao_url ? (
-                    <img src={form.brasao_url} alt="Brasão" className="w-full h-full object-contain p-1" />
-                  ) : (
-                    <div className="text-center">
-                      <Upload size={18} className="text-muted-foreground mx-auto" />
-                      <span className="text-[9px] text-muted-foreground mt-1 block">Clique</span>
+            {/* ======== SEÇÃO 1: DADOS DA CÂMARA ======== */}
+            <div className="rounded-lg border border-border overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setSecaoExpandida(s => s === "camara" ? "" : "camara")}
+                className="w-full flex items-center justify-between px-4 py-3 bg-muted/40 hover:bg-muted/60 transition-colors"
+              >
+                <span className="text-sm font-semibold text-foreground">Seção 1 — Dados da Câmara</span>
+                {secaoExpandida === "camara" ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
+              </button>
+              {secaoExpandida === "camara" && (
+                <div className="p-4 space-y-4">
+                  {/* Brasão + Logotipo + Nome + Cor */}
+                  <div className="flex items-start gap-4">
+                    {/* Brasão */}
+                    <div className="flex-shrink-0">
+                      <label className="text-xs text-muted-foreground block mb-1.5">Brasão</label>
+                      <div className="relative w-20 h-20 rounded-xl border-2 border-dashed border-border flex items-center justify-center bg-muted/30 overflow-hidden cursor-pointer hover:border-primary/50 transition-colors">
+                        {form.brasao_url ? (
+                          <img src={form.brasao_url} alt="Brasão" className="w-full h-full object-contain p-1" />
+                        ) : (
+                          <div className="text-center">
+                            <Upload size={16} className="text-muted-foreground mx-auto" />
+                            <span className="text-[9px] text-muted-foreground mt-1 block">Upload</span>
+                          </div>
+                        )}
+                        <input type="file" accept="image/*" onChange={e => handleUpload(e, 'brasao')} className="absolute inset-0 opacity-0 cursor-pointer" />
+                      </div>
+                      {uploadingBrasao && <p className="text-[10px] text-muted-foreground mt-1">Enviando...</p>}
                     </div>
-                  )}
-                  <input type="file" accept="image/*" onChange={handleBrasaoUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
-                </div>
-                {uploading && <p className="text-[10px] text-muted-foreground mt-1">Enviando...</p>}
-              </div>
-              <div className="flex-1 space-y-3">
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="col-span-2">
-                    <F label="Nome da Câmara" required>
-                      <Input value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} placeholder="Câmara Municipal de..." />
+
+                    {/* Logotipo */}
+                    <div className="flex-shrink-0">
+                      <label className="text-xs text-muted-foreground block mb-1.5">Logotipo</label>
+                      <div className="relative w-20 h-20 rounded-xl border-2 border-dashed border-border flex items-center justify-center bg-muted/30 overflow-hidden cursor-pointer hover:border-primary/50 transition-colors">
+                        {form.logotipo_url ? (
+                          <img src={form.logotipo_url} alt="Logotipo" className="w-full h-full object-contain p-1" />
+                        ) : (
+                          <div className="text-center">
+                            <Upload size={16} className="text-muted-foreground mx-auto" />
+                            <span className="text-[9px] text-muted-foreground mt-1 block">Upload</span>
+                          </div>
+                        )}
+                        <input type="file" accept="image/*" onChange={e => handleUpload(e, 'logo')} className="absolute inset-0 opacity-0 cursor-pointer" />
+                      </div>
+                      {uploadingLogo && <p className="text-[10px] text-muted-foreground mt-1">Enviando...</p>}
+                    </div>
+
+                    <div className="flex-1 space-y-3">
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="col-span-2">
+                          <F label="Nome da Câmara" required>
+                            <Input value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} placeholder="Câmara Municipal de..." />
+                          </F>
+                        </div>
+                        <div>
+                          <F label="Sigla">
+                            <Input value={form.sigla} onChange={e => setForm(f => ({ ...f, sigla: e.target.value }))} maxLength={10} placeholder="CM..." />
+                          </F>
+                        </div>
+                      </div>
+                      <F label="Cor Institucional">
+                        <div className="flex items-center gap-2">
+                          <input type="color" value={form.cor_institucional} onChange={e => setForm(f => ({ ...f, cor_institucional: e.target.value }))} className="w-9 h-9 rounded border border-border cursor-pointer flex-shrink-0" />
+                          <Input value={form.cor_institucional} onChange={e => setForm(f => ({ ...f, cor_institucional: e.target.value }))} className="font-mono" placeholder="#1d4ed8" />
+                        </div>
+                      </F>
+                    </div>
+                  </div>
+
+                  {/* Localização */}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="col-span-2">
+                      <F label="Município" required>
+                        <Input value={form.municipio || form.cidade || ''} onChange={e => setForm(f => ({ ...f, municipio: e.target.value, cidade: e.target.value }))} />
+                      </F>
+                    </div>
+                    <div>
+                      <F label="Estado (UF)" required>
+                        <Input value={form.estado} onChange={e => setForm(f => ({ ...f, estado: e.target.value.toUpperCase() }))} maxLength={2} placeholder="SP" />
+                      </F>
+                    </div>
+                  </div>
+
+                  {/* CNPJ + Vereadores */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <F label="CNPJ" required>
+                      <Input value={form.cnpj} onChange={e => setForm(f => ({ ...f, cnpj: e.target.value }))} placeholder="00.000.000/0001-00" />
+                    </F>
+                    <F label="Total de Vereadores">
+                      <Input type="number" min={1} value={form.total_vereadores} onChange={e => setForm(f => ({ ...f, total_vereadores: +e.target.value }))} />
                     </F>
                   </div>
-                  <div>
-                    <F label="Sigla">
-                      <Input value={form.sigla} onChange={e => setForm(f => ({ ...f, sigla: e.target.value }))} maxLength={10} placeholder="CM..." />
+
+                  {/* Contato */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <F label="E-mail Institucional" required>
+                      <Input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="contato@camara.sp.gov.br" />
+                    </F>
+                    <F label="Telefone" required>
+                      <Input value={form.telefone} onChange={e => setForm(f => ({ ...f, telefone: e.target.value }))} placeholder="(11) 3333-0000" />
                     </F>
                   </div>
-                </div>
-                <F label="Cor Institucional">
-                  <div className="flex items-center gap-2">
-                    <input type="color" value={form.cor_institucional} onChange={e => setForm(f => ({ ...f, cor_institucional: e.target.value }))} className="w-9 h-9 rounded border border-border cursor-pointer flex-shrink-0" />
-                    <Input value={form.cor_institucional} onChange={e => setForm(f => ({ ...f, cor_institucional: e.target.value }))} className="font-mono" placeholder="#1d4ed8" />
+                  <F label="Site">
+                    <Input value={form.site} onChange={e => setForm(f => ({ ...f, site: e.target.value }))} placeholder="https://www.camara.sp.gov.br" />
+                  </F>
+
+                  {/* Plano + Status */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <F label="Plano">
+                      <Select value={form.plano} onValueChange={v => setForm(f => ({ ...f, plano: v }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Básico">Básico</SelectItem>
+                          <SelectItem value="Profissional">Profissional</SelectItem>
+                          <SelectItem value="Enterprise">Enterprise</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </F>
+                    <F label="Status">
+                      <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Ativa">Ativa</SelectItem>
+                          <SelectItem value="Suspensa">Suspensa</SelectItem>
+                          <SelectItem value="Inativa">Inativa</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </F>
                   </div>
-                </F>
-              </div>
+
+                  <F label="Observações">
+                    <Input value={form.observacoes} onChange={e => setForm(f => ({ ...f, observacoes: e.target.value }))} />
+                  </F>
+                </div>
+              )}
             </div>
 
-            {/* Localização */}
-            <div className="grid grid-cols-3 gap-3">
-              <div className="col-span-2">
-                <F label="Município" required>
-                  <Input value={form.municipio || form.cidade || ''} onChange={e => setForm(f => ({ ...f, municipio: e.target.value, cidade: e.target.value }))} />
-                </F>
-              </div>
-              <div>
-                <F label="Estado (UF)" required>
-                  <Input value={form.estado} onChange={e => setForm(f => ({ ...f, estado: e.target.value.toUpperCase() }))} maxLength={2} placeholder="SP" />
-                </F>
-              </div>
-            </div>
-
-            {/* CNPJ + Vereadores */}
-            <div className="grid grid-cols-2 gap-3">
-              <F label="CNPJ" required>
-                <Input value={form.cnpj} onChange={e => setForm(f => ({ ...f, cnpj: e.target.value }))} placeholder="00.000.000/0001-00" />
-              </F>
-              <F label="Total de Vereadores">
-                <Input type="number" min={1} value={form.total_vereadores} onChange={e => setForm(f => ({ ...f, total_vereadores: +e.target.value }))} />
-              </F>
-            </div>
-
-            {/* Contato */}
-            <div className="grid grid-cols-2 gap-3">
-              <F label="E-mail Institucional" required>
-                <Input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="contato@camara.sp.gov.br" />
-              </F>
-              <F label="Telefone" required>
-                <Input value={form.telefone} onChange={e => setForm(f => ({ ...f, telefone: e.target.value }))} placeholder="(11) 3333-0000" />
-              </F>
-            </div>
-            <F label="Site">
-              <Input value={form.site} onChange={e => setForm(f => ({ ...f, site: e.target.value }))} placeholder="https://www.camara.sp.gov.br" />
-            </F>
-
-            {/* Admin padrão — somente ao criar */}
+            {/* ======== SEÇÃO 2: ADMINISTRADOR DA CÂMARA (somente criação) ======== */}
             {!editing && (
-              <div className="rounded-lg border border-border bg-accent/30 p-4 space-y-3">
-                <p className="text-sm font-semibold text-foreground">Admin Padrão da Câmara</p>
-                <p className="text-xs text-muted-foreground">
-                  Um convite será enviado para este e-mail. O usuário receberá acesso como <strong>Admin da Câmara</strong> e deverá configurar sua senha ao fazer o primeiro acesso.
-                </p>
-                <F label="E-mail do Admin" required>
-                  <Input
-                    type="email"
-                    value={form.admin_email}
-                    onChange={e => setForm(f => ({ ...f, admin_email: e.target.value }))}
-                    placeholder="admin@camara.sp.gov.br"
-                  />
-                </F>
+              <div className="rounded-lg border border-border overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setSecaoExpandida(s => s === "admin" ? "" : "admin")}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-muted/40 hover:bg-muted/60 transition-colors"
+                >
+                  <span className="text-sm font-semibold text-foreground">Seção 2 — Administrador da Câmara</span>
+                  {secaoExpandida === "admin" ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
+                </button>
+                {secaoExpandida === "admin" && (
+                  <div className="p-4 space-y-4">
+                    <p className="text-xs text-muted-foreground">
+                      O administrador será criado com status <strong>Pendente de Ativação</strong>. No primeiro acesso, será obrigatória a troca da senha.
+                    </p>
+
+                    <F label="Nome do Administrador" required>
+                      <Input value={admin.nome} onChange={e => setAdmin(a => ({ ...a, nome: e.target.value }))} placeholder="Nome completo" />
+                    </F>
+
+                    <F label="Login (E-mail)" required>
+                      <Input type="email" value={admin.email} onChange={e => setAdmin(a => ({ ...a, email: e.target.value }))} placeholder="admin@camara.sp.gov.br" />
+                    </F>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <F label="Senha Temporária" required>
+                        <div className="relative">
+                          <Input
+                            type={showSenha ? 'text' : 'password'}
+                            value={admin.senha}
+                            onChange={e => setAdmin(a => ({ ...a, senha: e.target.value }))}
+                            placeholder="Mínimo 6 caracteres"
+                            className="pr-10"
+                          />
+                          <button type="button" onClick={() => setShowSenha(!showSenha)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                            {showSenha ? <EyeOff size={14} /> : <Eye size={14} />}
+                          </button>
+                        </div>
+                      </F>
+                      <F label="Confirmar Senha" required>
+                        <Input
+                          type="password"
+                          value={admin.confirmarSenha}
+                          onChange={e => setAdmin(a => ({ ...a, confirmarSenha: e.target.value }))}
+                          placeholder="Repita a senha"
+                          className={
+                            admin.confirmarSenha && admin.senha !== admin.confirmarSenha
+                              ? 'border-destructive focus-visible:ring-destructive'
+                              : admin.confirmarSenha && admin.senha === admin.confirmarSenha
+                                ? 'border-green-500 focus-visible:ring-green-500'
+                                : ''
+                          }
+                        />
+                      </F>
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-1">
+                      <Checkbox
+                        id="enviar-email"
+                        checked={admin.enviarEmail}
+                        onCheckedChange={(c) => setAdmin(a => ({ ...a, enviarEmail: !!c }))}
+                      />
+                      <label htmlFor="enviar-email" className="text-sm text-muted-foreground cursor-pointer select-none">
+                        Enviar credenciais por e-mail
+                      </label>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
-
-            {/* Plano + Status */}
-            <div className="grid grid-cols-2 gap-3">
-              <F label="Plano">
-                <Select value={form.plano} onValueChange={v => setForm(f => ({ ...f, plano: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Básico">Básico</SelectItem>
-                    <SelectItem value="Profissional">Profissional</SelectItem>
-                    <SelectItem value="Enterprise">Enterprise</SelectItem>
-                  </SelectContent>
-                </Select>
-              </F>
-              <F label="Status">
-                <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Ativa">Ativa</SelectItem>
-                    <SelectItem value="Suspensa">Suspensa</SelectItem>
-                    <SelectItem value="Inativa">Inativa</SelectItem>
-                  </SelectContent>
-                </Select>
-              </F>
-            </div>
-
-            <F label="Observações">
-              <Input value={form.observacoes} onChange={e => setForm(f => ({ ...f, observacoes: e.target.value }))} />
-            </F>
           </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
             <Button
               onClick={handleSave}
-              disabled={saving || !isFormValid(form) || (!editing && !form.admin_email?.trim())}
+              disabled={saving || !isFormValid(form) || (!editing && !isAdminValid(admin))}
             >
               {saving ? "Salvando..." : editing ? "Salvar Alterações" : "Criar Câmara"}
             </Button>
@@ -361,29 +506,34 @@ export default function GerenciarCamaras() {
                   </div>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Admin Convidado</p>
-                  <p className="font-medium text-sm">{createdInfo.adminEmail}</p>
+                  <p className="text-xs text-muted-foreground">Administrador</p>
+                  <p className="font-medium text-sm">{createdInfo.adminNome}</p>
+                  <p className="text-xs text-muted-foreground">{createdInfo.adminEmail}</p>
+                </div>
+                <div>
+                  <Badge variant="secondary" className="text-xs">Pendente de Ativação</Badge>
+                  <span className="text-xs text-muted-foreground ml-2">O admin deverá trocar a senha no primeiro acesso.</span>
                 </div>
               </div>
 
-              {createdInfo.success ? (
+              {createdInfo.inviteOk ? (
                 <div className="flex items-start gap-2 rounded-lg bg-green-50 border border-green-200 p-3">
                   <CheckCircle2 size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
                   <p className="text-xs text-green-800">
-                    Um convite foi enviado para <strong>{createdInfo.adminEmail}</strong>. Ao aceitar, o usuário deverá definir sua senha e será automaticamente vinculado a esta câmara.
+                    Convite enviado para <strong>{createdInfo.adminEmail}</strong>. O administrador receberá um e-mail da plataforma para definir o acesso.
                   </p>
                 </div>
               ) : (
                 <div className="flex items-start gap-2 rounded-lg bg-yellow-50 border border-yellow-200 p-3">
                   <AlertCircle size={16} className="text-yellow-600 mt-0.5 flex-shrink-0" />
                   <p className="text-xs text-yellow-800">
-                    A câmara foi criada, mas o convite ao admin não pôde ser enviado automaticamente. Acesse <strong>Gerenciar Usuários</strong> para convidá-lo manualmente e vincule o <strong>tenant_id</strong> acima.
+                    A câmara foi criada, mas houve um problema ao convidar o administrador. Acesse <strong>Gerenciar Usuários</strong> para convidá-lo manualmente.
                   </p>
                 </div>
               )}
 
               <p className="text-xs text-muted-foreground text-center">
-                Após o primeiro acesso, o Admin da Câmara poderá configurar os usuários e dados do seu ambiente.
+                O administrador deverá trocar a senha no primeiro acesso antes de utilizar o sistema.
               </p>
             </div>
           )}

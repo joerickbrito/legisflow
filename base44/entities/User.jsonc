@@ -42,6 +42,7 @@
     "status": {
       "type": "string",
       "enum": [
+        "Pendente de Ativa\u00e7\u00e3o",
         "Ativo",
         "Inativo",
         "Bloqueado",

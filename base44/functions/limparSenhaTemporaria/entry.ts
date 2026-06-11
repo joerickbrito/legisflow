@@ -10,14 +10,16 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Email é obrigatório' }, { status: 400 });
     }
 
-    // Buscar usuário pelo email usando service role
     const users = await base44.asServiceRole.entities.User.filter({ email });
     if (!users || users.length === 0) {
       return Response.json({ error: 'Usuário não encontrado' }, { status: 404 });
     }
 
     const user = users[0];
-    await base44.asServiceRole.entities.User.update(user.id, { senha_temporaria: false });
+    await base44.asServiceRole.entities.User.update(user.id, {
+      senha_temporaria: false,
+      status: 'Ativo'
+    });
 
     return Response.json({ success: true });
   } catch (error) {

@@ -1,39 +1,69 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
-import { Mail, Loader2, Scale, ArrowRight } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Loader2, Scale, Lock, Eye, EyeOff } from 'lucide-react';
 
 export default function TrocarSenha() {
-  const [sent, setSent] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [senhaAtual, setSenhaAtual] = useState('');
+  const [novaSenha, setNovaSenha] = useState('');
+  const [confirmarSenha, setConfirmarSenha] = useState('');
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [email, setEmail] = useState('');
+  const [success, setSuccess] = useState(false);
+  const [showAtual, setShowAtual] = useState(false);
+  const [showNova, setShowNova] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const user = await base44.auth.me();
-        setEmail(user.email);
-        sessionStorage.setItem('pendingPasswordResetEmail', user.email);
-        await base44.auth.resetPasswordRequest(user.email);
-        setSent(true);
-      } catch (err) {
-        setError('Não foi possível enviar o e-mail de redefinição. Tente novamente.');
-      } finally {
-        setLoading(false);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (novaSenha.length < 6) {
+      setError('A nova senha deve ter pelo menos 6 caracteres.');
+      return;
+    }
+    if (novaSenha !== confirmarSenha) {
+      setError('As senhas não conferem.');
+      return;
+    }
+    if (senhaAtual === novaSenha) {
+      setError('A nova senha deve ser diferente da senha atual.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const user = await base44.auth.me();
+      await base44.auth.changePassword({
+        userId: user.id,
+        currentPassword: senhaAtual,
+        newPassword: novaSenha
+      });
+      // Limpar flag de senha temporária e ativar o usuário
+      await base44.functions.invoke('limparSenhaTemporaria', { email: user.email });
+      setSuccess(true);
+      setTimeout(() => { window.location.href = '/'; }, 1500);
+    } catch (err) {
+      const msg = err?.response?.data?.error || err?.message || '';
+      if (msg.toLowerCase().includes('incorrect') || msg.toLowerCase().includes('invalid') || msg.toLowerCase().includes('password')) {
+        setError('Senha atual incorreta.');
+      } else {
+        setError('Erro ao alterar senha. Tente novamente.');
       }
-    })();
-  }, []);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const reenviar = async () => {
+  const handleRedefinirPorEmail = async () => {
     setLoading(true);
     setError('');
     try {
-      await base44.auth.resetPasswordRequest(email);
-      setSent(true);
+      const user = await base44.auth.me();
+      await base44.auth.resetPasswordRequest(user.email);
+      setSuccess(true);
     } catch (err) {
-      setError('Erro ao reenviar. Tente novamente.');
+      setError('Não foi possível enviar o e-mail de redefinição.');
     } finally {
       setLoading(false);
     }
@@ -51,47 +81,101 @@ export default function TrocarSenha() {
         </div>
 
         <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 shadow-2xl">
-          {loading ? (
-            <div className="text-center py-6">
-              <Loader2 className="w-8 h-8 text-amber-400 mx-auto animate-spin" />
-              <p className="text-slate-300 text-sm mt-4">Preparando sua redefinição de senha...</p>
-            </div>
-          ) : sent ? (
+          {success ? (
             <div className="text-center space-y-5">
-              <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-amber-500/20">
-                <Mail className="w-7 h-7 text-amber-400" />
+              <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-green-500/20">
+                <Lock className="w-7 h-7 text-green-400" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-white">Verifique seu E-mail</h2>
+                <h2 className="text-xl font-semibold text-white">Senha alterada com sucesso!</h2>
                 <p className="text-slate-400 text-sm mt-2">
-                  Um link de redefinição de senha foi enviado para{' '}
-                  <strong className="text-white">{email}</strong>.
+                  Sua conta foi ativada. Você será redirecionado...
                 </p>
-                <p className="text-slate-500 text-xs mt-3">
-                  Por segurança, você precisa criar uma senha definitiva antes de acessar o sistema.
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="text-center mb-6">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-amber-500/20 mb-3">
+                  <Lock className="w-6 h-6 text-amber-400" />
+                </div>
+                <h2 className="text-lg font-semibold text-white">Primeiro Acesso</h2>
+                <p className="text-slate-400 text-sm mt-1">
+                  Por segurança, defina uma nova senha antes de continuar.
                 </p>
               </div>
 
               {error && (
-                <div className="p-3 rounded-lg bg-red-500/20 border border-red-500/30 text-red-300 text-sm">{error}</div>
+                <div className="p-3 rounded-lg bg-red-500/20 border border-red-500/30 text-red-300 text-sm mb-4">{error}</div>
               )}
 
-              <div className="space-y-3 pt-2">
-                <Button onClick={reenviar} variant="outline" className="w-full border-amber-500/40 text-amber-300 hover:bg-amber-500/10">
-                  Reenviar E-mail
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs text-slate-400">Senha Atual</label>
+                  <div className="relative">
+                    <Input
+                      type={showAtual ? 'text' : 'password'}
+                      value={senhaAtual}
+                      onChange={e => setSenhaAtual(e.target.value)}
+                      placeholder="Senha temporária fornecida"
+                      className="bg-white/10 border-white/20 text-white placeholder:text-slate-500 pr-10"
+                      required
+                    />
+                    <button type="button" onClick={() => setShowAtual(!showAtual)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white">
+                      {showAtual ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs text-slate-400">Nova Senha</label>
+                  <div className="relative">
+                    <Input
+                      type={showNova ? 'text' : 'password'}
+                      value={novaSenha}
+                      onChange={e => setNovaSenha(e.target.value)}
+                      placeholder="Mínimo 6 caracteres"
+                      className="bg-white/10 border-white/20 text-white placeholder:text-slate-500 pr-10"
+                      required
+                    />
+                    <button type="button" onClick={() => setShowNova(!showNova)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white">
+                      {showNova ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs text-slate-400">Confirmar Nova Senha</label>
+                  <Input
+                    type="password"
+                    value={confirmarSenha}
+                    onChange={e => setConfirmarSenha(e.target.value)}
+                    placeholder="Repita a nova senha"
+                    className="bg-white/10 border-white/20 text-white placeholder:text-slate-500"
+                    required
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-amber-600 hover:bg-amber-500 text-white"
+                >
+                  {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Alterar Senha e Acessar
                 </Button>
-                <Link to="/login">
-                  <Button variant="ghost" className="w-full text-slate-400 hover:text-white">
-                    Voltar para o Login <ArrowRight className="w-4 h-4 ml-1" />
-                  </Button>
-                </Link>
+              </form>
+
+              <div className="mt-4 text-center">
+                <button
+                  onClick={handleRedefinirPorEmail}
+                  disabled={loading}
+                  className="text-xs text-slate-500 hover:text-amber-400 transition-colors"
+                >
+                  Não sabe a senha atual? Redefinir por e-mail
+                </button>
               </div>
-            </div>
-          ) : (
-            <div className="text-center space-y-4">
-              <p className="text-red-300 text-sm">{error || 'Erro inesperado. Tente novamente.'}</p>
-              <Button onClick={reenviar} className="w-full bg-amber-600 hover:bg-amber-500">Tentar Novamente</Button>
-            </div>
+            </>
           )}
         </div>
       </div>
