@@ -18,7 +18,7 @@ function isFormValid(form) {
 }
 
 function isAdminValid(admin) {
-  return admin.nome?.trim() && admin.username?.trim() && admin.senha?.trim() && admin.senha.length >= 6 && admin.senha === admin.confirmarSenha;
+  return admin.nome?.trim() && admin.username?.trim() && admin.email?.trim() && admin.senha?.trim() && admin.senha.length >= 6 && admin.senha === admin.confirmarSenha;
 }
 
 const FormField = ({ label, required, children }) => (
@@ -87,7 +87,7 @@ export default function GerenciarCamaras() {
         setOpen(false);
       } else {
         if (!isAdminValid(admin)) {
-          alert("Preencha todos os dados do administrador corretamente. A senha deve ter no mínimo 6 caracteres e as senhas devem ser iguais.");
+          alert("Preencha todos os dados do administrador corretamente (nome, usuário, e-mail e senha). A senha deve ter no mínimo 6 caracteres e as senhas devem ser iguais.");
           setSaving(false);
           return;
         }
@@ -95,6 +95,7 @@ export default function GerenciarCamaras() {
         const novaCamara = await base44.entities.Camara.create(form);
 
         let inviteOk = false;
+        let inviteError = null;
         try {
           await base44.users.inviteUser(admin.email, "user");
           inviteOk = true;
@@ -110,8 +111,12 @@ export default function GerenciarCamaras() {
               senha_temporaria: true,
               camara_nome: novaCamara.nome,
             });
+          } else {
+            inviteError = "Usuário criado mas não localizado na listagem. Acesse Gerenciar Usuários para vinculá-lo manualmente.";
+            inviteOk = false;
           }
         } catch (err) {
+          inviteError = err?.response?.data?.error || err?.message || "Erro desconhecido ao criar administrador.";
           console.warn("Erro ao criar admin:", err);
         }
 
@@ -147,8 +152,10 @@ export default function GerenciarCamaras() {
           camara: novaCamara,
           adminEmail: admin.email,
           adminNome: admin.nome,
+          adminUsername: admin.username,
           tenantId: novaCamara.id,
           inviteOk,
+          inviteError,
         });
       }
     } finally {
@@ -408,9 +415,12 @@ export default function GerenciarCamaras() {
                       Recomendamos incluir uma referência da câmara no nome de usuário para facilitar a identificação. Exemplo: joao.saj
                     </p>
 
-                    <FormField label="E-mail (opcional)">
+                    <FormField label="E-mail" required>
                       <Input type="email" value={admin.email} onChange={e => setAdmin(a => ({ ...a, email: e.target.value }))} placeholder="admin@camara.sp.gov.br" />
                     </FormField>
+                    <p className="text-[11px] text-muted-foreground -mt-3">
+                      O e-mail é obrigatório para o convite do administrador à plataforma.
+                    </p>
 
                     <div className="grid grid-cols-2 gap-3">
                       <FormField label="Senha Temporária" required>
@@ -447,10 +457,11 @@ export default function GerenciarCamaras() {
                     <div className="flex items-center gap-2 pt-1">
                       <Checkbox
                         id="enviar-email"
-                        checked={admin.enviarEmail}
+                        checked={admin.enviarEmail && !!admin.email?.trim()}
+                        disabled={!admin.email?.trim()}
                         onCheckedChange={(c) => setAdmin(a => ({ ...a, enviarEmail: !!c }))}
                       />
-                      <label htmlFor="enviar-email" className="text-sm text-muted-foreground cursor-pointer select-none">
+                      <label htmlFor="enviar-email" className={`text-sm cursor-pointer select-none ${!admin.email?.trim() ? 'text-muted-foreground/50' : 'text-muted-foreground'}`}>
                         Enviar credenciais por e-mail
                       </label>
                     </div>
@@ -500,6 +511,7 @@ export default function GerenciarCamaras() {
                 <div>
                   <p className="text-xs text-muted-foreground">Administrador</p>
                   <p className="font-medium text-sm">{createdInfo.adminNome}</p>
+                  <p className="text-xs text-muted-foreground">Usuário: {createdInfo.adminUsername}</p>
                   <p className="text-xs text-muted-foreground">{createdInfo.adminEmail}</p>
                 </div>
                 <div>
@@ -512,14 +524,22 @@ export default function GerenciarCamaras() {
                 <div className="flex items-start gap-2 rounded-lg bg-green-50 border border-green-200 p-3">
                   <CheckCircle2 size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
                   <p className="text-xs text-green-800">
-                    Convite enviado para <strong>{createdInfo.adminEmail}</strong>. O administrador receberá um e-mail da plataforma para definir o acesso.
+                    Administrador <strong>{createdInfo.adminUsername}</strong> criado e vinculado à câmara com sucesso.
                   </p>
                 </div>
               ) : (
-                <div className="flex items-start gap-2 rounded-lg bg-yellow-50 border border-yellow-200 p-3">
-                  <AlertCircle size={16} className="text-yellow-600 mt-0.5 flex-shrink-0" />
-                  <p className="text-xs text-yellow-800">
-                    A câmara foi criada, mas houve um problema ao convidar o administrador. Acesse <strong>Gerenciar Usuários</strong> para convidá-lo manualmente.
+                <div className="space-y-2">
+                  <div className="flex items-start gap-2 rounded-lg bg-red-50 border border-red-200 p-3">
+                    <AlertCircle size={16} className="text-red-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs text-red-800 font-medium">Falha ao criar o administrador</p>
+                      {createdInfo.inviteError && (
+                        <p className="text-xs text-red-700 mt-1">{createdInfo.inviteError}</p>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    A câmara foi criada, mas será necessário criar o administrador manualmente em <strong>Gerenciar Usuários</strong>.
                   </p>
                 </div>
               )}
