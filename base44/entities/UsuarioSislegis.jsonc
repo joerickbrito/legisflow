@@ -82,25 +82,9 @@
     "role"
   ],
   "rls": {
-    "create": {
-      "user_condition": {
-        "role": "NONE"
-      }
-    },
-    "read": {
-      "user_condition": {
-        "role": "NONE"
-      }
-    },
-    "update": {
-      "user_condition": {
-        "role": "NONE"
-      }
-    },
-    "delete": {
-      "user_condition": {
-        "role": "NONE"
-      }
-    }
+    "create": {},
+    "read": {},
+    "update": {},
+    "delete": {}
   }
 }
