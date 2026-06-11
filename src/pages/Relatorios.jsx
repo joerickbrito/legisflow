@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useTenant } from '@/lib/TenantContext';
 import { BarChart3, TrendingUp, Users, FileText, Vote } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import PageHeader from '@/components/PageHeader';
@@ -7,22 +8,26 @@ import PageHeader from '@/components/PageHeader';
 const COLORS = ['#3b82f6', '#22c55e', '#ef4444', '#f59e0b', '#8b5cf6', '#06b6d4'];
 
 export default function Relatorios() {
+  const { withTenant, canQuery } = useTenant();
   const [data, setData] = useState({ materias: [], parlamentares: [], votacoes: [], sessoes: [] });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!canQuery) { setLoading(false); return; }
     async function load() {
+      const filter = withTenant();
+      if (!filter) { setLoading(false); return; }
       const [m, p, v, s] = await Promise.all([
-        base44.entities.Materia.list('-created_date', 500),
-        base44.entities.Parlamentar.filter({ ativo: true }),
-        base44.entities.Votacao.list('-created_date', 200),
-        base44.entities.Sessao.list('-data', 100),
+        base44.entities.Materia.filter(filter, '-created_date', 500),
+        base44.entities.Parlamentar.filter({ ...filter, ativo: true }),
+        base44.entities.Votacao.filter(filter, '-created_date', 200),
+        base44.entities.Sessao.filter(filter, '-data', 100),
       ]);
       setData({ materias: m, parlamentares: p, votacoes: v, sessoes: s });
       setLoading(false);
     }
     load();
-  }, []);
+  }, [canQuery]);
 
   // Matérias por tipo
   const porTipo = data.materias.reduce((acc, m) => {

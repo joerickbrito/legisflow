@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { useTenant } from "@/lib/TenantContext";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { UserCheck, Plus, CheckCircle, XCircle } from "lucide-react";
 
 export default function Quorum() {
+  const { withTenant, canQuery, tenantId } = useTenant();
   const [registros, setRegistros] = useState([]);
   const [sessoes, setSessoes] = useState([]);
   const [parlamentares, setParlamentares] = useState([]);
@@ -16,17 +18,21 @@ export default function Quorum() {
   const [form, setForm] = useState({ sessao_id: "", data: "", total_parlamentares: 0, quorum_minimo: 0, registro_presencas: [], observacoes: "" });
 
   useEffect(() => {
-    base44.entities.Quorum.list("-created_date", 50).then(setRegistros);
-    base44.entities.Sessao.list("-created_date", 20).then(setSessoes);
-    base44.entities.Parlamentar.list().then(setParlamentares);
-  }, []);
+    if (!canQuery) return;
+    const filter = withTenant();
+    if (!filter) return;
+    base44.entities.Quorum.filter(filter, "-created_date", 50).then(setRegistros);
+    base44.entities.Sessao.filter(filter, "-created_date", 20).then(setSessoes);
+    base44.entities.Parlamentar.filter(filter).then(setParlamentares);
+  }, [canQuery]);
 
   const handleSave = async () => {
     const presentes = form.registro_presencas.filter(p => p.status === "Presente").length;
     const ausentes = form.total_parlamentares - presentes;
     const quorum_atingido = presentes >= form.quorum_minimo;
-    await base44.entities.Quorum.create({ ...form, presentes, ausentes, quorum_atingido });
-    const updated = await base44.entities.Quorum.list("-created_date", 50);
+    await base44.entities.Quorum.create({ ...form, tenant_id: tenantId, presentes, ausentes, quorum_atingido });
+    const filter = withTenant();
+    const updated = filter ? await base44.entities.Quorum.filter(filter, "-created_date", 50) : [];
     setRegistros(updated);
     setOpen(false);
   };

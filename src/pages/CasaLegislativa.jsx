@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useTenant } from '@/lib/TenantContext';
 import { Building2, Save, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,15 +10,18 @@ import PageHeader from '@/components/PageHeader';
 const ESTADOS = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
 
 export default function CasaLegislativa() {
+  const { withTenant, canQuery, tenantId } = useTenant();
   const [casa, setCasa] = useState(null);
   const [form, setForm] = useState({ nome: '', sigla: '', cnpj: '', endereco: '', cep: '', cidade: '', estado: '', telefone: '', email: '', site: '' });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { if (canQuery) load(); }, [canQuery]);
 
   async function load() {
-    const list = await base44.entities.CasaLegislativa.list();
+    const filter = withTenant();
+    if (!filter) return;
+    const list = await base44.entities.CasaLegislativa.filter(filter);
     if (list.length > 0) {
       setCasa(list[0]);
       setForm({
@@ -30,8 +34,9 @@ export default function CasaLegislativa() {
 
   async function salvar() {
     setSaving(true);
-    if (casa) await base44.entities.CasaLegislativa.update(casa.id, form);
-    else await base44.entities.CasaLegislativa.create(form);
+    const data = { ...form, tenant_id: tenantId };
+    if (casa) await base44.entities.CasaLegislativa.update(casa.id, data);
+    else await base44.entities.CasaLegislativa.create(data);
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);

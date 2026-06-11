@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { useTenant } from "@/lib/TenantContext";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,6 +17,7 @@ const TIPOS = ["Interno", "Externo"];
 const DIRECOES = ["Enviado", "Recebido"];
 
 export default function Oficios() {
+  const { withTenant, canQuery, tenantId } = useTenant();
   const [oficios, setOficios] = useState([]);
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
@@ -23,16 +25,21 @@ export default function Oficios() {
   const [form, setForm] = useState({ numero: "", ano: new Date().getFullYear(), tipo: "Externo", direcao: "Enviado", assunto: "", remetente: "", destinatario: "", data: "", texto: "", status: "Rascunho", observacoes: "" });
 
   useEffect(() => {
-    base44.entities.Oficio.list("-created_date", 100).then(setOficios);
-  }, []);
+    if (!canQuery) return;
+    const filter = withTenant();
+    if (!filter) return;
+    base44.entities.Oficio.filter(filter, "-created_date", 100).then(setOficios);
+  }, [canQuery]);
 
   const openNew = () => { setEditing(null); setForm({ numero: "", ano: new Date().getFullYear(), tipo: "Externo", direcao: "Enviado", assunto: "", remetente: "", destinatario: "", data: "", texto: "", status: "Rascunho", observacoes: "" }); setOpen(true); };
   const openEdit = (o) => { setEditing(o); setForm(o); setOpen(true); };
 
   const handleSave = async () => {
-    if (editing) await base44.entities.Oficio.update(editing.id, form);
-    else await base44.entities.Oficio.create(form);
-    setOficios(await base44.entities.Oficio.list("-created_date", 100));
+    const data = { ...form, tenant_id: tenantId };
+    if (editing) await base44.entities.Oficio.update(editing.id, data);
+    else await base44.entities.Oficio.create(data);
+    const filter = withTenant();
+    if (filter) setOficios(await base44.entities.Oficio.filter(filter, "-created_date", 100));
     setOpen(false);
   };
 

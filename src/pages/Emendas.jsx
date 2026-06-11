@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { useTenant } from "@/lib/TenantContext";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,6 +16,7 @@ const TIPOS = ["Supressiva", "Modificativa", "Aditiva", "Substitutiva", "Substit
 const STATUS = ["Em análise", "Aprovada", "Rejeitada", "Retirada"];
 
 export default function Emendas() {
+  const { withTenant, canQuery, tenantId } = useTenant();
   const [emendas, setEmendas] = useState([]);
   const [materias, setMaterias] = useState([]);
   const [parlamentares, setParlamentares] = useState([]);
@@ -23,10 +25,12 @@ export default function Emendas() {
   const [form, setForm] = useState({ materia_id: "", numero: "", tipo: "Modificativa", ementa: "", texto: "", justificativa: "", autor_id: "", autor_nome: "", data_apresentacao: "", status: "Em análise" });
 
   useEffect(() => {
-    base44.entities.Emenda.list("-created_date", 50).then(setEmendas);
-    base44.entities.Materia.list().then(setMaterias);
-    base44.entities.Parlamentar.list().then(setParlamentares);
-  }, []);
+    if (!canQuery) return;
+    const filter = withTenant();
+    base44.entities.Emenda.filter(filter, "-created_date", 50).then(setEmendas);
+    base44.entities.Materia.filter(filter).then(setMaterias);
+    base44.entities.Parlamentar.filter(filter).then(setParlamentares);
+  }, [canQuery]);
 
   const openNew = () => { setEditing(null); setForm({ materia_id: "", numero: "", tipo: "Modificativa", ementa: "", texto: "", justificativa: "", autor_id: "", autor_nome: "", data_apresentacao: "", status: "Em análise" }); setOpen(true); };
   const openEdit = (e) => { setEditing(e); setForm(e); setOpen(true); };
@@ -34,10 +38,11 @@ export default function Emendas() {
   const handleSave = async () => {
     const materia = materias.find(m => m.id === form.materia_id);
     const autor = parlamentares.find(p => p.id === form.autor_id);
-    const data = { ...form, materia_ementa: materia?.ementa || "", autor_nome: autor?.nome_parlamentar || autor?.nome || form.autor_nome };
+    const data = { ...form, tenant_id: tenantId, materia_ementa: materia?.ementa || "", autor_nome: autor?.nome_parlamentar || autor?.nome || form.autor_nome };
     if (editing) await base44.entities.Emenda.update(editing.id, data);
     else await base44.entities.Emenda.create(data);
-    setEmendas(await base44.entities.Emenda.list("-created_date", 50));
+    const filter = withTenant();
+    if (filter) setEmendas(await base44.entities.Emenda.filter(filter, "-created_date", 50));
     setOpen(false);
   };
 

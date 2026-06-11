@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useTenant } from '@/lib/TenantContext';
 import { FolderOpen, Plus, Search } from 'lucide-react';
 import FileUpload from '@/components/FileUpload';
 import { Button } from '@/components/ui/button';
@@ -15,23 +16,27 @@ const TIPOS = ['Ofício', 'Memorando', 'Circular', 'Portaria', 'Despacho', 'Reso
 const STATUS_OPTS = ['Rascunho', 'Emitido', 'Entregue', 'Arquivado'];
 
 export default function Documentos() {
+  const { withTenant, canQuery, tenantId } = useTenant();
   const [documentos, setDocumentos] = useState([]);
   const [busca, setBusca] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editando, setEditando] = useState(null);
   const [form, setForm] = useState({ tipo: 'Ofício', numero: '', ano: new Date().getFullYear(), assunto: '', texto: '', remetente: '', destinatario: '', data: '', status: 'Rascunho', arquivo_url: '' });
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { if (canQuery) load(); }, [canQuery]);
 
   async function load() {
-    const d = await base44.entities.DocumentoAdministrativo.list('-created_date', 100);
+    const filter = withTenant();
+    if (!filter) return;
+    const d = await base44.entities.DocumentoAdministrativo.filter(filter, '-created_date', 100);
     setDocumentos(d);
   }
 
   async function salvar() {
     if (!form.assunto) return;
-    if (editando) await base44.entities.DocumentoAdministrativo.update(editando.id, form);
-    else await base44.entities.DocumentoAdministrativo.create(form);
+    const data = { ...form, tenant_id: tenantId };
+    if (editando) await base44.entities.DocumentoAdministrativo.update(editando.id, data);
+    else await base44.entities.DocumentoAdministrativo.create(data);
     setShowForm(false);
     load();
   }

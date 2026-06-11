@@ -34,7 +34,7 @@ const ROLE_BADGE_COLOR = {
 };
 
 export default function GerenciarUsuarios() {
-  const { isAdminCamara, isSuperAdmin, tenantId } = useTenant();
+  const { isAdminCamara, isSuperAdmin, tenantId, withTenant } = useTenant();
   const [usuarios, setUsuarios] = useState([]);
   const [camaras, setCamaras] = useState([]);
   const [partidos, setPartidos] = useState([]);
@@ -57,8 +57,8 @@ export default function GerenciarUsuarios() {
     loadUsuarios();
     if (isSuperAdmin) base44.entities.Camara.list().then(setCamaras);
     // Carregar partidos do tenant atual
-    const filter = tenantId ? { tenant_id: tenantId } : {};
-    base44.entities.Partido.filter(filter).then(setPartidos).catch(() => {});
+    const pFilter = withTenant({});
+    if (pFilter) base44.entities.Partido.filter(pFilter).then(setPartidos).catch(() => {});
   }, [isAdminCamara, tenantId]);
 
   const loadUsuarios = async () => {

@@ -44,9 +44,9 @@ export default function Auditoria() {
 
   useEffect(() => {
     if (!isAdminCamara) return;
-    base44.entities.LogAuditoria.list("-created_date", 500).then(all => {
-      if (isSuperAdmin) setLogs(all);
-      else setLogs(all.filter(l => l.tenant_id === tenantId));
+    const filter = isSuperAdmin ? {} : { tenant_id: tenantId };
+    base44.entities.LogAuditoria.filter(filter, "-created_date", 500).then(all => {
+      setLogs(all);
       setLoading(false);
     });
   }, [isAdminCamara, tenantId, isSuperAdmin]);

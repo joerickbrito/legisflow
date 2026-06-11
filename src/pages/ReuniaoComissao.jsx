@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { useTenant } from "@/lib/TenantContext";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,6 +14,7 @@ import { UsersRound, Plus } from "lucide-react";
 const STATUS = ["Agendada", "Realizada", "Cancelada"];
 
 export default function ReuniaoComissao() {
+  const { withTenant, canQuery, tenantId } = useTenant();
   const [reunioes, setReunioes] = useState([]);
   const [comissoes, setComissoes] = useState([]);
   const [open, setOpen] = useState(false);
@@ -20,19 +22,23 @@ export default function ReuniaoComissao() {
   const [form, setForm] = useState({ comissao_id: "", comissao_nome: "", numero: "", data: "", hora_inicio: "", hora_fim: "", local: "", status: "Agendada", ata: "", observacoes: "" });
 
   useEffect(() => {
-    base44.entities.ReuniaoComissao.list("-created_date", 50).then(setReunioes);
-    base44.entities.Comissao.list().then(setComissoes);
-  }, []);
+    if (!canQuery) return;
+    const filter = withTenant();
+    if (!filter) return;
+    base44.entities.ReuniaoComissao.filter(filter, "-created_date", 50).then(setReunioes);
+    base44.entities.Comissao.filter(filter).then(setComissoes);
+  }, [canQuery]);
 
   const openNew = () => { setEditing(null); setForm({ comissao_id: "", comissao_nome: "", numero: "", data: "", hora_inicio: "", hora_fim: "", local: "", status: "Agendada", ata: "", observacoes: "" }); setOpen(true); };
   const openEdit = (r) => { setEditing(r); setForm(r); setOpen(true); };
 
   const handleSave = async () => {
     const comissao = comissoes.find(c => c.id === form.comissao_id);
-    const data = { ...form, comissao_nome: comissao?.nome || form.comissao_nome };
+    const data = { ...form, tenant_id: tenantId, comissao_nome: comissao?.nome || form.comissao_nome };
     if (editing) await base44.entities.ReuniaoComissao.update(editing.id, data);
     else await base44.entities.ReuniaoComissao.create(data);
-    setReunioes(await base44.entities.ReuniaoComissao.list("-created_date", 50));
+    const filter = withTenant();
+    if (filter) setReunioes(await base44.entities.ReuniaoComissao.filter(filter, "-created_date", 50));
     setOpen(false);
   };
 

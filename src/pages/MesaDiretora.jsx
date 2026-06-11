@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useTenant } from '@/lib/TenantContext';
 import { Gavel, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +13,7 @@ import StatusBadge from '@/components/StatusBadge';
 const CARGOS = ['Presidente', 'Vice-Presidente', '1º Secretário', '2º Secretário'];
 
 export default function MesaDiretora() {
+  const { withTenant, canQuery, tenantId } = useTenant();
   const [mesas, setMesas] = useState([]);
   const [parlamentares, setParlamentares] = useState([]);
   const [legislaturas, setLegislaturas] = useState([]);
@@ -20,14 +22,16 @@ export default function MesaDiretora() {
   const [editando, setEditando] = useState(null);
   const [form, setForm] = useState({ legislatura_id: '', legislatura_numero: '', sessao_legislativa_id: '', data_inicio: '', data_fim: '', presidente_id: '', presidente_nome: '', vice_presidente_id: '', vice_presidente_nome: '', primeiro_secretario_id: '', primeiro_secretario_nome: '', segundo_secretario_id: '', segundo_secretario_nome: '', status: 'Ativa' });
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { if (canQuery) load(); }, [canQuery]);
 
   async function load() {
+    const filter = withTenant();
+    if (!filter) return;
     const [m, p, l, sl] = await Promise.all([
-      base44.entities.MesaDiretora.list('-created_date'),
-      base44.entities.Parlamentar.filter({ ativo: true }),
-      base44.entities.Legislatura.list(),
-      base44.entities.SessaoLegislativa.list('-ano'),
+      base44.entities.MesaDiretora.filter(filter, '-created_date'),
+      base44.entities.Parlamentar.filter({ ...filter, ativo: true }),
+      base44.entities.Legislatura.filter(filter),
+      base44.entities.SessaoLegislativa.filter(filter, '-ano'),
     ]);
     setMesas(m);
     setParlamentares(p);
@@ -49,7 +53,7 @@ export default function MesaDiretora() {
 
   async function salvar() {
     const leg = legislaturas.find(l => l.id === form.legislatura_id);
-    const data = { ...form, legislatura_numero: leg?.numero };
+    const data = { ...form, tenant_id: tenantId, legislatura_numero: leg?.numero };
     if (editando) await base44.entities.MesaDiretora.update(editando.id, data);
     else await base44.entities.MesaDiretora.create(data);
     setShowForm(false); load();
