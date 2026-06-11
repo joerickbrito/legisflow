@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { criarUsuario } from "@/lib/sislegisApi";
 import { useTenant } from "@/lib/TenantContext";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -18,7 +19,7 @@ function isFormValid(form) {
 }
 
 function isAdminValid(admin) {
-  return admin.nome?.trim() && admin.username?.trim() && admin.email?.trim() && admin.senha?.trim() && admin.senha.length >= 6 && admin.senha === admin.confirmarSenha;
+  return admin.nome?.trim() && admin.username?.trim() && admin.senha?.trim() && admin.senha.length >= 6 && admin.senha === admin.confirmarSenha;
 }
 
 const FormField = ({ label, required, children }) => (
@@ -87,29 +88,39 @@ export default function GerenciarCamaras() {
         setOpen(false);
       } else {
         if (!isAdminValid(admin)) {
-          alert("Preencha todos os dados do administrador corretamente (nome, usuário, e-mail e senha). A senha deve ter no mínimo 6 caracteres e as senhas devem ser iguais.");
+          alert("Preencha todos os dados do administrador corretamente (nome, usuário e senha). A senha deve ter no mínimo 6 caracteres e as senhas devem ser iguais.");
           setSaving(false);
           return;
         }
 
-        // 1. Criar a Câmara com os dados do admin pendentes
+        // 1. Criar a Câmara
         const novaCamara = await base44.entities.Camara.create({
           ...form,
-          admin_email: admin.email.trim().toLowerCase(),
+          admin_email: admin.email.trim().toLowerCase() || null,
           admin_username: admin.username.trim(),
           admin_nome: admin.nome.trim(),
-          admin_configurado: false,
+          admin_configurado: true,
         });
 
-        let inviteOk = false;
-        let inviteError = null;
+        // 2. Criar usuário diretamente no SisLegis (sem convite por e-mail)
+        let userCreated = false;
+        let userError = null;
         try {
-          // 2. Enviar convite — o usuário será configurado automaticamente ao aceitar
-          await base44.users.inviteUser(admin.email, "user");
-          inviteOk = true;
+          await criarUsuario({
+            username: admin.username.trim(),
+            nome: admin.nome.trim(),
+            email: admin.email?.trim().toLowerCase() || null,
+            role: 'ADMIN_CAMARA',
+            tenant_id: novaCamara.id,
+            camara_id: novaCamara.id,
+            camara_nome: novaCamara.nome,
+            senha: admin.senha,
+            permissoes: {},
+          });
+          userCreated = true;
         } catch (err) {
-          inviteError = err?.response?.data?.error || err?.message || "Erro ao enviar convite.";
-          console.warn("Erro ao convidar admin:", err);
+          userError = err?.message || "Erro ao criar usuário.";
+          console.warn("Erro ao criar usuário SisLegis:", err);
         }
 
         if (admin.enviarEmail && admin.email) {
@@ -146,8 +157,8 @@ export default function GerenciarCamaras() {
           adminNome: admin.nome,
           adminUsername: admin.username,
           tenantId: novaCamara.id,
-          inviteOk,
-          inviteError,
+          userCreated,
+          userError,
         });
       }
     } finally {
@@ -407,11 +418,11 @@ export default function GerenciarCamaras() {
                       Recomendamos incluir uma referência da câmara no nome de usuário para facilitar a identificação. Exemplo: joao.saj
                     </p>
 
-                    <FormField label="E-mail" required>
+                    <FormField label="E-mail (opcional)">
                       <Input type="email" value={admin.email} onChange={e => setAdmin(a => ({ ...a, email: e.target.value }))} placeholder="admin@camara.sp.gov.br" />
                     </FormField>
                     <p className="text-[11px] text-muted-foreground -mt-3">
-                      O e-mail é obrigatório para o convite do administrador à plataforma.
+                      Opcional. Usado apenas para notificações e recuperação de senha.
                     </p>
 
                     <div className="grid grid-cols-2 gap-3">
@@ -512,20 +523,19 @@ export default function GerenciarCamaras() {
                 </div>
               </div>
 
-              {createdInfo.inviteOk ? (
+              {createdInfo.userCreated ? (
                 <div className="space-y-3">
-                  <div className="flex items-start gap-2 rounded-lg bg-blue-50 border border-blue-200 p-3">
-                    <CheckCircle2 size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div className="flex items-start gap-2 rounded-lg bg-green-50 border border-green-200 p-3">
+                    <CheckCircle2 size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="text-xs text-blue-800 font-medium">Convite enviado</p>
-                      <p className="text-xs text-blue-700 mt-1">
-                        Um e-mail de convite foi enviado para <strong>{createdInfo.adminEmail}</strong>.
-                        Quando o administrador aceitar o convite, ele será automaticamente configurado como <strong>ADMIN_CAMARA</strong>.
+                      <p className="text-xs text-green-800 font-medium">Usuário criado com sucesso</p>
+                      <p className="text-xs text-green-700 mt-1">
+                        O administrador <strong>{createdInfo.adminNome}</strong> já pode fazer login com o usuário <strong>{createdInfo.adminUsername}</strong> e a senha definida.
                       </p>
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    O administrador receberá um e-mail para definir a senha e, no primeiro acesso, deverá trocá-la.
+                    No primeiro acesso, será obrigatória a troca da senha. Nenhum e-mail foi enviado.
                   </p>
                 </div>
               ) : (
@@ -533,14 +543,14 @@ export default function GerenciarCamaras() {
                   <div className="flex items-start gap-2 rounded-lg bg-red-50 border border-red-200 p-3">
                     <AlertCircle size={16} className="text-red-600 mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="text-xs text-red-800 font-medium">Falha ao enviar convite</p>
-                      {createdInfo.inviteError && (
-                        <p className="text-xs text-red-700 mt-1">{createdInfo.inviteError}</p>
+                      <p className="text-xs text-red-800 font-medium">Falha ao criar usuário</p>
+                      {createdInfo.userError && (
+                        <p className="text-xs text-red-700 mt-1">{createdInfo.userError}</p>
                       )}
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    A câmara foi criada. Tente reenviar o convite manualmente em <strong>Gerenciar Usuários</strong>.
+                    A câmara foi criada. Crie o usuário manualmente em <strong>Gerenciar Usuários</strong>.
                   </p>
                 </div>
               )}

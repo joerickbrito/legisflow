@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { criarUsuario, listarUsuariosSislegis, atualizarUsuarioSislegis } from "@/lib/sislegisApi";
 import { useTenant } from "@/lib/TenantContext";
 import { PERFIS_ORDER, PERFIL_LABELS, PERFIL_DESCRIPTIONS, DEFAULT_PERMISSIONS, PERMISSION_GROUPS, PERFIS_PARTIDO_OBRIGATORIO, PERFIS_FOTO_OBRIGATORIA } from "@/lib/perfis";
 import PageHeader from "@/components/PageHeader";
@@ -26,10 +27,11 @@ const ROLE_BADGE_COLOR = {
 };
 
 function displayName(u) {
+  const nome = u.nome || u.full_name || u.username || u.email || '';
   if ((u.role === 'VEREADOR' || u.role === 'PRESIDENTE') && u.partido_sigla) {
-    return `${u.full_name || u.username || u.email} — ${u.partido_sigla}`;
+    return `${nome} — ${u.partido_sigla}`;
   }
-  return u.full_name || u.username || u.email;
+  return nome;
 }
 
 const FormField = ({ label, required, children }) => (
@@ -56,15 +58,32 @@ export default function GerenciarUsuarios() {
 
   const handleResetarSenha = async (e, u) => {
     e.stopPropagation();
-    if (!confirm(`Deseja redefinir a senha de ${u.full_name || u.email}?\n\nUm e-mail de redefinição será enviado e o usuário precisará trocar a senha no próximo acesso.`)) return;
-    setResetandoSenha(u.id);
-    try {
-      await base44.functions.invoke('resetarSenhaAdmin', { email: u.email });
-      await loadUsuarios();
-    } catch (err) {
-      alert('Erro ao redefinir senha: ' + (err?.response?.data?.error || err.message));
-    } finally {
-      setResetandoSenha(null);
+    const nome = u.nome || u.full_name || u.email;
+    if (u._source === 'sislegis' || !u.email) {
+      if (!confirm(`Deseja redefinir a senha de ${nome}?\n\nA senha será alterada para "mudar123" e o usuário deverá trocá-la no próximo acesso.`)) return;
+      setResetandoSenha(u.id);
+      try {
+        await base44.functions.invoke('resetarSenhaSislegis', {
+          usuario_id: u.id,
+          nova_senha: 'mudar123',
+        });
+        await loadUsuarios();
+      } catch (err) {
+        alert('Erro ao redefinir senha: ' + (err?.response?.data?.error || err.message));
+      } finally {
+        setResetandoSenha(null);
+      }
+    } else {
+      if (!confirm(`Deseja redefinir a senha de ${nome}?\n\nUm e-mail de redefinição será enviado.`)) return;
+      setResetandoSenha(u.id);
+      try {
+        await base44.functions.invoke('resetarSenhaAdmin', { email: u.email });
+        await loadUsuarios();
+      } catch (err) {
+        alert('Erro ao redefinir senha: ' + (err?.response?.data?.error || err.message));
+      } finally {
+        setResetandoSenha(null);
+      }
     }
   };
 
@@ -86,8 +105,37 @@ export default function GerenciarUsuarios() {
   }, [isAdminCamara, tenantId]);
 
   const loadUsuarios = async () => {
-    const all = await base44.entities.User.list();
-    setUsuarios(isSuperAdmin ? all : all.filter(u => u.tenant_id === tenantId));
+    try {
+      // Buscar usuários do SisLegis (novo sistema)
+      const sislegisUsers = await listarUsuariosSislegis({}, 'nome', 500);
+      // Buscar usuários do Base44 (legado)
+      const base44Users = await base44.entities.User.list();
+      // Mapear Base44 para formato compatível
+      const legacyUsers = base44Users
+        .filter(u => !sislegisUsers?.some(s => s.email && s.email === u.email))
+        .map(u => ({
+          id: u.id,
+          username: u.username || u.email?.split('@')[0] || '',
+          nome: u.full_name || '',
+          email: u.email || '',
+          role: u.role || 'user',
+          tenant_id: u.tenant_id || '',
+          status: u.status || 'Ativo',
+          senha_temporaria: !!u.senha_temporaria,
+          permissoes: u.permissoes || {},
+          foto_url: u.foto_url || null,
+          cargo: u.cargo || null,
+          partido_id: u.partido_id || null,
+          partido_sigla: u.partido_sigla || null,
+          cpf: u.cpf || null,
+          telefone: u.telefone || null,
+          _source: 'base44',
+        }));
+      const all = [...(sislegisUsers || []).map(u => ({ ...u, _source: 'sislegis' })), ...legacyUsers];
+      setUsuarios(isSuperAdmin ? all : all.filter(u => u.tenant_id === tenantId));
+    } catch (err) {
+      console.warn('Erro ao carregar usuários:', err);
+    }
   };
 
   if (!isAdminCamara) return (
@@ -104,7 +152,19 @@ export default function GerenciarUsuarios() {
     setEditing(u);
     setForm({
       ...emptyForm,
-      ...u,
+      full_name: u.nome || u.full_name || '',
+      email: u.email || '',
+      username: u.username || '',
+      cpf: u.cpf || '',
+      telefone: u.telefone || '',
+      cargo: u.cargo || '',
+      foto_url: u.foto_url || '',
+      partido_id: u.partido_id || '',
+      partido_sigla: u.partido_sigla || '',
+      role: u.role,
+      tenant_id: u.tenant_id || tenantId || '',
+      status: u.status || 'Ativo',
+      senha_temporaria: !!u.senha_temporaria,
       permissoes: u.permissoes || DEFAULT_PERMISSIONS[u.role] || { ...DEFAULT_PERMISSIONS.VEREADOR },
     });
     setOpen(true);
@@ -139,26 +199,9 @@ export default function GerenciarUsuarios() {
     setSaving(true);
     try {
       if (editing) {
-        await base44.entities.User.update(editing.id, {
-          username: form.username,
-          cpf: form.cpf,
-          telefone: form.telefone,
-          cargo: form.cargo,
-          foto_url: form.foto_url,
-          partido_id: form.partido_id,
-          partido_sigla: form.partido_sigla,
-          login: form.login,
-          role: form.role,
-          tenant_id: form.tenant_id,
-          status: form.status,
-          permissoes: form.permissoes,
-        });
-      } else {
-        await base44.users.inviteUser(form.email, form.role === 'SUPER_ADMIN' ? "admin" : "user");
-        const all = await base44.entities.User.list();
-        const newUser = all.find(u => u.email === form.email);
-        if (newUser) {
-          await base44.entities.User.update(newUser.id, {
+        if (editing._source === 'base44') {
+          // Atualizar no Base44 (legado)
+          await base44.entities.User.update(editing.id, {
             username: form.username,
             cpf: form.cpf,
             telefone: form.telefone,
@@ -169,10 +212,43 @@ export default function GerenciarUsuarios() {
             login: form.login,
             role: form.role,
             tenant_id: form.tenant_id,
-            senha_temporaria: true,
+            status: form.status,
+            permissoes: form.permissoes,
+          });
+        } else {
+          // Atualizar no SisLegis
+          await atualizarUsuarioSislegis(editing.id, {
+            username: form.username,
+            nome: form.nome || form.full_name,
+            cpf: form.cpf,
+            telefone: form.telefone,
+            cargo: form.cargo,
+            foto_url: form.foto_url,
+            partido_id: form.partido_id,
+            partido_sigla: form.partido_sigla,
+            role: form.role,
+            tenant_id: form.tenant_id,
+            status: form.status,
             permissoes: form.permissoes,
           });
         }
+      } else {
+        // Criar novo usuário no SisLegis (sem convite por e-mail)
+        await criarUsuario({
+          username: form.username,
+          nome: form.full_name || form.nome,
+          email: form.email || null,
+          role: form.role,
+          tenant_id: form.tenant_id,
+          senha: form.senha || 'mudar123',
+          permissoes: form.permissoes,
+          foto_url: form.foto_url,
+          cargo: form.cargo,
+          partido_id: form.partido_id,
+          partido_sigla: form.partido_sigla,
+          cpf: form.cpf,
+          telefone: form.telefone,
+        });
       }
       await loadUsuarios();
       setOpen(false);
@@ -202,7 +278,7 @@ export default function GerenciarUsuarios() {
         icon={Users}
         title="Gerenciar Usuários"
         subtitle={`${usuarios.length} usuário(s) cadastrado(s)`}
-        action={<Button onClick={openNew}><Plus className="w-4 h-4 mr-2" />Convidar Usuário</Button>}
+        action={<Button onClick={openNew}><Plus className="w-4 h-4 mr-2" />Novo Usuário</Button>}
       />
 
       {/* Filtros */}
@@ -241,7 +317,7 @@ export default function GerenciarUsuarios() {
                   {u.cargo && <p className="text-xs text-muted-foreground">{u.cargo}</p>}
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  {isSuperAdmin && u.role === 'ADMIN_CAMARA' && (
+                  {isSuperAdmin && (u.role === 'ADMIN_CAMARA' || u._source === 'sislegis') && (
                     <Button
                       size="sm"
                       variant="ghost"
@@ -271,8 +347,8 @@ export default function GerenciarUsuarios() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editing ? "Editar Usuário" : "Convidar Usuário"}</DialogTitle>
-            {!editing && <p className="text-xs text-muted-foreground">Um convite será enviado ao e-mail informado.</p>}
+            <DialogTitle>{editing ? "Editar Usuário" : "Novo Usuário"}</DialogTitle>
+            {!editing && <p className="text-xs text-muted-foreground">O usuário será criado diretamente, sem envio de e-mail. A senha deve ser informada manualmente.</p>}
           </DialogHeader>
 
           {/* ===== SEÇÃO 1: DADOS DO USUÁRIO ===== */}
@@ -311,7 +387,7 @@ export default function GerenciarUsuarios() {
                     <Input value={form.username || ""} onChange={e => setForm(f => ({ ...f, username: e.target.value }))} placeholder="admin.saopaulo" />
                   </FormField>
                 )}
-                <FormField label="E-mail" required={!editing}>
+                <FormField label="E-mail (opcional)">
                   <Input type="email" value={form.email || ""} disabled={!!editing} className={editing ? "opacity-50" : ""} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="usuario@camara.gov.br" />
                 </FormField>
               </div>
@@ -327,31 +403,29 @@ export default function GerenciarUsuarios() {
               </FormField>
             </div>
 
-            {/* Login + Senha temporária (novo usuário) */}
-            <div className="grid grid-cols-2 gap-3">
-              <FormField label="Login">
-                <Input
-                  value={form.login || ""}
-                  onChange={e => setForm(f => ({ ...f, login: e.target.value }))}
-                  placeholder={form.email || "login"}
-                  disabled={!!editing}
-                  className={editing ? "opacity-50" : ""}
-                />
-              </FormField>
-              {!editing && (
-                <FormField label="Senha temporária">
-                  <div className="flex items-center h-9 gap-2">
-                    <Switch
-                      checked={form.senha_temporaria}
-                      onCheckedChange={v => setForm(f => ({ ...f, senha_temporaria: v }))}
-                    />
-                    <span className="text-xs text-muted-foreground">
-                      {form.senha_temporaria ? 'Será solicitada troca no 1º acesso' : 'Senha permanente'}
-                    </span>
-                  </div>
+            {/* Senha (novo usuário) + Status (edição) */}
+            {!editing && (
+              <div className="grid grid-cols-2 gap-3">
+                <FormField label="Senha Inicial" required>
+                  <Input
+                    type="password"
+                    value={form.senha || ""}
+                    onChange={e => setForm(f => ({ ...f, senha: e.target.value }))}
+                    placeholder="Mínimo 6 caracteres"
+                  />
                 </FormField>
-              )}
-              {editing && (
+                <FormField label="Confirmar Senha" required>
+                  <Input
+                    type="password"
+                    value={form.confirmarSenha || ""}
+                    onChange={e => setForm(f => ({ ...f, confirmarSenha: e.target.value }))}
+                    placeholder="Repita a senha"
+                  />
+                </FormField>
+              </div>
+            )}
+            {editing && (
+              <div className="grid grid-cols-2 gap-3">
                 <FormField label="Status">
                   <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
@@ -360,8 +434,31 @@ export default function GerenciarUsuarios() {
                     </SelectContent>
                   </Select>
                 </FormField>
-              )}
-            </div>
+                <FormField label="Senha temporária">
+                  <div className="flex items-center h-9 gap-2">
+                    <Switch
+                      checked={form.senha_temporaria}
+                      onCheckedChange={v => setForm(f => ({ ...f, senha_temporaria: v }))}
+                    />
+                    <span className="text-xs text-muted-foreground">
+                      {form.senha_temporaria ? 'Troca no 1º acesso' : 'Permanente'}
+                    </span>
+                  </div>
+                </FormField>
+              </div>
+            )}
+
+            {!editing && (
+              <div className="flex items-center gap-2 pt-1">
+                <Switch
+                  checked={form.senha_temporaria}
+                  onCheckedChange={v => setForm(f => ({ ...f, senha_temporaria: v }))}
+                />
+                <span className="text-xs text-muted-foreground">
+                  {form.senha_temporaria ? 'Exigir troca de senha no primeiro acesso' : 'Senha permanente (não exigir troca)'}
+                </span>
+              </div>
+            )}
 
             {/* Partido — obrigatório para Vereador/Presidente */}
             <FormField label="Partido Político" required={isParlamentar}>
@@ -470,8 +567,8 @@ export default function GerenciarUsuarios() {
 
           <DialogFooter className="pt-2">
             <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-            <Button onClick={handleSave} disabled={saving || (!editing && (!form.email || !form.username))}>
-              {saving ? "Salvando..." : editing ? "Salvar Alterações" : "Enviar Convite"}
+            <Button onClick={handleSave} disabled={saving || !form.username || !form.full_name || (!editing && (!form.senha || form.senha.length < 6))}>
+              {saving ? "Salvando..." : editing ? "Salvar Alterações" : "Criar Usuário"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
+import { trocarSenha, getSessionUser } from '@/lib/sislegisApi';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, Scale, Lock, Eye, EyeOff } from 'lucide-react';
 
 export default function TrocarSenha() {
+  const { authMode, refreshUser } = useAuth();
   const [senhaAtual, setSenhaAtual] = useState('');
   const [novaSenha, setNovaSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
@@ -33,19 +36,26 @@ export default function TrocarSenha() {
 
     setLoading(true);
     try {
-      const user = await base44.auth.me();
-      await base44.auth.changePassword({
-        userId: user.id,
-        currentPassword: senhaAtual,
-        newPassword: novaSenha
-      });
-      // Limpar flag de senha temporária e ativar o usuário
-      await base44.functions.invoke('limparSenhaTemporaria', { email: user.email });
+      if (authMode === 'sislegis') {
+        // Autenticação SisLegis
+        const sessionUser = getSessionUser();
+        await trocarSenha(sessionUser.username, senhaAtual, novaSenha);
+      } else {
+        // Autenticação Base44 (legado)
+        const user = await base44.auth.me();
+        await base44.auth.changePassword({
+          userId: user.id,
+          currentPassword: senhaAtual,
+          newPassword: novaSenha
+        });
+        await base44.functions.invoke('limparSenhaTemporaria', { email: user.email });
+      }
       setSuccess(true);
+      refreshUser?.();
       setTimeout(() => { window.location.href = '/'; }, 1500);
     } catch (err) {
       const msg = err?.response?.data?.error || err?.message || '';
-      if (msg.toLowerCase().includes('incorrect') || msg.toLowerCase().includes('invalid') || msg.toLowerCase().includes('password')) {
+      if (msg.toLowerCase().includes('incorrect') || msg.toLowerCase().includes('invalid') || msg.toLowerCase().includes('password') || msg.toLowerCase().includes('incorreta')) {
         setError('Senha atual incorreta.');
       } else {
         setError('Erro ao alterar senha. Tente novamente.');
@@ -56,6 +66,10 @@ export default function TrocarSenha() {
   };
 
   const handleRedefinirPorEmail = async () => {
+    if (authMode === 'sislegis') {
+      setError('Entre em contato com o administrador master para redefinir sua senha.');
+      return;
+    }
     setLoading(true);
     setError('');
     try {

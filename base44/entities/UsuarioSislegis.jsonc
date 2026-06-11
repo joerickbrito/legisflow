@@ -1,0 +1,106 @@
+{
+  "name": "UsuarioSislegis",
+  "type": "object",
+  "properties": {
+    "username": {
+      "type": "string"
+    },
+    "password_hash": {
+      "type": "string"
+    },
+    "session_token": {
+      "type": "string"
+    },
+    "nome": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "SUPER_ADMIN",
+        "ADMIN_CAMARA",
+        "OPERADOR_GERAL",
+        "PRESIDENTE",
+        "VEREADOR",
+        "ASSESSOR",
+        "SECRETARIO_LEGISLATIVO"
+      ],
+      "default": "VEREADOR"
+    },
+    "tenant_id": {
+      "type": "string"
+    },
+    "camara_id": {
+      "type": "string"
+    },
+    "camara_nome": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Pendente de Ativa\u00e7\u00e3o",
+        "Ativo",
+        "Inativo",
+        "Bloqueado"
+      ],
+      "default": "Pendente de Ativa\u00e7\u00e3o"
+    },
+    "senha_temporaria": {
+      "type": "boolean",
+      "default": true
+    },
+    "permissoes": {
+      "type": "object"
+    },
+    "foto_url": {
+      "type": "string"
+    },
+    "cargo": {
+      "type": "string"
+    },
+    "partido_id": {
+      "type": "string"
+    },
+    "partido_sigla": {
+      "type": "string"
+    },
+    "cpf": {
+      "type": "string"
+    },
+    "telefone": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "username",
+    "password_hash",
+    "nome",
+    "role"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "NONE"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "NONE"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "NONE"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "NONE"
+      }
+    }
+  }
+}
