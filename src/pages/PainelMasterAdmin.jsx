@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Building2, Search, LogIn, Plus, ShieldOff, Trash2, Shield, PlusCircle } from 'lucide-react';
+import { Building2, Search, LogIn, Plus, ShieldOff, Trash2, Shield, PlusCircle, ExternalLink } from 'lucide-react';
 
 const statusColor = { Ativa: 'default', Suspensa: 'secondary', Inativa: 'destructive' };
 
@@ -114,11 +114,10 @@ export default function PainelMasterAdmin() {
                     <div className="flex items-center gap-1.5 mt-3">
                       <Button
                         size="sm"
-                        variant="outline"
                         className="h-7 px-2.5 text-xs gap-1"
-                        onClick={() => enterCamara(camara)}
+                        onClick={async () => { await enterCamara(camara); navigate('/'); }}
                       >
-                        <LogIn size={12} /> Entrar
+                        <ExternalLink size={12} /> Gerenciar
                       </Button>
                       <Button
                         size="sm"

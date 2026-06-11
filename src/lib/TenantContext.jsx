@@ -68,6 +68,8 @@ export function TenantProvider({ children }) {
   const { user, isAuthenticated } = useAuth();
   const [camara, setCamara] = useState(null);
   const [loadingCamara, setLoadingCamara] = useState(false);
+  // activeCamara: quando um SUPER_ADMIN "entra" numa câmara específica
+  const [activeCamara, setActiveCamara] = useState(null);
 
   useEffect(() => {
     if (isAuthenticated && user?.tenant_id) {
@@ -78,7 +80,6 @@ export function TenantProvider({ children }) {
   const loadCamara = async (tenantId) => {
     setLoadingCamara(true);
     try {
-      // Try by id first, then by direct get
       const list = await base44.entities.Camara.list('-created_date', 200);
       const found = list.find(c => c.id === tenantId);
       if (found) setCamara(found);
@@ -88,8 +89,27 @@ export function TenantProvider({ children }) {
     setLoadingCamara(false);
   };
 
-  const tenantId = user?.tenant_id || null;
+  // tenant_id efetivo: se SUPER_ADMIN entrou numa câmara, usa o id dela
+  const effectiveTenantId = (() => {
+    if (user?.role === 'SUPER_ADMIN' && activeCamara) return activeCamara.id;
+    return user?.tenant_id || null;
+  })();
+
+  const tenantId = effectiveTenantId;
   const userRole = user?.role || null;
+
+  // Entrar no contexto de uma câmara (apenas SUPER_ADMIN)
+  const enterCamara = async (camaraData) => {
+    const c = camaraData.id ? camaraData : await base44.entities.Camara.list('-created_date', 200).then(list => list.find(x => x.id === camaraData));
+    if (!c) return;
+    setActiveCamara(c);
+    return c;
+  };
+
+  // Sair do contexto de uma câmara (voltar ao painel master)
+  const exitCamara = () => {
+    setActiveCamara(null);
+  };
 
   const hasPermission = (permission) => {
     if (!userRole) return false;
@@ -113,13 +133,17 @@ export function TenantProvider({ children }) {
   };
 
   // Helper to add tenant_id to any filter object.
-  // SECURITY: returns null if user has no tenant and is not SUPER_ADMIN — callers
-  // must check canQuery before calling any entity query.
+  // SECURITY: SUPER_ADMIN sees all tenants ONLY when in master mode.
+  // When SUPER_ADMIN enters a chamber, queries are scoped to that chamber.
   const withTenant = useCallback((filter = {}) => {
-    if (isSuperAdmin) return filter; // Super admin sees all tenants
-    if (!tenantId) return null;      // No tenant → caller must skip the fetch
+    // SUPER_ADMIN dentro de uma câmara → escopo da câmara ativa
+    if (isSuperAdmin && activeCamara) return { ...filter, tenant_id: activeCamara.id };
+    // SUPER_ADMIN no painel master → vê tudo (sem filtro de tenant)
+    if (isSuperAdmin) return filter;
+    // Usuário comum sem tenant → bloqueado
+    if (!tenantId) return null;
     return { ...filter, tenant_id: tenantId };
-  }, [isSuperAdmin, tenantId]);
+  }, [isSuperAdmin, tenantId, activeCamara]);
 
   // Hard guard: throws if called without a valid tenant (use in critical paths).
   const requireTenant = useCallback((filter = {}) => {
@@ -138,10 +162,15 @@ export function TenantProvider({ children }) {
     [tenantId, user]
   );
 
+  // isInChamberContext: true se NÃO for SUPER_ADMIN (admin câmara sempre tem tenant)
+  // ou se SUPER_ADMIN tiver entrado numa câmara específica
+  const isInChamberContext = !!(userRole !== 'SUPER_ADMIN' || activeCamara);
+
   return (
     <TenantContext.Provider value={{
       tenantId,
-      camara,
+      camara: activeCamara || camara,  // prefere a câmara ativa do master
+      activeCamara,
       loadingCamara,
       userRole,
       hasPermission,
@@ -153,9 +182,12 @@ export function TenantProvider({ children }) {
       isSecretarioLegislativo,
       withTenant,
       requireTenant,
-      canQuery,
+      canQuery: isSuperAdmin || !!tenantId,
       formatParlamentar,
       audit,
+      enterCamara,
+      exitCamara,
+      isInChamberContext,
       ROLES,
       ROLE_LABELS,
     }}>
