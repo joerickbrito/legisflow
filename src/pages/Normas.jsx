@@ -14,7 +14,7 @@ const TIPOS = ['Lei Ordinária', 'Lei Complementar', 'Lei Orgânica', 'Decreto L
 const SITUACOES = ['Vigente', 'Revogada', 'Revogada Parcialmente', 'Suspensa', 'Não Vigente'];
 
 export default function Normas() {
-  const { tenantId, isAdminCamara, isOperadorGeral } = useTenant();
+  const { tenantId, withTenant, canQuery, isAdminCamara, isOperadorGeral } = useTenant();
   const [normas, setNormas] = useState([]);
   const [busca, setBusca] = useState('');
   const [filtroTipo, setFiltroTipo] = useState('todos');
@@ -23,11 +23,10 @@ export default function Normas() {
   const [editando, setEditando] = useState(null);
   const emptyForm = { tipo: 'Lei Ordinária', numero: '', ano: new Date().getFullYear(), ementa: '', data_publicacao: '', data_vigencia: '', texto_articulado: '', situacao: 'Vigente', arquivo_url: '', tenant_id: tenantId || '' };
   const [form, setForm] = useState(emptyForm);
-  useEffect(() => { loadData(); }, [tenantId]);
+  useEffect(() => { if (canQuery) loadData(); }, [tenantId, canQuery]);
 
   async function loadData() {
-    const filter = tenantId ? { tenant_id: tenantId } : {};
-    const n = await base44.entities.NormaJuridica.filter(filter, '-ano', 200);
+    const n = await base44.entities.NormaJuridica.filter(withTenant({}), '-ano', 200);
     setNormas(n);
   }
 

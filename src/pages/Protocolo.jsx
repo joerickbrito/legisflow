@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Plus, Inbox, Search } from 'lucide-react';
+import { useTenant } from '@/lib/TenantContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -11,6 +12,7 @@ const TIPOS = ['Ofício', 'Requerimento', 'Petição', 'Memorando', 'Relatório'
 const STATUS_OPTS = ['Recebido', 'Em Análise', 'Encaminhado', 'Arquivado', 'Respondido'];
 
 export default function Protocolo() {
+  const { tenantId, withTenant, canQuery } = useTenant();
   const [protocolos, setProtocolos] = useState([]);
   const [busca, setBusca] = useState('');
   const [filtroStatus, setFiltroStatus] = useState('todos');
@@ -18,10 +20,10 @@ export default function Protocolo() {
   const [editando, setEditando] = useState(null);
   const [form, setForm] = useState({ tipo: 'Ofício', assunto: '', remetente: '', data_recebimento: '', status: 'Recebido', destino: '', observacoes: '' });
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { if (canQuery) loadData(); }, [tenantId, canQuery]);
 
   async function loadData() {
-    const p = await base44.entities.Protocolo.list('-created_date', 100);
+    const p = await base44.entities.Protocolo.filter(withTenant({}), '-created_date', 100);
     setProtocolos(p);
   }
 
@@ -39,7 +41,7 @@ export default function Protocolo() {
 
   async function salvar() {
     if (editando) await base44.entities.Protocolo.update(editando.id, form);
-    else await base44.entities.Protocolo.create({ ...form, numero: String(protocolos.length + 1).padStart(4, '0'), ano: new Date().getFullYear() });
+    else await base44.entities.Protocolo.create({ ...form, tenant_id: tenantId || '', numero: String(protocolos.length + 1).padStart(4, '0'), ano: new Date().getFullYear() });
     setShowForm(false);
     loadData();
   }

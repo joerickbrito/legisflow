@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Users, Plus, MapPin, Clock } from 'lucide-react';
+import { useTenant } from '@/lib/TenantContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,21 +12,22 @@ import StatusBadge from '@/components/StatusBadge';
 import EmptyState from '@/components/EmptyState';
 
 export default function Audiencias() {
+  const { tenantId, withTenant, canQuery } = useTenant();
   const [audiencias, setAudiencias] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editando, setEditando] = useState(null);
   const [form, setForm] = useState({ tema: '', descricao: '', data: '', hora: '', local: '', status: 'Agendada', ata: '' });
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { if (canQuery) load(); }, [tenantId, canQuery]);
 
   async function load() {
-    const a = await base44.entities.AudienciaPublica.list('-data', 50);
+    const a = await base44.entities.AudienciaPublica.filter(withTenant({}), '-data', 50);
     setAudiencias(a);
   }
 
   async function salvar() {
     if (editando) await base44.entities.AudienciaPublica.update(editando.id, form);
-    else await base44.entities.AudienciaPublica.create(form);
+    else await base44.entities.AudienciaPublica.create({ ...form, tenant_id: tenantId || '' });
     setShowForm(false);
     load();
   }

@@ -21,7 +21,7 @@ const statusColors = {
 };
 
 export default function NormaSimples({ tipo, icon: Icon, title, subtitle, addLabel }) {
-  const { tenant, withTenant, canQuery } = useTenant();
+  const { tenantId, withTenant, canQuery } = useTenant();
   const [items, setItems] = useState([]);
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
@@ -33,7 +33,7 @@ export default function NormaSimples({ tipo, icon: Icon, title, subtitle, addLab
   useEffect(() => {
     if (!canQuery) return;
     base44.entities.NormaJuridica.filter(withTenant({ tipo })).then(setItems);
-  }, [canQuery, tenant]);
+  }, [canQuery, tenantId]);
 
   const filtered = items.filter(i =>
     `${i.numero} ${i.ementa}`.toLowerCase().includes(search.toLowerCase())
@@ -43,7 +43,7 @@ export default function NormaSimples({ tipo, icon: Icon, title, subtitle, addLab
   const openEdit = (item) => { setForm({ ...item }); setEditing(item.id); setOpen(true); };
 
   const save = async () => {
-    const data = { ...form, tipo, tenant_id: tenant?.id };
+    const data = { ...form, tipo, tenant_id: tenantId || '' };
     if (editing) await base44.entities.NormaJuridica.update(editing, data);
     else await base44.entities.NormaJuridica.create(data);
     const updated = await base44.entities.NormaJuridica.filter(withTenant({ tipo }));

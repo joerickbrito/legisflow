@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { BookOpen, Plus } from 'lucide-react';
+import { useTenant } from '@/lib/TenantContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -10,6 +11,7 @@ import StatusBadge from '@/components/StatusBadge';
 import EmptyState from '@/components/EmptyState';
 
 export default function Legislaturas() {
+  const { tenantId, withTenant, canQuery } = useTenant();
   const [legislaturas, setLegislaturas] = useState([]);
   const [sessoesLeg, setSessoesLeg] = useState([]);
   const [showForm, setShowForm] = useState(false);
@@ -18,19 +20,20 @@ export default function Legislaturas() {
   const [showSessaoForm, setShowSessaoForm] = useState(false);
   const [sessaoForm, setSessaoForm] = useState({ numero: '', ano: new Date().getFullYear(), data_inicio: '', data_fim: '', legislatura_id: '' });
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { if (canQuery) load(); }, [tenantId, canQuery]);
 
   async function load() {
+    const filter = withTenant({});
     const [l, s] = await Promise.all([
-      base44.entities.Legislatura.list('-data_inicio'),
-      base44.entities.SessaoLegislativa.list('-ano'),
+      base44.entities.Legislatura.filter(filter, '-data_inicio'),
+      base44.entities.SessaoLegislativa.filter(filter, '-ano'),
     ]);
     setLegislaturas(l);
     setSessoesLeg(s);
   }
 
   async function salvarLeg() {
-    const data = { ...form, numero: Number(form.numero), ano_inicio: form.ano_inicio ? Number(form.ano_inicio) : undefined, ano_fim: form.ano_fim ? Number(form.ano_fim) : undefined };
+    const data = { ...form, tenant_id: tenantId || '', numero: Number(form.numero), ano_inicio: form.ano_inicio ? Number(form.ano_inicio) : undefined, ano_fim: form.ano_fim ? Number(form.ano_fim) : undefined };
     if (editando) await base44.entities.Legislatura.update(editando.id, data);
     else await base44.entities.Legislatura.create(data);
     setShowForm(false); load();
@@ -38,7 +41,7 @@ export default function Legislaturas() {
 
   async function salvarSessao() {
     const leg = legislaturas.find(l => l.id === sessaoForm.legislatura_id);
-    await base44.entities.SessaoLegislativa.create({ ...sessaoForm, ano: Number(sessaoForm.ano), numero: Number(sessaoForm.numero), legislatura_numero: leg?.numero });
+    await base44.entities.SessaoLegislativa.create({ ...sessaoForm, tenant_id: tenantId || '', ano: Number(sessaoForm.ano), numero: Number(sessaoForm.numero), legislatura_numero: leg?.numero });
     setShowSessaoForm(false); load();
   }
 

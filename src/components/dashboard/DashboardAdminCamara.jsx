@@ -10,13 +10,14 @@ import { format, isAfter, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export default function DashboardAdminCamara() {
-  const { tenantId, camara, withTenant } = useTenant();
+  const { tenantId, camara, withTenant, canQuery } = useTenant();
   const [data, setData] = useState({ materias: [], sessoes: [], parlamentares: [], normas: [], protocolos: [], votacaoAtiva: null, aguardandoVotacao: [] });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
-      const filter = tenantId ? { tenant_id: tenantId } : {};
+      if (!canQuery) return;
+      const filter = withTenant({});
       const [materias, sessoes, parlamentares, normas, protocolos, votacoes, aguardandoVot] = await Promise.all([
         base44.entities.Materia.filter(filter, '-created_date', 50),
         base44.entities.Sessao.filter(filter, '-data', 20),
@@ -41,7 +42,7 @@ export default function DashboardAdminCamara() {
       setLoading(false);
     }
     load();
-  }, [tenantId]);
+  }, [tenantId, canQuery]);
 
   // Chart data: matérias por status
   const chartData = [

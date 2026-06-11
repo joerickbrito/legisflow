@@ -27,7 +27,7 @@ const STATUS_CONFIG = {
 };
 
 export default function Proposicoes() {
-  const { tenantId, hasPermission, ROLES, userRole } = useTenant();
+  const { tenantId, withTenant, canQuery, hasPermission, ROLES, userRole } = useTenant();
   const { user } = useAuth();
   const [proposicoes, setProposicoes] = useState([]);
   const [parlamentares, setParlamentares] = useState([]);
@@ -44,10 +44,10 @@ export default function Proposicoes() {
   const canReceive = ['SUPER_ADMIN', 'ADMIN_CAMARA', 'SECRETARIA_LEGISLATIVA', 'PROTOCOLO'].includes(userRole);
   const canCreate = !['CONSULTA_PUBLICA'].includes(userRole);
 
-  useEffect(() => { load(); }, [tenantId]);
+  useEffect(() => { if (canQuery) load(); }, [tenantId, canQuery]);
 
   async function load() {
-    const filter = tenantId ? { tenant_id: tenantId } : {};
+    const filter = withTenant({});
     const [p, parl, tipos] = await Promise.all([
       base44.entities.Proposicao.filter(filter, '-created_date', 100),
       base44.entities.Parlamentar.filter({ ...filter, ativo: true }),

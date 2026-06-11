@@ -14,7 +14,7 @@ const CARGOS_MEMBRO = ['Presidente', 'Vice-Presidente', 'Membro', 'Suplente'];
 import PageHeader from '@/components/PageHeader';
 
 export default function Comissoes() {
-  const { tenantId, isAdminCamara } = useTenant();
+  const { tenantId, withTenant, canQuery, isAdminCamara } = useTenant();
   const [comissoes, setComissoes] = useState([]);
   const [parlamentares, setParlamentares] = useState([]);
   const [showForm, setShowForm] = useState(false);
@@ -22,10 +22,10 @@ export default function Comissoes() {
   const emptyForm = { nome: '', sigla: '', tipo: 'Permanente', objetivo: '', data_criacao: '', data_encerramento: '', membros: [], ativa: true, tenant_id: tenantId || '' };
   const [form, setForm] = useState(emptyForm);
 
-  useEffect(() => { loadData(); }, [tenantId]);
+  useEffect(() => { if (canQuery) loadData(); }, [tenantId, canQuery]);
 
   async function loadData() {
-    const filter = tenantId ? { tenant_id: tenantId } : {};
+    const filter = withTenant({});
     const [c, p] = await Promise.all([
       base44.entities.Comissao.filter(filter, '-created_date', 50),
       base44.entities.Parlamentar.filter({ ...filter, ativo: true }),

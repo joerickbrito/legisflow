@@ -16,7 +16,7 @@ const STATUS = ['Em tramitação', 'Aprovada', 'Rejeitada', 'Arquivada', 'Retira
 const REGIMES = ['Normal', 'Urgência', 'Urgência Urgentíssima'];
 
 export default function Materias() {
-  const { tenantId, isAdminCamara, userRole } = useTenant();
+  const { tenantId, withTenant, canQuery, isAdminCamara, userRole } = useTenant();
   const [materias, setMaterias] = useState([]);
   const [parlamentares, setParlamentares] = useState([]);
   const [tiposMateria, setTiposMateria] = useState(TIPOS_DEFAULT);
@@ -33,11 +33,11 @@ export default function Materias() {
   const canCreateDirect = ['SUPER_ADMIN', 'ADMIN_CAMARA', 'SECRETARIA_LEGISLATIVA'].includes(userRole);
 
   useEffect(() => {
-    loadData();
-  }, [tenantId]);
+    if (canQuery) loadData();
+  }, [tenantId, canQuery]);
 
   async function loadData() {
-    const filter = tenantId ? { tenant_id: tenantId } : {};
+    const filter = withTenant({});
     const [m, p, tipos] = await Promise.all([
       base44.entities.Materia.filter(filter, '-created_date', 100),
       base44.entities.Parlamentar.filter({ ...filter, ativo: true }),

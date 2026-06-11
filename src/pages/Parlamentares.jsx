@@ -15,7 +15,7 @@ const TIPOS = ['Titular', 'Suplente'];
 const CARGOS = ['Vereador', 'Presidente', 'Vice-Presidente', '1º Secretário', '2º Secretário'];
 
 export default function Parlamentares() {
-  const { tenantId, isAdminCamara } = useTenant();
+  const { tenantId, withTenant, canQuery, isAdminCamara } = useTenant();
   const [parlamentares, setParlamentares] = useState([]);
   const [partidos, setPartidos] = useState([]);
   const [legislaturas, setLegislaturas] = useState([]);
@@ -32,10 +32,10 @@ export default function Parlamentares() {
   };
   const [form, setForm] = useState(emptyForm);
 
-  useEffect(() => { loadData(); }, [tenantId]);
+  useEffect(() => { if (canQuery) loadData(); }, [tenantId, canQuery]);
 
   async function loadData() {
-    const filter = tenantId ? { tenant_id: tenantId } : {};
+    const filter = withTenant({});
     const [p, part, legs] = await Promise.all([
       base44.entities.Parlamentar.filter(filter, 'nome', 100),
       base44.entities.Partido.filter(filter, 'sigla', 50).catch(() => []),

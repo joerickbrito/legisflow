@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Vote, CheckCircle2, XCircle, MinusCircle, Users, BarChart3, Clock, Play, StopCircle, Plus } from 'lucide-react';
+import { useTenant } from '@/lib/TenantContext';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -8,6 +9,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export default function Votacao() {
+  const { tenantId, withTenant, canQuery } = useTenant();
   const [votacoes, setVotacoes] = useState([]);
   const [votacaoAtiva, setVotacaoAtiva] = useState(null);
   const [parlamentares, setParlamentares] = useState([]);
@@ -18,14 +20,15 @@ export default function Votacao() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (canQuery) loadData();
+  }, [tenantId, canQuery]);
 
   async function loadData() {
+    const filter = withTenant({});
     const [v, p, m] = await Promise.all([
-      base44.entities.Votacao.list('-created_date', 20),
-      base44.entities.Parlamentar.filter({ ativo: true }),
-      base44.entities.Materia.filter({ status: 'Em tramitação' }),
+      base44.entities.Votacao.filter(filter, '-created_date', 20),
+      base44.entities.Parlamentar.filter({ ...filter, ativo: true }),
+      base44.entities.Materia.filter({ ...filter, status: 'Em tramitação' }),
     ]);
     setVotacoes(v);
     setParlamentares(p);
@@ -38,6 +41,7 @@ export default function Votacao() {
   async function iniciarVotacao() {
     const mat = materias.find(m => m.id === novaVotacao.materia_id);
     const nova = await base44.entities.Votacao.create({
+      tenant_id: tenantId || '',
       materia_id: novaVotacao.materia_id,
       materia_ementa: mat?.ementa || 'Matéria',
       materia_tipo: mat?.tipo || '',

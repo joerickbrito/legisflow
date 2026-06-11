@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { GitMerge, Plus, Search } from 'lucide-react';
+import { useTenant } from '@/lib/TenantContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -15,6 +16,7 @@ const STATUS_OPTS = ['Em Tramitação', 'Devolvida', 'Aprovada', 'Rejeitada', 'A
 const TURNOS = ['Único', '1º Turno', '2º Turno', '3º Turno'];
 
 export default function Tramitacoes() {
+  const { tenantId, withTenant, canQuery } = useTenant();
   const [tramitacoes, setTramitacoes] = useState([]);
   const [materias, setMaterias] = useState([]);
   const [busca, setBusca] = useState('');
@@ -24,12 +26,13 @@ export default function Tramitacoes() {
 
   function format(d) { return d.toISOString().split('T')[0]; }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { if (canQuery) load(); }, [tenantId, canQuery]);
 
   async function load() {
+    const filter = withTenant({});
     const [t, m] = await Promise.all([
-      base44.entities.Tramitacao.list('-created_date', 100),
-      base44.entities.Materia.filter({ status: 'Em tramitação' }),
+      base44.entities.Tramitacao.filter(filter, '-created_date', 100),
+      base44.entities.Materia.filter({ ...filter, status: 'Em tramitação' }),
     ]);
     setTramitacoes(t);
     setMaterias(m);
@@ -39,6 +42,7 @@ export default function Tramitacoes() {
     const mat = materias.find(m => m.id === form.materia_id);
     await base44.entities.Tramitacao.create({
       ...form,
+      tenant_id: tenantId || '',
       materia_ementa: mat?.ementa || form.materia_ementa,
       materia_numero: mat?.numero || '',
     });

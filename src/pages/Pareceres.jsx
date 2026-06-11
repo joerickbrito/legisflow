@@ -14,7 +14,7 @@ import EmptyState from '@/components/EmptyState';
 const TIPOS = ['Favorável', 'Contrário', 'Favorável com Emendas', 'Pela Inconstitucionalidade', 'Pela Constitucionalidade'];
 
 export default function Pareceres() {
-  const { tenantId, hasPermission, ROLES } = useTenant();
+  const { tenantId, withTenant, canQuery, hasPermission, ROLES } = useTenant();
   const [pareceres, setPareceres] = useState([]);
   const [materias, setMaterias] = useState([]);
   const [comissoes, setComissoes] = useState([]);
@@ -23,10 +23,10 @@ export default function Pareceres() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ materia_id: '', comissao_id: '', relator_id: '', tipo: 'Favorável', texto: '', data: '' });
 
-  useEffect(() => { load(); }, [tenantId]);
+  useEffect(() => { if (canQuery) load(); }, [tenantId, canQuery]);
 
   async function load() {
-    const filter = tenantId ? { tenant_id: tenantId } : {};
+    const filter = withTenant({});
     const [p, m, c, parl] = await Promise.all([
       base44.entities.Parecer.filter(filter, '-created_date', 50),
       base44.entities.Materia.filter({ ...filter, status: 'Em tramitação' }),

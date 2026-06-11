@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Scale, Plus, Users } from 'lucide-react';
+import { useTenant } from '@/lib/TenantContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -10,6 +11,7 @@ import EmptyState from '@/components/EmptyState';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 export default function Partidos() {
+  const { tenantId, withTenant, canQuery } = useTenant();
   const [partidos, setPartidos] = useState([]);
   const [bancadas, setBancadas] = useState([]);
   const [parlamentares, setParlamentares] = useState([]);
@@ -20,13 +22,14 @@ export default function Partidos() {
   const [bancadaForm, setBancadaForm] = useState({ nome: '', sigla: '', tipo: 'Partidária', membros: [] });
 
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { if (canQuery) load(); }, [tenantId, canQuery]);
 
   async function load() {
+    const filter = withTenant({});
     const [p, b, parl] = await Promise.all([
-      base44.entities.Partido.list(),
-      base44.entities.Bancada.list(),
-      base44.entities.Parlamentar.filter({ ativo: true }),
+      base44.entities.Partido.filter(filter),
+      base44.entities.Bancada.filter(filter),
+      base44.entities.Parlamentar.filter({ ...filter, ativo: true }),
     ]);
     setPartidos(p);
     setBancadas(b);
@@ -35,12 +38,12 @@ export default function Partidos() {
 
   async function salvarPartido() {
     if (editando) await base44.entities.Partido.update(editando.id, form);
-    else await base44.entities.Partido.create(form);
+    else await base44.entities.Partido.create({ ...form, tenant_id: tenantId || '' });
     setShowForm(false); load();
   }
 
   async function salvarBancada() {
-    await base44.entities.Bancada.create(bancadaForm);
+    await base44.entities.Bancada.create({ ...bancadaForm, tenant_id: tenantId || '' });
     setShowBancada(false); load();
   }
 
