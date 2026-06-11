@@ -92,40 +92,24 @@ export default function GerenciarCamaras() {
           return;
         }
 
-        const novaCamara = await base44.entities.Camara.create(form);
+        // 1. Criar a Câmara com os dados do admin pendentes
+        const novaCamara = await base44.entities.Camara.create({
+          ...form,
+          admin_email: admin.email.trim().toLowerCase(),
+          admin_username: admin.username.trim(),
+          admin_nome: admin.nome.trim(),
+          admin_configurado: false,
+        });
 
         let inviteOk = false;
         let inviteError = null;
         try {
-          // 1. Criar o usuário na plataforma
+          // 2. Enviar convite — o usuário será configurado automaticamente ao aceitar
           await base44.users.inviteUser(admin.email, "user");
-
-          // 2. Buscar o usuário recém-criado (com retry — pode haver delay de propagação)
-          let found = null;
-          for (let attempt = 0; attempt < 5; attempt++) {
-            if (attempt > 0) await new Promise(r => setTimeout(r, 1000));
-            const users = await base44.entities.User.filter({ email: admin.email.trim().toLowerCase() });
-            found = users[0];
-            if (found) break;
-          }
-
-          if (found) {
-            // 3. Vincular à Câmara, definir role e status
-            await base44.entities.User.update(found.id, {
-              role: 'ADMIN_CAMARA',
-              tenant_id: novaCamara.id,
-              username: admin.username,
-              status: 'Pendente de Ativação',
-              senha_temporaria: true,
-              camara_nome: novaCamara.nome,
-            });
-            inviteOk = true;
-          } else {
-            inviteError = "Usuário criado na plataforma mas não localizado após 5 tentativas. Acesse Gerenciar Usuários para vinculá-lo manualmente.";
-          }
+          inviteOk = true;
         } catch (err) {
-          inviteError = err?.response?.data?.error || err?.message || "Erro desconhecido ao criar administrador.";
-          console.warn("Erro ao criar admin:", err);
+          inviteError = err?.response?.data?.error || err?.message || "Erro ao enviar convite.";
+          console.warn("Erro ao convidar admin:", err);
         }
 
         if (admin.enviarEmail && admin.email) {
@@ -529,10 +513,19 @@ export default function GerenciarCamaras() {
               </div>
 
               {createdInfo.inviteOk ? (
-                <div className="flex items-start gap-2 rounded-lg bg-green-50 border border-green-200 p-3">
-                  <CheckCircle2 size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
-                  <p className="text-xs text-green-800">
-                    Administrador <strong>{createdInfo.adminUsername}</strong> criado e vinculado à câmara com sucesso.
+                <div className="space-y-3">
+                  <div className="flex items-start gap-2 rounded-lg bg-blue-50 border border-blue-200 p-3">
+                    <CheckCircle2 size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs text-blue-800 font-medium">Convite enviado</p>
+                      <p className="text-xs text-blue-700 mt-1">
+                        Um e-mail de convite foi enviado para <strong>{createdInfo.adminEmail}</strong>.
+                        Quando o administrador aceitar o convite, ele será automaticamente configurado como <strong>ADMIN_CAMARA</strong>.
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    O administrador receberá um e-mail para definir a senha e, no primeiro acesso, deverá trocá-la.
                   </p>
                 </div>
               ) : (
@@ -540,21 +533,17 @@ export default function GerenciarCamaras() {
                   <div className="flex items-start gap-2 rounded-lg bg-red-50 border border-red-200 p-3">
                     <AlertCircle size={16} className="text-red-600 mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="text-xs text-red-800 font-medium">Falha ao criar o administrador</p>
+                      <p className="text-xs text-red-800 font-medium">Falha ao enviar convite</p>
                       {createdInfo.inviteError && (
                         <p className="text-xs text-red-700 mt-1">{createdInfo.inviteError}</p>
                       )}
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    A câmara foi criada, mas será necessário criar o administrador manualmente em <strong>Gerenciar Usuários</strong>.
+                    A câmara foi criada. Tente reenviar o convite manualmente em <strong>Gerenciar Usuários</strong>.
                   </p>
                 </div>
               )}
-
-              <p className="text-xs text-muted-foreground text-center">
-                O administrador deverá trocar a senha no primeiro acesso antes de utilizar o sistema.
-              </p>
             </div>
           )}
           <DialogFooter>

@@ -65,6 +65,19 @@
     },
     "observacoes": {
       "type": "string"
+    },
+    "admin_email": {
+      "type": "string"
+    },
+    "admin_username": {
+      "type": "string"
+    },
+    "admin_nome": {
+      "type": "string"
+    },
+    "admin_configurado": {
+      "type": "boolean",
+      "default": false
     }
   },
   "required": [

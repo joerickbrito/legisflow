@@ -109,7 +109,16 @@ export const AuthProvider = ({ children }) => {
         }
       } catch (_) { /* silencioso */ }
 
-      if (roleUpdated) {
+      // Vincular automaticamente admin de câmara (convite aceito)
+      let adminVinculado = false;
+      if (currentUser.role === 'user') {
+        try {
+          await base44.functions.invoke('vincularAdminCamara', {});
+          adminVinculado = true;
+        } catch (_) { /* silencioso */ }
+      }
+
+      if (roleUpdated || adminVinculado) {
         const refreshed = await base44.auth.me();
         setUser(refreshed);
         setPrimeiroAcesso(!!refreshed.senha_temporaria);
