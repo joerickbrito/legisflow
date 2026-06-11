@@ -43,6 +43,7 @@ import EmendasImpositivas from '@/pages/EmendasImpositivas';
 import AtasSessoes from '@/pages/AtasSessoes';
 import PautasSessoes from '@/pages/PautasSessoes';
 import GerenciarCamaras from '@/pages/GerenciarCamaras';
+import PainelMasterAdmin from '@/pages/PainelMasterAdmin.jsx';
 import GerenciarUsuarios from '@/pages/GerenciarUsuarios';
 import Auditoria from '@/pages/Auditoria';
 import Configuracoes from '@/pages/Configuracoes';
@@ -108,6 +109,7 @@ const AuthenticatedApp = () => {
           <Route path="/atas-sessoes" element={<AtasSessoes />} />
           <Route path="/pautas-sessoes" element={<PautasSessoes />} />
           <Route path="/gerenciar-camaras" element={<GerenciarCamaras />} />
+          <Route path="/painel-master" element={<PainelMasterAdmin />} />
           <Route path="/gerenciar-usuarios" element={<GerenciarUsuarios />} />
           <Route path="/auditoria" element={<Auditoria />} />
           <Route path="/configuracoes" element={<Configuracoes />} />

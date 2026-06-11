@@ -1,17 +1,18 @@
 import { useState } from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation, Navigate } from 'react-router-dom';
 import {
   LayoutDashboard, FileText, Calendar, Vote, Users, Building2,
   ScrollText, Inbox, ChevronLeft, ChevronRight, Menu, LogOut,
   Scale, Gavel, MessageSquare, BarChart3, Globe, BookOpen,
   FolderOpen, ChevronDown, ChevronRight as ChevRight,
   Monitor, UserCheck, FileDiff, UsersRound, Mail, Shield, Settings, SlidersHorizontal,
-  Landmark, Stamp, ClipboardList, DollarSign, BookMarked
+  Landmark, Stamp, ClipboardList, DollarSign, BookMarked, ArrowLeftRight
 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useTenant, ROLE_LABELS } from '@/lib/TenantContext';
 import { useAuth } from '@/lib/AuthContext';
 import { cn } from '@/lib/utils';
+import PainelMasterAdmin from '@/pages/PainelMasterAdmin.jsx';
 
 const OPERACIONAL_ROLES = ['SUPER_ADMIN', 'ADMIN_CAMARA', 'OPERADOR_GERAL', 'SECRETARIA_LEGISLATIVA', 'PROTOCOLO', 'PRESIDENTE'];
 
@@ -131,11 +132,16 @@ export default function Layout() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
-  const { isSuperAdmin, isAdminCamara, userRole, camara, ROLE_LABELS: RL } = useTenant();
+  const { isSuperAdmin, isAdminCamara, userRole, camara, activeCamara, exitCamara, ROLE_LABELS: RL } = useTenant();
   const { user } = useAuth();
 
   const navGroups = getNavGroups(isSuperAdmin, isAdminCamara, userRole);
   const [expandedGroups, setExpandedGroups] = useState(navGroups.map(() => true));
+
+  // SUPER_ADMIN sem câmara ativa → mostrar painel central
+  if (isSuperAdmin && !activeCamara) {
+    return <PainelMasterAdmin />;
+  }
 
   function toggleGroup(i) {
     setExpandedGroups(eg => eg.map((v, idx) => idx === i ? !v : v));
@@ -237,6 +243,22 @@ export default function Layout() {
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Barra Master Admin administrando */}
+        {isSuperAdmin && activeCamara && (
+          <div className="flex items-center justify-between px-4 py-2 bg-amber-500/10 border-b border-amber-500/30 text-amber-700 dark:text-amber-400 flex-shrink-0 z-10">
+            <div className="flex items-center gap-2 text-xs font-medium">
+              <Shield size={13} className="flex-shrink-0" />
+              <span>Administrando: <strong>{activeCamara.nome}</strong></span>
+              {activeCamara.municipio && <span className="text-amber-600/70 dark:text-amber-500/60">— {activeCamara.municipio}{activeCamara.estado ? `, ${activeCamara.estado}` : ''}</span>}
+            </div>
+            <button
+              onClick={exitCamara}
+              className="flex items-center gap-1.5 text-xs font-medium px-3 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 transition-colors"
+            >
+              <ArrowLeftRight size={12} /> Trocar Câmara
+            </button>
+          </div>
+        )}
         <header className="md:hidden flex items-center justify-between px-4 py-3 bg-card border-b border-border">
           <button onClick={() => setMobileOpen(true)} className="p-2 rounded-lg hover:bg-muted">
             <Menu size={20} />
