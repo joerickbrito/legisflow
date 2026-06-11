@@ -21,6 +21,15 @@ function isAdminValid(admin) {
   return admin.nome?.trim() && admin.email?.trim() && admin.senha?.trim() && admin.senha.length >= 6 && admin.senha === admin.confirmarSenha;
 }
 
+const FormField = ({ label, required, children }) => (
+  <div>
+    <label className="text-xs text-muted-foreground block mb-1">
+      {label}{required && <span className="text-destructive ml-0.5">*</span>}
+    </label>
+    {children}
+  </div>
+);
+
 export default function GerenciarCamaras() {
   const { isSuperAdmin } = useTenant();
   const [camaras, setCamaras] = useState([]);
@@ -30,7 +39,6 @@ export default function GerenciarCamaras() {
   const [saving, setSaving] = useState(false);
   const [createdInfo, setCreatedInfo] = useState(null);
 
-  // Accordion para seções do formulário
   const [secaoExpandida, setSecaoExpandida] = useState("camara");
 
   const emptyForm = {
@@ -47,7 +55,6 @@ export default function GerenciarCamaras() {
   const [admin, setAdmin] = useState(emptyAdmin);
   const [showSenha, setShowSenha] = useState(false);
 
-  // Upload states
   const [uploadingBrasao, setUploadingBrasao] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
 
@@ -75,33 +82,26 @@ export default function GerenciarCamaras() {
     setSaving(true);
     try {
       if (editing) {
-        // Edição de câmara existente — sem criar admin
         await base44.entities.Camara.update(editing.id, form);
         setCamaras(await base44.entities.Camara.list("-created_date", 200));
         setOpen(false);
       } else {
-        // Validação do admin
         if (!isAdminValid(admin)) {
           alert("Preencha todos os dados do administrador corretamente. A senha deve ter no mínimo 6 caracteres e as senhas devem ser iguais.");
           setSaving(false);
           return;
         }
 
-        // 1. Criar câmara
         const novaCamara = await base44.entities.Camara.create(form);
 
-        // 2. Convidar usuário admin
-        let usuarioCriado = null;
         let inviteOk = false;
         try {
           await base44.users.inviteUser(admin.email, "user");
           inviteOk = true;
 
-          // Buscar o usuário recém-convidado para atualizar campos customizados
           const allUsers = await base44.entities.User.list();
           const found = allUsers.find(u => u.email === admin.email);
           if (found) {
-            usuarioCriado = found;
             await base44.entities.User.update(found.id, {
               role: 'ADMIN_CAMARA',
               tenant_id: novaCamara.id,
@@ -114,7 +114,6 @@ export default function GerenciarCamaras() {
           console.warn("Erro ao criar admin:", err);
         }
 
-        // 3. Enviar e-mail com credenciais (opcional)
         if (admin.enviarEmail && admin.email) {
           try {
             await base44.integrations.Core.SendEmail({
@@ -162,15 +161,6 @@ export default function GerenciarCamaras() {
   );
 
   const statusColor = { "Ativa": "default", "Suspensa": "secondary", "Inativa": "destructive" };
-
-  const F = ({ label, required, children }) => (
-    <div>
-      <label className="text-xs text-muted-foreground block mb-1">
-        {label}{required && <span className="text-destructive ml-0.5">*</span>}
-      </label>
-      {children}
-    </div>
-  );
 
   return (
     <div className="p-6 space-y-6">
@@ -257,7 +247,7 @@ export default function GerenciarCamaras() {
           </DialogHeader>
 
           <div className="space-y-4 py-1">
-            {/* ======== SEÇÃO 1: DADOS DA CÂMARA ======== */}
+            {/* SEÇÃO 1: DADOS DA CÂMARA */}
             <div className="rounded-lg border border-border overflow-hidden">
               <button
                 type="button"
@@ -271,7 +261,6 @@ export default function GerenciarCamaras() {
                 <div className="p-4 space-y-4">
                   {/* Brasão + Logotipo + Nome + Cor */}
                   <div className="flex items-start gap-4">
-                    {/* Brasão */}
                     <div className="flex-shrink-0">
                       <label className="text-xs text-muted-foreground block mb-1.5">Brasão</label>
                       <div className="relative w-20 h-20 rounded-xl border-2 border-dashed border-border flex items-center justify-center bg-muted/30 overflow-hidden cursor-pointer hover:border-primary/50 transition-colors">
@@ -288,7 +277,6 @@ export default function GerenciarCamaras() {
                       {uploadingBrasao && <p className="text-[10px] text-muted-foreground mt-1">Enviando...</p>}
                     </div>
 
-                    {/* Logotipo */}
                     <div className="flex-shrink-0">
                       <label className="text-xs text-muted-foreground block mb-1.5">Logotipo</label>
                       <div className="relative w-20 h-20 rounded-xl border-2 border-dashed border-border flex items-center justify-center bg-muted/30 overflow-hidden cursor-pointer hover:border-primary/50 transition-colors">
@@ -308,65 +296,61 @@ export default function GerenciarCamaras() {
                     <div className="flex-1 space-y-3">
                       <div className="grid grid-cols-3 gap-3">
                         <div className="col-span-2">
-                          <F label="Nome da Câmara" required>
+                          <FormField label="Nome da Câmara" required>
                             <Input value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} placeholder="Câmara Municipal de..." />
-                          </F>
+                          </FormField>
                         </div>
                         <div>
-                          <F label="Sigla">
+                          <FormField label="Sigla">
                             <Input value={form.sigla} onChange={e => setForm(f => ({ ...f, sigla: e.target.value }))} maxLength={10} placeholder="CM..." />
-                          </F>
+                          </FormField>
                         </div>
                       </div>
-                      <F label="Cor Institucional">
+                      <FormField label="Cor Institucional">
                         <div className="flex items-center gap-2">
                           <input type="color" value={form.cor_institucional} onChange={e => setForm(f => ({ ...f, cor_institucional: e.target.value }))} className="w-9 h-9 rounded border border-border cursor-pointer flex-shrink-0" />
                           <Input value={form.cor_institucional} onChange={e => setForm(f => ({ ...f, cor_institucional: e.target.value }))} className="font-mono" placeholder="#1d4ed8" />
                         </div>
-                      </F>
+                      </FormField>
                     </div>
                   </div>
 
-                  {/* Localização */}
                   <div className="grid grid-cols-3 gap-3">
                     <div className="col-span-2">
-                      <F label="Município" required>
+                      <FormField label="Município" required>
                         <Input value={form.municipio || form.cidade || ''} onChange={e => setForm(f => ({ ...f, municipio: e.target.value, cidade: e.target.value }))} />
-                      </F>
+                      </FormField>
                     </div>
                     <div>
-                      <F label="Estado (UF)" required>
+                      <FormField label="Estado (UF)" required>
                         <Input value={form.estado} onChange={e => setForm(f => ({ ...f, estado: e.target.value.toUpperCase() }))} maxLength={2} placeholder="SP" />
-                      </F>
+                      </FormField>
                     </div>
                   </div>
 
-                  {/* CNPJ + Vereadores */}
                   <div className="grid grid-cols-2 gap-3">
-                    <F label="CNPJ" required>
+                    <FormField label="CNPJ" required>
                       <Input value={form.cnpj} onChange={e => setForm(f => ({ ...f, cnpj: e.target.value }))} placeholder="00.000.000/0001-00" />
-                    </F>
-                    <F label="Total de Vereadores">
+                    </FormField>
+                    <FormField label="Total de Vereadores">
                       <Input type="number" min={1} value={form.total_vereadores} onChange={e => setForm(f => ({ ...f, total_vereadores: +e.target.value }))} />
-                    </F>
+                    </FormField>
                   </div>
 
-                  {/* Contato */}
                   <div className="grid grid-cols-2 gap-3">
-                    <F label="E-mail Institucional" required>
+                    <FormField label="E-mail Institucional" required>
                       <Input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="contato@camara.sp.gov.br" />
-                    </F>
-                    <F label="Telefone" required>
+                    </FormField>
+                    <FormField label="Telefone" required>
                       <Input value={form.telefone} onChange={e => setForm(f => ({ ...f, telefone: e.target.value }))} placeholder="(11) 3333-0000" />
-                    </F>
+                    </FormField>
                   </div>
-                  <F label="Site">
+                  <FormField label="Site">
                     <Input value={form.site} onChange={e => setForm(f => ({ ...f, site: e.target.value }))} placeholder="https://www.camara.sp.gov.br" />
-                  </F>
+                  </FormField>
 
-                  {/* Plano + Status */}
                   <div className="grid grid-cols-2 gap-3">
-                    <F label="Plano">
+                    <FormField label="Plano">
                       <Select value={form.plano} onValueChange={v => setForm(f => ({ ...f, plano: v }))}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -375,8 +359,8 @@ export default function GerenciarCamaras() {
                           <SelectItem value="Enterprise">Enterprise</SelectItem>
                         </SelectContent>
                       </Select>
-                    </F>
-                    <F label="Status">
+                    </FormField>
+                    <FormField label="Status">
                       <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -385,17 +369,17 @@ export default function GerenciarCamaras() {
                           <SelectItem value="Inativa">Inativa</SelectItem>
                         </SelectContent>
                       </Select>
-                    </F>
+                    </FormField>
                   </div>
 
-                  <F label="Observações">
+                  <FormField label="Observações">
                     <Input value={form.observacoes} onChange={e => setForm(f => ({ ...f, observacoes: e.target.value }))} />
-                  </F>
+                  </FormField>
                 </div>
               )}
             </div>
 
-            {/* ======== SEÇÃO 2: ADMINISTRADOR DA CÂMARA (somente criação) ======== */}
+            {/* SEÇÃO 2: ADMINISTRADOR DA CÂMARA (somente criação) */}
             {!editing && (
               <div className="rounded-lg border border-border overflow-hidden">
                 <button
@@ -412,16 +396,16 @@ export default function GerenciarCamaras() {
                       O administrador será criado com status <strong>Pendente de Ativação</strong>. No primeiro acesso, será obrigatória a troca da senha.
                     </p>
 
-                    <F label="Nome do Administrador" required>
+                    <FormField label="Nome do Administrador" required>
                       <Input value={admin.nome} onChange={e => setAdmin(a => ({ ...a, nome: e.target.value }))} placeholder="Nome completo" />
-                    </F>
+                    </FormField>
 
-                    <F label="Login (E-mail)" required>
+                    <FormField label="Login (E-mail)" required>
                       <Input type="email" value={admin.email} onChange={e => setAdmin(a => ({ ...a, email: e.target.value }))} placeholder="admin@camara.sp.gov.br" />
-                    </F>
+                    </FormField>
 
                     <div className="grid grid-cols-2 gap-3">
-                      <F label="Senha Temporária" required>
+                      <FormField label="Senha Temporária" required>
                         <div className="relative">
                           <Input
                             type={showSenha ? 'text' : 'password'}
@@ -434,8 +418,8 @@ export default function GerenciarCamaras() {
                             {showSenha ? <EyeOff size={14} /> : <Eye size={14} />}
                           </button>
                         </div>
-                      </F>
-                      <F label="Confirmar Senha" required>
+                      </FormField>
+                      <FormField label="Confirmar Senha" required>
                         <Input
                           type="password"
                           value={admin.confirmarSenha}
@@ -449,7 +433,7 @@ export default function GerenciarCamaras() {
                                 : ''
                           }
                         />
-                      </F>
+                      </FormField>
                     </div>
 
                     <div className="flex items-center gap-2 pt-1">
