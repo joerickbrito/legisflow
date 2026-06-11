@@ -85,37 +85,33 @@ const getNavGroups = (user, isInChamberContext) => {
       items: filterItems([
         { path: '/sessoes', icon: Calendar, label: 'Sessões Plenárias' },
         { path: '/painel-eletronico', icon: Monitor, label: 'Painel Eletrônico', highlight: true },
+        { path: '/quorum', icon: UserCheck, label: 'Controle de Presença' },
       ]),
     },
     {
       label: 'Documentos',
       items: filterItems([
-        { path: '/atas-sessoes', icon: BookOpen, label: 'Atas' },
+        { path: '/atas-sessoes', icon: BookOpen, label: 'Atas das Sessões' },
         { path: '/pautas-sessoes', icon: ClipboardList, label: 'Pautas' },
+        { path: '/audiencias', icon: Users, label: 'Audiências Públicas' },
+      ]),
+    },
+    {
+      label: 'Administração',
+      items: filterItems([
+        { path: '/gerenciar-usuarios', icon: Users, label: 'Usuários da Câmara' },
+        { path: '/casa-legislativa', icon: Building2, label: 'Casa Legislativa' },
+        { path: '/relatorios', icon: BarChart3, label: 'Relatórios' },
+        { path: '/auditoria', icon: ScrollText, label: 'Auditoria da Câmara' },
       ]),
     },
     {
       label: 'Outros',
       items: filterItems([
-        { path: '/audiencias', icon: Users, label: 'Audiências Públicas' },
-        { path: '/gerenciar-usuarios', icon: Users, label: 'Usuários' },
-        { path: '/transparencia', icon: Globe, label: 'Portal Transparência' },
-        { path: '/relatorios', icon: BarChart3, label: 'Relatórios' },
-        { path: '/auditoria', icon: ScrollText, label: 'Auditoria da Câmara' },
+        { path: '/transparencia', icon: Globe, label: 'Portal de Transparência' },
       ]),
     },
   ];
-
-  // Admin da câmara também vê administração
-  if (!isSuperAdmin && user.role === 'ADMIN_CAMARA') {
-    groups.push({
-      label: 'Administração',
-      items: filterItems([
-        { path: '/casa-legislativa', icon: Building2, label: 'Casa Legislativa' },
-        { path: '/configuracoes', icon: SlidersHorizontal, label: 'Configurações' },
-      ]),
-    });
-  }
 
   return groups.filter(g => g.items.length > 0);
 };
