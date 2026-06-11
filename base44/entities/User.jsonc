@@ -9,7 +9,9 @@
         "ADMIN_CAMARA",
         "OPERADOR_GERAL",
         "PRESIDENTE",
-        "VEREADOR"
+        "VEREADOR",
+        "ASSESSOR",
+        "SECRETARIO_LEGISLATIVO"
       ],
       "default": "VEREADOR"
     },
@@ -34,6 +36,9 @@
     "partido_sigla": {
       "type": "string"
     },
+    "login": {
+      "type": "string"
+    },
     "status": {
       "type": "string",
       "enum": [
@@ -50,6 +55,10 @@
     },
     "camara_nome": {
       "type": "string"
+    },
+    "permissoes": {
+      "type": "object",
+      "default": {}
     }
   }
 }

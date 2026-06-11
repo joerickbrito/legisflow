@@ -2,16 +2,12 @@ import { createContext, useContext, useEffect, useState, useCallback } from 'rea
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { createAuditor } from '@/lib/auditoria';
+import { PERFIS, PERFIL_LABELS, DEFAULT_PERMISSIONS } from '@/lib/perfis';
 
 const TenantContext = createContext(null);
 
 // Role hierarchy and permissions
-export const ROLES = {
-  SUPER_ADMIN: 'SUPER_ADMIN',       // Master admin — acesso total
-  ADMIN_CAMARA: 'ADMIN_CAMARA',     // Admin da câmara — gestão total da câmara
-  OPERADOR_GERAL: 'OPERADOR_GERAL', // Acesso operacional completo, sem alterar cadastros estruturais
-  PRESIDENTE: 'PRESIDENTE',         // Vereador presidente — desempate
-  VEREADOR: 'VEREADOR',            // Acesso ao painel de votação e consulta
+export const ROLES = { ...PERFIS,
   // Legados (manter para compatibilidade)
   SECRETARIA_LEGISLATIVA: 'SECRETARIA_LEGISLATIVA',
   PROTOCOLO: 'PROTOCOLO',
@@ -20,12 +16,7 @@ export const ROLES = {
   CONSULTA_PUBLICA: 'CONSULTA_PUBLICA',
 };
 
-export const ROLE_LABELS = {
-  SUPER_ADMIN: 'Master Admin',
-  ADMIN_CAMARA: 'Admin da Câmara',
-  OPERADOR_GERAL: 'Operador Geral',
-  PRESIDENTE: 'Presidente',
-  VEREADOR: 'Vereador',
+export const ROLE_LABELS = { ...PERFIL_LABELS,
   // Legados
   SECRETARIA_LEGISLATIVA: 'Secretaria Legislativa',
   PROTOCOLO: 'Protocolo',
@@ -34,7 +25,9 @@ export const ROLE_LABELS = {
   CONSULTA_PUBLICA: 'Consulta Pública',
 };
 
-const OPERACIONAL = [ROLES.SUPER_ADMIN, ROLES.ADMIN_CAMARA, ROLES.OPERADOR_GERAL, ROLES.SECRETARIA_LEGISLATIVA];
+export { DEFAULT_PERMISSIONS };
+
+const OPERACIONAL = [ROLES.SUPER_ADMIN, ROLES.ADMIN_CAMARA, ROLES.OPERADOR_GERAL, ROLES.SECRETARIO_LEGISLATIVO];
 
 export const PERMISSIONS = {
   // Admin permissions
@@ -109,6 +102,8 @@ export function TenantProvider({ children }) {
   const isAdminCamara = userRole === ROLES.ADMIN_CAMARA || isSuperAdmin;
   const isOperadorGeral = userRole === ROLES.OPERADOR_GERAL || isAdminCamara;
   const isPresidente = userRole === ROLES.PRESIDENTE;
+  const isAssessor = userRole === ROLES.ASSESSOR;
+  const isSecretarioLegislativo = userRole === ROLES.SECRETARIO_LEGISLATIVO;
 
   // Helper: format parlamentar display name {Nome} — {Partido}
   const formatParlamentar = (nome, partido_sigla) => {
@@ -154,6 +149,8 @@ export function TenantProvider({ children }) {
       isAdminCamara,
       isOperadorGeral,
       isPresidente,
+      isAssessor,
+      isSecretarioLegislativo,
       withTenant,
       requireTenant,
       canQuery,

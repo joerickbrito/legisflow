@@ -13,7 +13,7 @@ import { useTenant, ROLE_LABELS } from '@/lib/TenantContext';
 import { useAuth } from '@/lib/AuthContext';
 import { cn } from '@/lib/utils';
 
-const OPERACIONAL_ROLES = ['SUPER_ADMIN', 'ADMIN_CAMARA', 'OPERADOR_GERAL', 'SECRETARIA_LEGISLATIVA', 'PROTOCOLO', 'PRESIDENTE'];
+const OPERACIONAL_ROLES = ['SUPER_ADMIN', 'ADMIN_CAMARA', 'OPERADOR_GERAL', 'SECRETARIO_LEGISLATIVO', 'SECRETARIA_LEGISLATIVA', 'PROTOCOLO', 'PRESIDENTE'];
 
 const getNavGroups = (isSuperAdmin, isAdminCamara, userRole) => {
   const groups = [
