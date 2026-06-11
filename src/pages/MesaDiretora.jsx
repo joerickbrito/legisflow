@@ -27,16 +27,10 @@ export default function MesaDiretora() {
   async function load() {
     const filter = withTenant();
     if (!filter) return;
-    const [m, p, l, sl] = await Promise.all([
-      base44.entities.MesaDiretora.filter(filter, '-created_date'),
-      base44.entities.Parlamentar.filter({ ...filter, ativo: true }),
-      base44.entities.Legislatura.filter(filter),
-      base44.entities.SessaoLegislativa.filter(filter, '-ano'),
-    ]);
-    setMesas(m);
-    setParlamentares(p);
-    setLegislaturas(l);
-    setSessoesLeg(sl);
+    try { const m = await base44.entities.MesaDiretora.filter(filter, '-created_date'); setMesas(m); } catch (e) { console.error('Erro ao carregar mesas:', e); }
+    try { const p = await base44.entities.Parlamentar.filter({ ...filter, ativo: true }); setParlamentares(p); } catch (e) { console.error('Erro ao carregar parlamentares:', e); }
+    try { const l = await base44.entities.Legislatura.filter(filter); setLegislaturas(l); } catch (e) { console.error('Erro ao carregar legislaturas:', e); }
+    try { const sl = await base44.entities.SessaoLegislativa.filter(filter, '-ano'); setSessoesLeg(sl); } catch (e) { console.error('Erro ao carregar sessões:', e); }
   }
 
   function setParlamentarCargo(cargo, id) {

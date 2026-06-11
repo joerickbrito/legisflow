@@ -48,14 +48,10 @@ export default function Proposicoes() {
 
   async function load() {
     const filter = withTenant({});
-    const [p, parl, tipos] = await Promise.all([
-      base44.entities.Proposicao.filter(filter, '-created_date', 100),
-      base44.entities.Parlamentar.filter({ ...filter, ativo: true }),
-      base44.entities.TipoMateria.filter({ ...filter, ativo: true }, 'ordem', 50),
-    ]);
-    setProposicoes(p);
-    setParlamentares(parl);
-    setTiposMateria(tipos.length > 0 ? tipos.map(t => t.nome) : TIPOS_DEFAULT);
+    if (!filter) return;
+    try { const p = await base44.entities.Proposicao.filter(filter, '-created_date', 100); setProposicoes(p); } catch (e) { console.error('Erro ao carregar proposições:', e); }
+    try { const parl = await base44.entities.Parlamentar.filter({ ...filter, ativo: true }); setParlamentares(parl); } catch (e) { console.error('Erro ao carregar parlamentares:', e); }
+    try { const tipos = await base44.entities.TipoMateria.filter({ ...filter, ativo: true }, 'ordem', 50); setTiposMateria(tipos.length > 0 ? tipos.map(t => t.nome) : TIPOS_DEFAULT); } catch (e) { console.error('Erro ao carregar tipos:', e); }
   }
 
   async function salvar() {

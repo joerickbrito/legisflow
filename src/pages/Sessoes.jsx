@@ -46,18 +46,12 @@ export default function Sessoes() {
 
   async function loadData() {
     const filter = withTenant({});
-    const [s, p, m, sl, leg] = await Promise.all([
-      base44.entities.Sessao.filter(filter, '-data', 50),
-      base44.entities.Parlamentar.filter({ ...filter, ativo: true }),
-      base44.entities.Materia.filter({ ...filter, status: 'Em tramitação' }),
-      base44.entities.SessaoLegislativa.filter(filter),
-      base44.entities.Legislatura.filter(filter),
-    ]);
-    setSessoes(s);
-    setParlamentares(p);
-    setMaterias(m);
-    setSessoesLeg(sl);
-    setLegislaturas(leg);
+    if (!filter) return;
+    try { const s = await base44.entities.Sessao.filter(filter, '-data', 50); setSessoes(s); } catch (e) { console.error('Erro ao carregar sessões:', e); }
+    try { const p = await base44.entities.Parlamentar.filter({ ...filter, ativo: true }); setParlamentares(p); } catch (e) { console.error('Erro ao carregar parlamentares:', e); }
+    try { const m = await base44.entities.Materia.filter({ ...filter, status: 'Em tramitação' }); setMaterias(m); } catch (e) { console.error('Erro ao carregar matérias:', e); }
+    try { const sl = await base44.entities.SessaoLegislativa.filter(filter); setSessoesLeg(sl); } catch (e) { console.error('Erro ao carregar sessões leg:', e); }
+    try { const leg = await base44.entities.Legislatura.filter(filter); setLegislaturas(leg); } catch (e) { console.error('Erro ao carregar legislaturas:', e); }
   }
 
   function buildPresencas(existing) {

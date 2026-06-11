@@ -25,16 +25,10 @@ export default function Votacao() {
 
   async function loadData() {
     const filter = withTenant({});
-    const [v, p, m] = await Promise.all([
-      base44.entities.Votacao.filter(filter, '-created_date', 20),
-      base44.entities.Parlamentar.filter({ ...filter, ativo: true }),
-      base44.entities.Materia.filter({ ...filter, status: 'Em tramitação' }),
-    ]);
-    setVotacoes(v);
-    setParlamentares(p);
-    setMaterias(m);
-    const ativa = v.find(x => x.status === 'Em Votação');
-    setVotacaoAtiva(ativa || null);
+    if (!filter) { setLoading(false); return; }
+    try { const v = await base44.entities.Votacao.filter(filter, '-created_date', 20); setVotacoes(v); const ativa = v.find(x => x.status === 'Em Votação'); setVotacaoAtiva(ativa || null); } catch (e) { console.error('Erro ao carregar votações:', e); }
+    try { const p = await base44.entities.Parlamentar.filter({ ...filter, ativo: true }); setParlamentares(p); } catch (e) { console.error('Erro ao carregar parlamentares:', e); }
+    try { const m = await base44.entities.Materia.filter({ ...filter, status: 'Em tramitação' }); setMaterias(m); } catch (e) { console.error('Erro ao carregar matérias:', e); }
     setLoading(false);
   }
 

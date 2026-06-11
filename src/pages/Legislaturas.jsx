@@ -24,12 +24,15 @@ export default function Legislaturas() {
 
   async function load() {
     const filter = withTenant({});
-    const [l, s] = await Promise.all([
-      base44.entities.Legislatura.filter(filter, '-data_inicio'),
-      base44.entities.SessaoLegislativa.filter(filter, '-ano'),
-    ]);
-    setLegislaturas(l);
-    setSessoesLeg(s);
+    if (!filter) return;
+    try {
+      const l = await base44.entities.Legislatura.filter(filter, '-data_inicio');
+      setLegislaturas(l);
+    } catch (e) { console.error('Erro ao carregar legislaturas:', e); }
+    try {
+      const s = await base44.entities.SessaoLegislativa.filter(filter, '-ano');
+      setSessoesLeg(s);
+    } catch (e) { console.error('Erro ao carregar sessões legislativas:', e); }
   }
 
   async function salvarLeg() {

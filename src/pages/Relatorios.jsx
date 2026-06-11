@@ -17,13 +17,12 @@ export default function Relatorios() {
     async function load() {
       const filter = withTenant();
       if (!filter) { setLoading(false); return; }
-      const [m, p, v, s] = await Promise.all([
-        base44.entities.Materia.filter(filter, '-created_date', 500),
-        base44.entities.Parlamentar.filter({ ...filter, ativo: true }),
-        base44.entities.Votacao.filter(filter, '-created_date', 200),
-        base44.entities.Sessao.filter(filter, '-data', 100),
-      ]);
-      setData({ materias: m, parlamentares: p, votacoes: v, sessoes: s });
+      const result = { materias: [], parlamentares: [], votacoes: [], sessoes: [] };
+      try { result.materias = await base44.entities.Materia.filter(filter, '-created_date', 500); } catch (e) { console.error('Erro matérias:', e); }
+      try { result.parlamentares = await base44.entities.Parlamentar.filter({ ...filter, ativo: true }); } catch (e) { console.error('Erro parlamentares:', e); }
+      try { result.votacoes = await base44.entities.Votacao.filter(filter, '-created_date', 200); } catch (e) { console.error('Erro votações:', e); }
+      try { result.sessoes = await base44.entities.Sessao.filter(filter, '-data', 100); } catch (e) { console.error('Erro sessões:', e); }
+      setData(result);
       setLoading(false);
     }
     load();

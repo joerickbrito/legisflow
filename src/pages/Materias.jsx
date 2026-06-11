@@ -38,14 +38,10 @@ export default function Materias() {
 
   async function loadData() {
     const filter = withTenant({});
-    const [m, p, tipos] = await Promise.all([
-      base44.entities.Materia.filter(filter, '-created_date', 100),
-      base44.entities.Parlamentar.filter({ ...filter, ativo: true }),
-      base44.entities.TipoMateria.filter({ ...filter, ativo: true }, 'ordem', 50),
-    ]);
-    setMaterias(m);
-    setParlamentares(p);
-    if (tipos.length > 0) setTiposMateria(tipos.map(t => t.nome));
+    if (!filter) { setLoading(false); return; }
+    try { const m = await base44.entities.Materia.filter(filter, '-created_date', 100); setMaterias(m); } catch (e) { console.error('Erro ao carregar matérias:', e); }
+    try { const p = await base44.entities.Parlamentar.filter({ ...filter, ativo: true }); setParlamentares(p); } catch (e) { console.error('Erro ao carregar parlamentares:', e); }
+    try { const tipos = await base44.entities.TipoMateria.filter({ ...filter, ativo: true }, 'ordem', 50); if (tipos.length > 0) setTiposMateria(tipos.map(t => t.nome)); } catch (e) { console.error('Erro ao carregar tipos:', e); }
     setLoading(false);
   }
 

@@ -26,12 +26,9 @@ export default function Comissoes() {
 
   async function loadData() {
     const filter = withTenant({});
-    const [c, p] = await Promise.all([
-      base44.entities.Comissao.filter(filter, '-created_date', 50),
-      base44.entities.Parlamentar.filter({ ...filter, ativo: true }),
-    ]);
-    setComissoes(c);
-    setParlamentares(p);
+    if (!filter) return;
+    try { const c = await base44.entities.Comissao.filter(filter, '-created_date', 50); setComissoes(c); } catch (e) { console.error('Erro ao carregar comissões:', e); }
+    try { const p = await base44.entities.Parlamentar.filter({ ...filter, ativo: true }); setParlamentares(p); } catch (e) { console.error('Erro ao carregar parlamentares:', e); }
   }
 
   function openNew() {
