@@ -97,12 +97,20 @@ export default function GerenciarCamaras() {
         let inviteOk = false;
         let inviteError = null;
         try {
+          // 1. Criar o usuário na plataforma
           await base44.users.inviteUser(admin.email, "user");
-          inviteOk = true;
 
-          const allUsers = await base44.entities.User.list();
-          const found = allUsers.find(u => u.email === admin.email);
+          // 2. Buscar o usuário recém-criado (com retry — pode haver delay de propagação)
+          let found = null;
+          for (let attempt = 0; attempt < 5; attempt++) {
+            if (attempt > 0) await new Promise(r => setTimeout(r, 1000));
+            const users = await base44.entities.User.filter({ email: admin.email.trim().toLowerCase() });
+            found = users[0];
+            if (found) break;
+          }
+
           if (found) {
+            // 3. Vincular à Câmara, definir role e status
             await base44.entities.User.update(found.id, {
               role: 'ADMIN_CAMARA',
               tenant_id: novaCamara.id,
@@ -111,9 +119,9 @@ export default function GerenciarCamaras() {
               senha_temporaria: true,
               camara_nome: novaCamara.nome,
             });
+            inviteOk = true;
           } else {
-            inviteError = "Usuário criado mas não localizado na listagem. Acesse Gerenciar Usuários para vinculá-lo manualmente.";
-            inviteOk = false;
+            inviteError = "Usuário criado na plataforma mas não localizado após 5 tentativas. Acesse Gerenciar Usuários para vinculá-lo manualmente.";
           }
         } catch (err) {
           inviteError = err?.response?.data?.error || err?.message || "Erro desconhecido ao criar administrador.";
