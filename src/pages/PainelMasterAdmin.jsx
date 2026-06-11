@@ -1,27 +1,31 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useTenant } from '@/lib/TenantContext';
-import { Building2, Search, LogIn, Edit2, ShieldOff, Trash2, Plus, Users, Shield } from 'lucide-react';
+import PageHeader from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { Building2, Search, LogIn, Plus, ShieldOff, Trash2, Shield, PlusCircle } from 'lucide-react';
 
-const statusColor = { Ativa: 'bg-green-500/15 text-green-400', Suspensa: 'bg-yellow-500/15 text-yellow-400', Inativa: 'bg-red-500/15 text-red-400' };
+const statusColor = { Ativa: 'default', Suspensa: 'secondary', Inativa: 'destructive' };
 
 export default function PainelMasterAdmin() {
+  const navigate = useNavigate();
   const { enterCamara } = useTenant();
   const [camaras, setCamaras] = useState([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    base44.entities.Camara.list().then(setCamaras).finally(() => setLoading(false));
+    base44.entities.Camara.list("-created_date", 200).then(setCamaras).finally(() => setLoading(false));
   }, []);
 
   const filtered = camaras.filter(c =>
     !search || c.nome?.toLowerCase().includes(search.toLowerCase()) ||
-    c.municipio?.toLowerCase().includes(search.toLowerCase()) ||
-    c.estado?.toLowerCase().includes(search.toLowerCase())
+    (c.municipio || '')?.toLowerCase().includes(search.toLowerCase()) ||
+    (c.estado || '')?.toLowerCase().includes(search.toLowerCase())
   );
 
   async function toggleStatus(camara) {
@@ -37,110 +41,111 @@ export default function PainelMasterAdmin() {
   }
 
   return (
-    <div className="min-h-screen bg-[hsl(220,30%,8%)] text-white flex flex-col">
-      {/* Header */}
-      <div className="border-b border-white/10 px-6 py-5 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-600/20 flex items-center justify-center">
-            <Shield size={20} className="text-blue-400" />
-          </div>
-          <div>
-            <h1 className="text-lg font-bold text-white">Painel Master Admin</h1>
-            <p className="text-xs text-white/40">Gerenciamento global de câmaras municipais</p>
-          </div>
-        </div>
-        <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
-          <Plus size={14} /> Nova Câmara
-        </Button>
-      </div>
+    <div className="p-6 space-y-6">
+      <PageHeader
+        icon={Shield}
+        title="Painel Master Admin"
+        subtitle="Visão geral e gestão de todas as câmaras municipais"
+        action={
+          <Button onClick={() => navigate('/gerenciar-camaras')} className="gap-2">
+            <PlusCircle size={16} /> Gerenciar Câmaras
+          </Button>
+        }
+      />
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 px-6 py-5">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Total de Câmaras', value: camaras.length, color: 'text-blue-400' },
-          { label: 'Ativas', value: camaras.filter(c => c.status === 'Ativa').length, color: 'text-green-400' },
-          { label: 'Suspensas / Inativas', value: camaras.filter(c => c.status !== 'Ativa').length, color: 'text-yellow-400' },
+          { label: "Total", value: camaras.length, color: "text-primary" },
+          { label: "Ativas", value: camaras.filter(c => c.status === "Ativa").length, color: "text-green-600" },
+          { label: "Suspensas", value: camaras.filter(c => c.status === "Suspensa").length, color: "text-yellow-600" },
+          { label: "Inativas", value: camaras.filter(c => c.status === "Inativa").length, color: "text-red-500" },
         ].map(s => (
-          <div key={s.label} className="bg-white/5 rounded-xl p-4 border border-white/10">
-            <p className="text-xs text-white/40">{s.label}</p>
-            <p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p>
-          </div>
+          <Card key={s.label}><CardContent className="pt-4 text-center">
+            <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
+            <p className="text-xs text-muted-foreground">{s.label}</p>
+          </CardContent></Card>
         ))}
       </div>
 
       {/* Search */}
-      <div className="px-6 pb-4">
-        <div className="relative">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
-          <Input
-            className="pl-9 bg-white/5 border-white/10 text-white placeholder:text-white/30 focus-visible:ring-blue-500"
-            placeholder="Buscar câmara por nome, município ou estado..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-        </div>
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input
+          className="pl-9"
+          placeholder="Buscar câmara por nome, município ou estado..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
       </div>
 
       {/* List */}
-      <div className="flex-1 overflow-y-auto px-6 pb-6 space-y-2">
-        {loading ? (
-          <div className="flex justify-center pt-12">
-            <div className="w-6 h-6 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center pt-12 text-white/30">
-            <Building2 size={40} className="mx-auto mb-3 opacity-30" />
-            <p>Nenhuma câmara encontrada</p>
-          </div>
-        ) : filtered.map(camara => (
-          <div key={camara.id} className="flex items-center justify-between bg-white/5 hover:bg-white/8 border border-white/10 rounded-xl px-4 py-3 transition-colors">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-9 h-9 rounded-lg bg-blue-600/20 flex items-center justify-center flex-shrink-0">
-                {camara.brasao_url
-                  ? <img src={camara.brasao_url} alt="" className="w-7 h-7 object-contain" />
-                  : <Building2 size={16} className="text-blue-400" />}
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-white truncate">{camara.nome}</p>
-                <p className="text-xs text-white/40 truncate">
-                  {[camara.municipio, camara.estado].filter(Boolean).join(', ')}
-                  {camara.plano && <span className="ml-2 opacity-60">· {camara.plano}</span>}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${statusColor[camara.status] || statusColor.Ativa}`}>
-                {camara.status || 'Ativa'}
-              </span>
-              <Button
-                size="sm"
-                className="h-7 px-3 text-xs bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 border border-blue-500/30 gap-1"
-                onClick={() => enterCamara(camara)}
-              >
-                <LogIn size={12} /> Entrar
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 w-7 p-0 text-white/40 hover:text-yellow-400 hover:bg-yellow-500/10"
-                onClick={() => toggleStatus(camara)}
-                title={camara.status === 'Ativa' ? 'Suspender' : 'Reativar'}
-              >
-                <ShieldOff size={13} />
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 w-7 p-0 text-white/40 hover:text-red-400 hover:bg-red-500/10"
-                onClick={() => deleteCamara(camara)}
-                title="Excluir"
-              >
-                <Trash2 size={13} />
-              </Button>
-            </div>
-          </div>
-        ))}
-      </div>
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground">
+          <Building2 size={40} className="mx-auto mb-3 opacity-30" />
+          <p>Nenhuma câmara encontrada</p>
+        </div>
+      ) : (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {filtered.map(camara => (
+            <Card key={camara.id} className="hover:shadow-md transition-shadow">
+              <CardContent className="pt-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    {camara.brasao_url
+                      ? <img src={camara.brasao_url} alt="" className="w-8 h-8 object-contain" />
+                      : <Building2 size={18} className="text-primary" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="font-semibold text-sm leading-tight truncate">{camara.nome}</p>
+                      <Badge variant={statusColor[camara.status] || 'secondary'} className="text-[10px] flex-shrink-0">
+                        {camara.status || 'Ativa'}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                      {[camara.municipio, camara.estado].filter(Boolean).join(', ') || '—'}
+                      {camara.plano && <span className="ml-2 opacity-60">· {camara.plano}</span>}
+                    </p>
+                    <div className="flex items-center gap-1.5 mt-3">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 px-2.5 text-xs gap-1"
+                        onClick={() => enterCamara(camara)}
+                      >
+                        <LogIn size={12} /> Entrar
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 w-7 p-0 text-muted-foreground hover:text-yellow-600"
+                        onClick={() => toggleStatus(camara)}
+                        title={camara.status === 'Ativa' ? 'Suspender' : 'Reativar'}
+                      >
+                        <ShieldOff size={13} />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                        onClick={() => deleteCamara(camara)}
+                        title="Excluir"
+                      >
+                        <Trash2 size={13} />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

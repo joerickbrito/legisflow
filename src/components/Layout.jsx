@@ -12,7 +12,6 @@ import { base44 } from '@/api/base44Client';
 import { useTenant, ROLE_LABELS } from '@/lib/TenantContext';
 import { useAuth } from '@/lib/AuthContext';
 import { cn } from '@/lib/utils';
-import PainelMasterAdmin from '@/pages/PainelMasterAdmin.jsx';
 
 const OPERACIONAL_ROLES = ['SUPER_ADMIN', 'ADMIN_CAMARA', 'OPERADOR_GERAL', 'SECRETARIA_LEGISLATIVA', 'PROTOCOLO', 'PRESIDENTE'];
 
@@ -31,8 +30,9 @@ const getNavGroups = (isSuperAdmin, isAdminCamara, userRole) => {
     groups.push({
       label: 'Super Admin',
       items: [
-        { path: '/gerenciar-camaras', icon: Building2, label: 'Câmaras', highlight: true },
-        { path: '/gerenciar-usuarios', icon: Shield, label: 'Usuários' },
+        { path: '/painel-master', icon: Shield, label: 'Painel Master', highlight: true },
+        { path: '/gerenciar-camaras', icon: Building2, label: 'Câmaras' },
+        { path: '/gerenciar-usuarios', icon: Users, label: 'Usuários' },
         { path: '/configuracoes', icon: SlidersHorizontal, label: 'Configurações' },
         { path: '/auditoria', icon: ScrollText, label: 'Auditoria' },
       ]
@@ -138,9 +138,9 @@ export default function Layout() {
   const navGroups = getNavGroups(isSuperAdmin, isAdminCamara, userRole);
   const [expandedGroups, setExpandedGroups] = useState(navGroups.map(() => true));
 
-  // SUPER_ADMIN sem câmara ativa → mostrar painel central
-  if (isSuperAdmin && !activeCamara) {
-    return <PainelMasterAdmin />;
+  // SUPER_ADMIN sem câmara ativa → redirecionar da home para painel master
+  if (isSuperAdmin && !activeCamara && location.pathname === '/') {
+    return <Navigate to="/painel-master" replace />;
   }
 
   function toggleGroup(i) {
