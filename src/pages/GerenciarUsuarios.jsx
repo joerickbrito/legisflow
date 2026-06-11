@@ -44,7 +44,7 @@ const FormField = ({ label, required, children }) => (
 );
 
 export default function GerenciarUsuarios() {
-  const { isAdminCamara, isSuperAdmin, tenantId, withTenant } = useTenant();
+  const { isAdminCamara, isSuperAdmin, isInChamberContext, tenantId, withTenant } = useTenant();
   const [usuarios, setUsuarios] = useState([]);
   const [camaras, setCamaras] = useState([]);
   const [partidos, setPartidos] = useState([]);
@@ -132,7 +132,8 @@ export default function GerenciarUsuarios() {
           _source: 'base44',
         }));
       const all = [...(sislegisUsers || []).map(u => ({ ...u, _source: 'sislegis' })), ...legacyUsers];
-      setUsuarios(isSuperAdmin ? all : all.filter(u => u.tenant_id === tenantId));
+      // Master: apenas SUPER_ADMIN. Câmara: apenas usuários do tenant_id desta câmara.
+      setUsuarios(isInChamberContext ? all.filter(u => u.tenant_id === tenantId) : all.filter(u => u.role === 'SUPER_ADMIN'));
     } catch (err) {
       console.warn('Erro ao carregar usuários:', err);
     }
@@ -264,8 +265,9 @@ export default function GerenciarUsuarios() {
   const fotoObrigatoria = PERFIS_FOTO_OBRIGATORIA.includes(form.role);
 
   const filtered = usuarios.filter(u => {
-    const matchSearch = u.full_name?.toLowerCase().includes(search.toLowerCase()) ||
-      u.email?.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = (u.nome || u.full_name || '').toLowerCase().includes(search.toLowerCase()) ||
+      (u.username || '').toLowerCase().includes(search.toLowerCase()) ||
+      (u.email || '').toLowerCase().includes(search.toLowerCase());
     const matchRole = filterRole === "todos" || u.role === filterRole;
     return matchSearch && matchRole;
   });
@@ -276,16 +278,20 @@ export default function GerenciarUsuarios() {
     <div className="p-6 space-y-6">
       <PageHeader
         icon={Users}
-        title="Gerenciar Usuários"
+        title={isInChamberContext ? "Usuários da Câmara" : "Usuários Master"}
         subtitle={`${usuarios.length} usuário(s) cadastrado(s)`}
-        action={<Button onClick={openNew}><Plus className="w-4 h-4 mr-2" />Novo Usuário</Button>}
+        action={
+          (isInChamberContext || isSuperAdmin) && (
+            <Button onClick={openNew}><Plus className="w-4 h-4 mr-2" />Novo Usuário</Button>
+          )
+        }
       />
 
       {/* Filtros */}
       <div className="flex gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input className="pl-9" placeholder="Buscar por nome ou e-mail..." value={search} onChange={e => setSearch(e.target.value)} />
+          <Input className="pl-9" placeholder="Buscar por nome, username ou e-mail..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         <Select value={filterRole} onValueChange={setFilterRole}>
           <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
