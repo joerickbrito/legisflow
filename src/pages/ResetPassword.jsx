@@ -24,6 +24,14 @@ export default function ResetPassword() {
     setLoading(true);
     try {
       await base44.auth.resetPassword({ resetToken, newPassword: password });
+      // Limpar flag de senha temporária se veio de primeiro acesso
+      const pendingEmail = sessionStorage.getItem('pendingPasswordResetEmail');
+      if (pendingEmail) {
+        try {
+          await base44.functions.invoke('limparSenhaTemporaria', { email: pendingEmail });
+        } catch (_) { /* silencioso */ }
+        sessionStorage.removeItem('pendingPasswordResetEmail');
+      }
       setDone(true);
     } catch (err) {
       setError("Link inválido ou expirado. Solicite uma nova recuperação.");

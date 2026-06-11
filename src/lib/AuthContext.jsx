@@ -13,6 +13,7 @@ export const AuthProvider = ({ children }) => {
   const [authError, setAuthError] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [appPublicSettings, setAppPublicSettings] = useState(null); // Contains only { id, public_settings }
+  const [primeiroAcesso, setPrimeiroAcesso] = useState(false);
 
   useEffect(() => {
     checkAppState();
@@ -96,6 +97,26 @@ export const AuthProvider = ({ children }) => {
       const currentUser = await base44.auth.me();
       setUser(currentUser);
       setIsAuthenticated(true);
+
+      // Primeiro usuário do sistema → SUPER_ADMIN automático
+      // E detecção de senha temporária (antes de liberar a interface)
+      let roleUpdated = false;
+      try {
+        const totalUsers = await base44.entities.User.list();
+        if (totalUsers.length <= 1 && currentUser.role !== 'SUPER_ADMIN') {
+          await base44.entities.User.update(currentUser.id, { role: 'SUPER_ADMIN' });
+          roleUpdated = true;
+        }
+      } catch (_) { /* silencioso */ }
+
+      if (roleUpdated) {
+        const refreshed = await base44.auth.me();
+        setUser(refreshed);
+        setPrimeiroAcesso(!!refreshed.senha_temporaria);
+      } else {
+        setPrimeiroAcesso(!!currentUser.senha_temporaria);
+      }
+
       setIsLoadingAuth(false);
       setAuthChecked(true);
     } catch (error) {
@@ -141,6 +162,7 @@ export const AuthProvider = ({ children }) => {
       authError,
       appPublicSettings,
       authChecked,
+      primeiroAcesso,
       logout,
       navigateToLogin,
       checkUserAuth,
