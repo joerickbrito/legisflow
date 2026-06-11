@@ -4,10 +4,10 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Mail, Loader2, Scale, ArrowLeft, CheckCircle } from "lucide-react";
+import { User, Loader2, Scale, ArrowLeft, CheckCircle } from "lucide-react";
 
 export default function ForgotPassword() {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
 
@@ -15,9 +15,13 @@ export default function ForgotPassword() {
     e.preventDefault();
     setLoading(true);
     try {
-      await base44.auth.resetPasswordRequest(email);
+      // Resolver username → email
+      const response = await base44.functions.invoke("buscarEmailPorUsername", { username });
+      if (response.data?.email) {
+        await base44.auth.resetPasswordRequest(response.data.email);
+      }
     } catch (e) {
-      // Always show success per security best practices
+      // Sempre mostra sucesso por segurança
     } finally {
       setLoading(false);
       setSent(true);
@@ -39,9 +43,9 @@ export default function ForgotPassword() {
           {sent ? (
             <div className="text-center space-y-4">
               <CheckCircle className="w-12 h-12 text-green-400 mx-auto" />
-              <h2 className="text-xl font-semibold text-white">E-mail Enviado</h2>
+              <h2 className="text-xl font-semibold text-white">Recuperação Solicitada</h2>
               <p className="text-slate-400 text-sm">
-                Se o e-mail estiver cadastrado, você receberá as instruções de recuperação em breve.
+                Se o usuário estiver cadastrado com um e-mail válido, você receberá as instruções de recuperação em breve.
               </p>
               <Link to="/login">
                 <Button variant="outline" className="w-full border-white/20 text-slate-300 hover:bg-white/10">
@@ -53,19 +57,19 @@ export default function ForgotPassword() {
             <>
               <div className="mb-6">
                 <h2 className="text-xl font-semibold text-white">Recuperar Senha</h2>
-                <p className="text-slate-400 text-sm mt-1">Informe seu e-mail para receber o link de recuperação</p>
+                <p className="text-slate-400 text-sm mt-1">Informe seu nome de usuário para receber o link de recuperação</p>
               </div>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="email" className="text-slate-300 text-sm">E-mail</Label>
+                  <Label htmlFor="username" className="text-slate-300 text-sm">Nome de Usuário</Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                     <Input
-                      id="email"
-                      type="email"
-                      placeholder="seu@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      id="username"
+                      type="text"
+                      placeholder="seu.usuario"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
                       className="pl-10 h-11 bg-white/10 border-white/20 text-white placeholder:text-slate-500 focus:border-blue-400"
                       required
                     />

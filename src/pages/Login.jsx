@@ -4,10 +4,10 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LogIn, Mail, Lock, Loader2, Scale, Globe } from "lucide-react";
+import { LogIn, User, Lock, Loader2, Scale, Globe } from "lucide-react";
 
 export default function Login() {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -17,10 +17,19 @@ export default function Login() {
     setError("");
     setLoading(true);
     try {
-      await base44.auth.loginViaEmailPassword(email, password);
+      // 1. Resolver username → email via backend
+      const response = await base44.functions.invoke("buscarEmailPorUsername", { username });
+      if (!response.data?.email) {
+        setError("Nome de usuário ou senha inválidos.");
+        setLoading(false);
+        return;
+      }
+
+      // 2. Login com email + senha
+      await base44.auth.loginViaEmailPassword(response.data.email, password);
       window.location.href = "/";
     } catch (err) {
-      setError("Email ou senha inválidos. Verifique suas credenciais.");
+      setError("Nome de usuário ou senha inválidos.");
     } finally {
       setLoading(false);
     }
@@ -53,17 +62,17 @@ export default function Login() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-slate-300 text-sm">E-mail</Label>
+              <Label htmlFor="username" className="text-slate-300 text-sm">Nome de Usuário</Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                 <Input
-                  id="email"
-                  type="email"
-                  autoComplete="email"
+                  id="username"
+                  type="text"
+                  autoComplete="username"
                   autoFocus
-                  placeholder="seu@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="seu.usuario"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   className="pl-10 h-11 bg-white/10 border-white/20 text-white placeholder:text-slate-500 focus:border-blue-400 focus:ring-blue-400/20"
                   required
                 />

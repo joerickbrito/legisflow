@@ -18,7 +18,7 @@ function isFormValid(form) {
 }
 
 function isAdminValid(admin) {
-  return admin.nome?.trim() && admin.email?.trim() && admin.senha?.trim() && admin.senha.length >= 6 && admin.senha === admin.confirmarSenha;
+  return admin.nome?.trim() && admin.username?.trim() && admin.senha?.trim() && admin.senha.length >= 6 && admin.senha === admin.confirmarSenha;
 }
 
 const FormField = ({ label, required, children }) => (
@@ -50,7 +50,7 @@ export default function GerenciarCamaras() {
   const [form, setForm] = useState(emptyForm);
 
   const emptyAdmin = {
-    nome: "", email: "", senha: "", confirmarSenha: "", enviarEmail: false,
+    nome: "", username: "", email: "", senha: "", confirmarSenha: "", enviarEmail: false,
   };
   const [admin, setAdmin] = useState(emptyAdmin);
   const [showSenha, setShowSenha] = useState(false);
@@ -105,6 +105,7 @@ export default function GerenciarCamaras() {
             await base44.entities.User.update(found.id, {
               role: 'ADMIN_CAMARA',
               tenant_id: novaCamara.id,
+              username: admin.username,
               status: 'Pendente de Ativação',
               senha_temporaria: true,
               camara_nome: novaCamara.nome,
@@ -125,7 +126,7 @@ export default function GerenciarCamaras() {
                 `Suas credenciais de acesso ao SisLegis foram criadas:`,
                 ``,
                 `Câmara: ${novaCamara.nome}`,
-                `Login: ${admin.email}`,
+                `Usuário: ${admin.username}`,
                 `Senha temporária: ${admin.senha}`,
                 ``,
                 `Acesse o sistema e altere sua senha no primeiro acesso.`,
@@ -400,7 +401,14 @@ export default function GerenciarCamaras() {
                       <Input value={admin.nome} onChange={e => setAdmin(a => ({ ...a, nome: e.target.value }))} placeholder="Nome completo" />
                     </FormField>
 
-                    <FormField label="Login (E-mail)" required>
+                    <FormField label="Nome de Usuário" required>
+                      <Input value={admin.username} onChange={e => setAdmin(a => ({ ...a, username: e.target.value }))} placeholder="admin.saopaulo" />
+                    </FormField>
+                    <p className="text-[11px] text-muted-foreground -mt-3">
+                      Recomendamos incluir uma referência da câmara no nome de usuário para facilitar a identificação. Exemplo: joao.saj
+                    </p>
+
+                    <FormField label="E-mail (opcional)">
                       <Input type="email" value={admin.email} onChange={e => setAdmin(a => ({ ...a, email: e.target.value }))} placeholder="admin@camara.sp.gov.br" />
                     </FormField>
 

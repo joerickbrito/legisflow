@@ -27,10 +27,19 @@ const ROLE_BADGE_COLOR = {
 
 function displayName(u) {
   if ((u.role === 'VEREADOR' || u.role === 'PRESIDENTE') && u.partido_sigla) {
-    return `${u.full_name || u.email} — ${u.partido_sigla}`;
+    return `${u.full_name || u.username || u.email} — ${u.partido_sigla}`;
   }
-  return u.full_name || u.email;
+  return u.full_name || u.username || u.email;
 }
+
+const FormField = ({ label, required, children }) => (
+  <div>
+    <label className="text-xs text-muted-foreground block mb-1">
+      {label}{required && <span className="text-destructive ml-0.5">*</span>}
+    </label>
+    {children}
+  </div>
+);
 
 export default function GerenciarUsuarios() {
   const { isAdminCamara, isSuperAdmin, tenantId, withTenant } = useTenant();
@@ -43,7 +52,7 @@ export default function GerenciarUsuarios() {
   const [editing, setEditing] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [resetandoSenha, setResetandoSenha] = useState(null); // id do usuário sendo resetado
+  const [resetandoSenha, setResetandoSenha] = useState(null);
 
   const handleResetarSenha = async (e, u) => {
     e.stopPropagation();
@@ -60,7 +69,7 @@ export default function GerenciarUsuarios() {
   };
 
   const emptyForm = {
-    email: "", full_name: "", cpf: "", telefone: "", cargo: "",
+    email: "", full_name: "", username: "", cpf: "", telefone: "", cargo: "",
     foto_url: "", partido_id: "", partido_sigla: "",
     login: "", role: "VEREADOR", tenant_id: tenantId || "",
     status: "Ativo", senha_temporaria: true,
@@ -110,18 +119,15 @@ export default function GerenciarUsuarios() {
     setUploading(false);
   }
 
-  // Ao trocar o perfil, preenche as permissões padrão (respeitando eventuais overrides manuais)
   const handleRoleChange = (newRole) => {
     const defaults = DEFAULT_PERMISSIONS[newRole] || {};
     setForm(f => ({
       ...f,
       role: newRole,
-      // Se mudou de perfil, reseta para o padrão do novo perfil
       permissoes: { ...defaults },
     }));
   };
 
-  // Alterna uma permissão individual
   const togglePermissao = (key) => {
     setForm(f => ({
       ...f,
@@ -134,6 +140,7 @@ export default function GerenciarUsuarios() {
     try {
       if (editing) {
         await base44.entities.User.update(editing.id, {
+          username: form.username,
           cpf: form.cpf,
           telefone: form.telefone,
           cargo: form.cargo,
@@ -152,6 +159,7 @@ export default function GerenciarUsuarios() {
         const newUser = all.find(u => u.email === form.email);
         if (newUser) {
           await base44.entities.User.update(newUser.id, {
+            username: form.username,
             cpf: form.cpf,
             telefone: form.telefone,
             cargo: form.cargo,
@@ -185,15 +193,6 @@ export default function GerenciarUsuarios() {
     const matchRole = filterRole === "todos" || u.role === filterRole;
     return matchSearch && matchRole;
   });
-
-  const F = ({ label, required, children }) => (
-    <div>
-      <label className="text-xs text-muted-foreground block mb-1">
-        {label}{required && <span className="text-destructive ml-0.5">*</span>}
-      </label>
-      {children}
-    </div>
-  );
 
   const todasPermKeys = PERMISSION_GROUPS.flatMap(g => g.keys.map(k => k.key));
 
@@ -238,7 +237,7 @@ export default function GerenciarUsuarios() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm truncate">{displayName(u)}</p>
-                  <p className="text-xs text-muted-foreground truncate">{u.email}</p>
+                  <p className="text-xs text-muted-foreground truncate">{u.username || u.email}</p>
                   {u.cargo && <p className="text-xs text-muted-foreground">{u.cargo}</p>}
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
@@ -280,7 +279,7 @@ export default function GerenciarUsuarios() {
           <div className="space-y-4 pt-1">
             <h3 className="text-sm font-semibold text-foreground border-b pb-2">Dados do Usuário</h3>
 
-            {/* Foto + Nome/Email */}
+            {/* Foto + Nome/Username/Email */}
             <div className="flex items-start gap-4">
               <div className="relative flex-shrink-0">
                 <div className={`w-20 h-20 rounded-full border-2 border-dashed ${fotoObrigatoria && !form.foto_url ? 'border-destructive/50' : 'border-border'} bg-muted/30 flex items-center justify-center overflow-hidden cursor-pointer hover:border-primary/50 transition-colors`}>
@@ -295,32 +294,42 @@ export default function GerenciarUsuarios() {
                 {fotoObrigatoria && <p className="text-[10px] text-muted-foreground mt-0.5 text-center">Obrigatória</p>}
               </div>
               <div className="flex-1 space-y-2">
-                <F label="Nome completo" required>
+                <FormField label="Nome completo" required>
                   {editing ? (
                     <Input value={form.full_name || ""} disabled className="opacity-50" />
                   ) : (
                     <Input value={form.full_name || ""} onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))} placeholder="Nome Completo" />
                   )}
-                </F>
-                <F label="E-mail" required={!editing}>
+                </FormField>
+                {!editing && (
+                  <FormField label="Nome de Usuário" required>
+                    <Input value={form.username || ""} onChange={e => setForm(f => ({ ...f, username: e.target.value }))} placeholder="admin.saopaulo" />
+                  </FormField>
+                )}
+                {editing && (
+                  <FormField label="Nome de Usuário">
+                    <Input value={form.username || ""} onChange={e => setForm(f => ({ ...f, username: e.target.value }))} placeholder="admin.saopaulo" />
+                  </FormField>
+                )}
+                <FormField label="E-mail" required={!editing}>
                   <Input type="email" value={form.email || ""} disabled={!!editing} className={editing ? "opacity-50" : ""} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="usuario@camara.gov.br" />
-                </F>
+                </FormField>
               </div>
             </div>
 
             {/* CPF + Telefone */}
             <div className="grid grid-cols-2 gap-3">
-              <F label="CPF">
+              <FormField label="CPF">
                 <Input value={form.cpf || ""} onChange={e => setForm(f => ({ ...f, cpf: e.target.value }))} placeholder="000.000.000-00" />
-              </F>
-              <F label="Telefone">
+              </FormField>
+              <FormField label="Telefone">
                 <Input value={form.telefone || ""} onChange={e => setForm(f => ({ ...f, telefone: e.target.value }))} placeholder="(11) 99999-0000" />
-              </F>
+              </FormField>
             </div>
 
             {/* Login + Senha temporária (novo usuário) */}
             <div className="grid grid-cols-2 gap-3">
-              <F label="Login">
+              <FormField label="Login">
                 <Input
                   value={form.login || ""}
                   onChange={e => setForm(f => ({ ...f, login: e.target.value }))}
@@ -328,9 +337,9 @@ export default function GerenciarUsuarios() {
                   disabled={!!editing}
                   className={editing ? "opacity-50" : ""}
                 />
-              </F>
+              </FormField>
               {!editing && (
-                <F label="Senha temporária">
+                <FormField label="Senha temporária">
                   <div className="flex items-center h-9 gap-2">
                     <Switch
                       checked={form.senha_temporaria}
@@ -340,22 +349,22 @@ export default function GerenciarUsuarios() {
                       {form.senha_temporaria ? 'Será solicitada troca no 1º acesso' : 'Senha permanente'}
                     </span>
                   </div>
-                </F>
+                </FormField>
               )}
               {editing && (
-                <F label="Status">
+                <FormField label="Status">
                   <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {STATUS_OPTIONS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                     </SelectContent>
                   </Select>
-                </F>
+                </FormField>
               )}
             </div>
 
             {/* Partido — obrigatório para Vereador/Presidente */}
-            <F label="Partido Político" required={isParlamentar}>
+            <FormField label="Partido Político" required={isParlamentar}>
               {partidos.length > 0 ? (
                 <Select
                   value={form.partido_id || ""}
@@ -384,18 +393,18 @@ export default function GerenciarUsuarios() {
                   Exibição: <strong>{form.full_name || 'Nome'} — {form.partido_sigla}</strong>
                 </p>
               )}
-            </F>
+            </FormField>
 
             {/* Câmara — Super Admin */}
             {isSuperAdmin && camaras.length > 0 && (
-              <F label="Câmara" required>
+              <FormField label="Câmara" required>
                 <Select value={form.tenant_id} onValueChange={v => setForm(f => ({ ...f, tenant_id: v }))}>
                   <SelectTrigger><SelectValue placeholder="Selecione a câmara..." /></SelectTrigger>
                   <SelectContent>
                     {camaras.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
                   </SelectContent>
                 </Select>
-              </F>
+              </FormField>
             )}
 
             {/* ===== SEÇÃO 2: DEFINIÇÃO DE ACESSO ===== */}
@@ -406,7 +415,7 @@ export default function GerenciarUsuarios() {
 
             {/* Etapa 1 — Seleção de Perfil */}
             <div className="bg-muted/40 rounded-lg p-4 space-y-3">
-              <F label="Perfil" required>
+              <FormField label="Perfil" required>
                 <Select value={form.role} onValueChange={handleRoleChange}>
                   <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -415,7 +424,7 @@ export default function GerenciarUsuarios() {
                     ))}
                   </SelectContent>
                 </Select>
-              </F>
+              </FormField>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 {PERFIL_DESCRIPTIONS[form.role] || 'Selecione um perfil para ver sua descrição.'}
               </p>
@@ -461,7 +470,7 @@ export default function GerenciarUsuarios() {
 
           <DialogFooter className="pt-2">
             <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-            <Button onClick={handleSave} disabled={saving || (!editing && !form.email)}>
+            <Button onClick={handleSave} disabled={saving || (!editing && (!form.email || !form.username))}>
               {saving ? "Salvando..." : editing ? "Salvar Alterações" : "Enviar Convite"}
             </Button>
           </DialogFooter>
