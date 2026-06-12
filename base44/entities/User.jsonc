@@ -1,7 +1,16 @@
 {
-  "name": "User",
   "type": "object",
+  "name": "User",
+  "title": "User",
   "properties": {
+    "email": {
+      "type": "string",
+      "description": "The email of the user"
+    },
+    "full_name": {
+      "type": "string",
+      "description": "The full name of the user"
+    },
     "role": {
       "type": "string",
       "enum": [
@@ -63,6 +72,78 @@
     "permissoes": {
       "type": "object",
       "default": {}
+    }
+  },
+  "required": [
+    "email",
+    "full_name"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "data.tenant_id": "{{user.data.tenant_id}}",
+          "user_condition": {
+            "role": "ADMIN_CAMARA"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "SUPER_ADMIN"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "id": "{{user.id}}"
+        },
+        {
+          "data.tenant_id": "{{user.data.tenant_id}}",
+          "user_condition": {
+            "role": "ADMIN_CAMARA"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "SUPER_ADMIN"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "id": "{{user.id}}"
+        },
+        {
+          "data.tenant_id": "{{user.data.tenant_id}}",
+          "user_condition": {
+            "role": "ADMIN_CAMARA"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "SUPER_ADMIN"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.tenant_id": "{{user.data.tenant_id}}",
+          "user_condition": {
+            "role": "ADMIN_CAMARA"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "SUPER_ADMIN"
+          }
+        }
+      ]
     }
   }
 }

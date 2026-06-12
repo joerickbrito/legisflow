@@ -169,7 +169,22 @@
     "update": {
       "$or": [
         {
-          "data.tenant_id": "{{user.data.tenant_id}}"
+          "data.tenant_id": "{{user.data.tenant_id}}",
+          "user_condition": {
+            "role": "OPERADOR_GERAL"
+          }
+        },
+        {
+          "data.tenant_id": "{{user.data.tenant_id}}",
+          "user_condition": {
+            "role": "ADMIN_CAMARA"
+          }
+        },
+        {
+          "data.tenant_id": "{{user.data.tenant_id}}",
+          "user_condition": {
+            "role": "PRESIDENTE"
+          }
         },
         {
           "user_condition": {
