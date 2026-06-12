@@ -136,55 +136,10 @@
   ],
   "rls": {
     "create": {
+      "user_condition": {
+        "role": "SUPER_ADMIN"
+      },
       "$or": [
-        {
-          "user_condition": {
-            "role": "SUPER_ADMIN"
-          }
-        },
-        {
-          "$and": [
-            {
-              "data.tenant_id": "{{user.data.tenant_id}}"
-            },
-            {
-              "$or": [
-                {
-                  "user_condition": {
-                    "role": "ADMIN_CAMARA"
-                  }
-                },
-                {
-                  "user_condition": {
-                    "role": "OPERADOR_GERAL"
-                  }
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    "read": {
-      "$or": [
-        {
-          "data.tenant_id": "{{user.data.tenant_id}}"
-        },
-        {
-          "user_condition": {
-            "role": "SUPER_ADMIN"
-          }
-        }
-      ]
-    },
-    "update": {
-      "$or": [
-        {
-          "data.tenant_id": "{{user.data.tenant_id}}",
-          "user_condition": {
-            "role": "OPERADOR_GERAL"
-          }
-        },
         {
           "data.tenant_id": "{{user.data.tenant_id}}",
           "user_condition": {
@@ -194,39 +149,19 @@
         {
           "data.tenant_id": "{{user.data.tenant_id}}",
           "user_condition": {
-            "role": "PRESIDENTE"
-          }
-        },
-        {
-          "user_condition": {
-            "role": "SUPER_ADMIN"
+            "role": "OPERADOR_GERAL"
           }
         }
       ]
     },
+    "read": null,
+    "update": {
+      "data.tenant_id": "{{user.data.tenant_id}}"
+    },
     "delete": {
-      "$or": [
-        {
-          "data.tenant_id": "{{user.data.tenant_id}}",
-          "$or": [
-            {
-              "user_condition": {
-                "role": "ADMIN_CAMARA"
-              }
-            },
-            {
-              "user_condition": {
-                "role": "OPERADOR_GERAL"
-              }
-            }
-          ]
-        },
-        {
-          "user_condition": {
-            "role": "SUPER_ADMIN"
-          }
-        }
-      ]
+      "user_condition": {
+        "role": "SUPER_ADMIN"
+      }
     }
   }
 }

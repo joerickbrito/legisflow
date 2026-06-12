@@ -135,104 +135,26 @@
   ],
   "rls": {
     "create": {
-      "$or": [
-        {
-          "data.tenant_id": "{{user.data.tenant_id}}",
-          "$or": [
-            {
-              "user_condition": {
-                "role": "VEREADOR"
-              }
-            },
-            {
-              "user_condition": {
-                "role": "ADMIN_CAMARA"
-              }
-            },
-            {
-              "user_condition": {
-                "role": "OPERADOR_GERAL"
-              }
-            },
-            {
-              "user_condition": {
-                "role": "SECRETARIO_LEGISLATIVO"
-              }
-            }
-          ]
-        },
-        {
-          "user_condition": {
-            "role": "SUPER_ADMIN"
-          }
-        }
-      ]
+      "data.tenant_id": "{{user.data.tenant_id}}"
     },
-    "read": {
-      "$or": [
-        {
-          "data.tenant_id": "{{user.data.tenant_id}}"
-        },
-        {
-          "user_condition": {
-            "role": "SUPER_ADMIN"
-          }
-        }
-      ]
-    },
+    "read": null,
     "update": {
       "$or": [
         {
           "data.tenant_id": "{{user.data.tenant_id}}",
-          "$or": [
-            {
-              "user_condition": {
-                "role": "ADMIN_CAMARA"
-              }
-            },
-            {
-              "user_condition": {
-                "role": "OPERADOR_GERAL"
-              }
-            },
-            {
-              "created_by_id": "{{user.id}}"
-            }
-          ]
+          "user_condition": {
+            "role": "ADMIN_CAMARA"
+          }
         },
         {
-          "user_condition": {
-            "role": "SUPER_ADMIN"
-          }
+          "created_by_id": "{{user.id}}"
         }
       ]
     },
     "delete": {
-      "$or": [
-        {
-          "data.tenant_id": "{{user.data.tenant_id}}",
-          "$or": [
-            {
-              "user_condition": {
-                "role": "ADMIN_CAMARA"
-              }
-            },
-            {
-              "user_condition": {
-                "role": "OPERADOR_GERAL"
-              }
-            },
-            {
-              "created_by_id": "{{user.id}}"
-            }
-          ]
-        },
-        {
-          "user_condition": {
-            "role": "SUPER_ADMIN"
-          }
-        }
-      ]
+      "user_condition": {
+        "role": "SUPER_ADMIN"
+      }
     }
   }
 }
