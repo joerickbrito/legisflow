@@ -121,7 +121,7 @@ export default function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const { isSuperAdmin, isAdminCamara, userRole, camara, activeCamara, exitCamara, isInChamberContext } = useTenant();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   const navGroups = getNavGroups(user, isInChamberContext);
   const [expandedGroups, setExpandedGroups] = useState(navGroups.map(() => true));
@@ -218,7 +218,7 @@ export default function Layout() {
 
         <div className="px-1.5 py-2 border-t border-sidebar-border flex-shrink-0">
           <button
-            onClick={() => base44.auth.logout()}
+            onClick={() => logout(true)}
             className={cn(
               "flex items-center gap-2.5 px-2.5 py-2 rounded-lg w-full transition-colors text-sm",
               "text-sidebar-foreground/40 hover:bg-sidebar-accent hover:text-sidebar-foreground"

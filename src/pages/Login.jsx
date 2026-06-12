@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { autenticar } from "@/lib/sislegisApi";
+import { autenticar, clearSession } from "@/lib/sislegisApi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +12,11 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Limpa qualquer sessão residual ao entrar na tela de login
+  useEffect(() => {
+    clearSession();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
