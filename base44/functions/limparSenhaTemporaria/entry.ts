@@ -1,25 +1,84 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
+// Obtém o usuário autenticado via BaaS ou via session_token do SisLegis
+async function getAuthenticatedUser(base44) {
+  try {
+    const baasUser = await base44.auth.me();
+    if (baasUser) {
+      const sislegisUsers = await base44.asServiceRole.entities.UsuarioSislegis.filter({
+        email: baasUser.email
+      });
+      if (sislegisUsers && sislegisUsers.length > 0) {
+        return sislegisUsers[0];
+      }
+      return { ...baasUser, role: baasUser.role || 'user', tenant_id: baasUser.tenant_id };
+    }
+  } catch { /* BaaS auth falhou, tenta SisLegis */ }
+
+  const token = base44._requestHeaders?.get?.('x-sislegis-token') || '';
+  if (!token) return null;
+
+  const usuarios = await base44.asServiceRole.entities.UsuarioSislegis.filter({ session_token: token });
+  if (!usuarios || usuarios.length === 0) return null;
+  return usuarios[0];
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const body = await req.json();
-    const { email } = body || {};
+    const caller = await getAuthenticatedUser(base44);
+    if (!caller) return Response.json({ error: 'Não autorizado. Faça login.' }, { status: 401 });
 
-    if (!email) {
-      return Response.json({ error: 'Email é obrigatório' }, { status: 400 });
+    const body = await req.json();
+    const { email, usuario_id } = body || {};
+
+    if (!email && !usuario_id) {
+      return Response.json({ error: 'Email ou ID do usuário é obrigatório' }, { status: 400 });
     }
 
-    const users = await base44.asServiceRole.entities.User.filter({ email });
-    if (!users || users.length === 0) {
+    const isSuperAdmin = caller.role === 'SUPER_ADMIN';
+    const isAdminCamara = caller.role === 'ADMIN_CAMARA';
+
+    // Determinar o usuário alvo
+    let targetUser;
+    if (usuario_id) {
+      // Buscar por ID no UsuarioSislegis
+      const usuarios = await base44.asServiceRole.entities.UsuarioSislegis.filter({ id: usuario_id });
+      if (usuarios && usuarios.length > 0) {
+        targetUser = usuarios[0];
+      }
+    }
+
+    if (!targetUser && email) {
+      // Buscar por email no User (BaaS)
+      const users = await base44.asServiceRole.entities.User.filter({ email });
+      if (users && users.length > 0) {
+        targetUser = users[0];
+      }
+    }
+
+    if (!targetUser) {
       return Response.json({ error: 'Usuário não encontrado' }, { status: 404 });
     }
 
-    const user = users[0];
-    await base44.asServiceRole.entities.User.update(user.id, {
-      senha_temporaria: false,
-      status: 'Ativo'
-    });
+    // Verificar permissão:
+    // - O próprio usuário pode limpar sua flag
+    // - SUPER_ADMIN pode limpar de qualquer um
+    // - ADMIN_CAMARA pode limpar de usuários da própria câmara
+    const isSelf = targetUser.email === caller.email || targetUser.id === caller.id;
+    const isSameTenant = targetUser.tenant_id && targetUser.tenant_id === caller.tenant_id;
+
+    if (!isSelf && !isSuperAdmin && !(isAdminCamara && isSameTenant)) {
+      return Response.json({ error: 'Acesso negado. Sem permissão para alterar este usuário.' }, { status: 403 });
+    }
+
+    // Atualizar o usuário
+    const targetEntity = usuario_id ? 'UsuarioSislegis' : 'User';
+    const updateData = usuario_id
+      ? { senha_temporaria: false, status: 'Ativo' }
+      : { senha_temporaria: false, status: 'Ativo' };
+
+    await base44.asServiceRole.entities[targetEntity].update(targetUser.id, updateData);
 
     return Response.json({ success: true });
   } catch (error) {

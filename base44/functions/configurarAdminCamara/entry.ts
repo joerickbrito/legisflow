@@ -4,7 +4,12 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
-    if (!user) return Response.json({ error: 'Não autorizado' }, { status: 401 });
+    if (!user) return Response.json({ error: 'Não autorizado. Faça login.' }, { status: 401 });
+
+    // Apenas SUPER_ADMIN pode executar esta função
+    if (user.role !== 'SUPER_ADMIN') {
+      return Response.json({ error: 'Acesso negado. Apenas Master Admin pode configurar admin de câmara.' }, { status: 403 });
+    }
 
     const body = await req.json();
     const { event, data } = body || {};
@@ -29,9 +34,13 @@ Deno.serve(async (req) => {
 
     const camara = camaras[0];
 
+    // Validar que a câmara existe e tem tenant_id
+    if (!camara.id) {
+      return Response.json({ error: 'Câmara inválida.' }, { status: 400 });
+    }
+
     // Configurar o usuário como ADMIN_CAMARA
-    const adminSdk = base44.asServiceRole.entities.User;
-    await adminSdk.update(data.id, {
+    await base44.asServiceRole.entities.User.update(data.id, {
       role: 'ADMIN_CAMARA',
       tenant_id: camara.id,
       username: camara.admin_username || data.email?.split('@')[0] || '',

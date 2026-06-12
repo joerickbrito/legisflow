@@ -15,11 +15,45 @@ async function hashPassword(password) {
   return JSON.stringify({ salt: saltArray, hash: hashArray });
 }
 
+// Obtém o usuário autenticado via BaaS ou via session_token do SisLegis
+async function getAuthenticatedUser(base44) {
+  try {
+    const baasUser = await base44.auth.me();
+    if (baasUser) {
+      const sislegisUsers = await base44.asServiceRole.entities.UsuarioSislegis.filter({
+        email: baasUser.email
+      });
+      if (sislegisUsers && sislegisUsers.length > 0) {
+        return sislegisUsers[0];
+      }
+      return { ...baasUser, role: baasUser.role || 'user', tenant_id: baasUser.tenant_id };
+    }
+  } catch { /* BaaS auth falhou, tenta SisLegis */ }
+
+  const token = base44._requestHeaders?.get?.('x-sislegis-token') || '';
+  if (!token) return null;
+
+  const usuarios = await base44.asServiceRole.entities.UsuarioSislegis.filter({ session_token: token });
+  if (!usuarios || usuarios.length === 0) return null;
+  return usuarios[0];
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const body = await req.json();
+    const caller = await getAuthenticatedUser(base44);
+    if (!caller) return Response.json({ error: 'Não autorizado. Faça login.' }, { status: 401 });
 
+    const isSuperAdmin = caller.role === 'SUPER_ADMIN';
+    const isAdminCamara = caller.role === 'ADMIN_CAMARA';
+    const callerPermissoes = caller.permissoes || {};
+
+    // Verificar permissão de criar usuários (exceto SUPER_ADMIN que pode tudo)
+    if (!isSuperAdmin && !callerPermissoes.usuarios_criar) {
+      return Response.json({ error: 'Acesso negado. Sem permissão para criar usuários.' }, { status: 403 });
+    }
+
+    const body = await req.json();
     const { username, nome, email, role, tenant_id, camara_id, camara_nome, senha, permissoes, foto_url, cargo, partido_id, partido_sigla, cpf, telefone } = body;
 
     if (!username || !nome || !role || !senha) {
@@ -28,6 +62,22 @@ Deno.serve(async (req) => {
 
     if (senha.length < 6) {
       return Response.json({ error: 'A senha deve ter no mínimo 6 caracteres.' }, { status: 400 });
+    }
+
+    // Validação de hierarquia de perfis
+    if (!isSuperAdmin && role === 'SUPER_ADMIN') {
+      return Response.json({ error: 'Acesso negado. Apenas Master Admin pode criar outro Master Admin.' }, { status: 403 });
+    }
+
+    // ADMIN_CAMARA só pode criar usuários na própria câmara
+    const effectiveTenantId = isSuperAdmin ? (tenant_id || null) : (caller.tenant_id || null);
+    if (isAdminCamara && !isSuperAdmin) {
+      if (!effectiveTenantId) {
+        return Response.json({ error: 'Admin da Câmara deve ter um tenant_id definido.' }, { status: 400 });
+      }
+      if (tenant_id && tenant_id !== effectiveTenantId) {
+        return Response.json({ error: 'Acesso negado. Só pode criar usuários na sua própria câmara.' }, { status: 403 });
+      }
     }
 
     const usernameLower = username.trim().toLowerCase();
@@ -49,7 +99,7 @@ Deno.serve(async (req) => {
       nome: nome.trim(),
       email: email?.trim().toLowerCase() || null,
       role: role,
-      tenant_id: tenant_id || null,
+      tenant_id: effectiveTenantId,
       camara_id: camara_id || null,
       camara_nome: camara_nome || null,
       status: 'Pendente de Ativação',

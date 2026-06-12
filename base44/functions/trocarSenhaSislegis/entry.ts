@@ -38,6 +38,47 @@ function generateToken() {
   return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
 }
 
+// Controle simples de tentativas (em memória — reseta ao reiniciar a função)
+const attemptTracker = new Map(); // key: username, value: { count, lastAttempt }
+
+function checkRateLimit(username) {
+  const now = Date.now();
+  const entry = attemptTracker.get(username);
+
+  // Limpar entradas expiradas
+  if (entry && (now - entry.lastAttempt) > 15 * 60 * 1000) {
+    attemptTracker.delete(username);
+    return true;
+  }
+
+  if (!entry) {
+    attemptTracker.set(username, { count: 1, lastAttempt: now });
+    return true;
+  }
+
+  if (entry.count >= 5) {
+    return false; // bloqueado
+  }
+
+  entry.count++;
+  entry.lastAttempt = now;
+  return true;
+}
+
+function resetRateLimit(username) {
+  attemptTracker.delete(username);
+}
+
+// Obtém o usuário autenticado via session_token do SisLegis
+async function getAuthenticatedUser(base44) {
+  const token = base44._requestHeaders?.get?.('x-sislegis-token') || '';
+  if (!token) return null;
+
+  const usuarios = await base44.asServiceRole.entities.UsuarioSislegis.filter({ session_token: token });
+  if (!usuarios || usuarios.length === 0) return null;
+  return usuarios[0];
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -51,20 +92,36 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'A nova senha deve ter no mínimo 6 caracteres.' }, { status: 400 });
     }
 
-    const usuarios = await base44.asServiceRole.entities.UsuarioSislegis.filter({
-      username: username.trim().toLowerCase()
-    });
+    const usernameLower = username.trim().toLowerCase();
 
-    if (!usuarios || usuarios.length === 0) {
-      return Response.json({ error: 'Usuário não encontrado.' }, { status: 404 });
+    // Rate limiting
+    if (!checkRateLimit(usernameLower)) {
+      return Response.json({
+        error: 'Muitas tentativas. Aguarde 15 minutos antes de tentar novamente.'
+      }, { status: 429 });
     }
 
-    const usuario = usuarios[0];
+    // Autenticar o chamador: deve ser o próprio usuário (verificado via session_token)
+    const caller = await getAuthenticatedUser(base44);
+    if (!caller) {
+      return Response.json({ error: 'Não autorizado. Faça login para trocar a senha.' }, { status: 401 });
+    }
 
+    // Verificar que o usuário autenticado é o mesmo que está tentando trocar a senha
+    if (caller.username !== usernameLower) {
+      return Response.json({ error: 'Acesso negado. Você só pode trocar sua própria senha.' }, { status: 403 });
+    }
+
+    const usuario = caller;
+
+    // Verificar senha atual
     const senhaValida = await verifyPassword(senha_atual, usuario.password_hash);
     if (!senhaValida) {
       return Response.json({ error: 'Senha atual incorreta.' }, { status: 401 });
     }
+
+    // Senha correta — resetar rate limit
+    resetRateLimit(usernameLower);
 
     const novoHash = await hashPassword(nova_senha);
     const novoSessionToken = generateToken();

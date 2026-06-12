@@ -4,6 +4,14 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
+    // Apenas SUPER_ADMIN pode executar esta função
+    const user = await base44.auth.me();
+    if (!user) return Response.json({ error: 'Não autorizado. Faça login.' }, { status: 401 });
+
+    if (user.role !== 'SUPER_ADMIN') {
+      return Response.json({ error: 'Acesso negado. Apenas Master Admin pode executar esta verificação.' }, { status: 403 });
+    }
+
     // Buscar todas as Câmaras com admin pendente
     const camarasPendentes = await base44.asServiceRole.entities.Camara.filter({
       admin_configurado: false
