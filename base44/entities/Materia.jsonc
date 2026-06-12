@@ -135,9 +135,31 @@
   ],
   "rls": {
     "create": {
-      "user_condition": {
-        "role": "VEREADOR"
-      }
+      "$or": [
+        {
+          "data.tenant_id": "{{user.data.tenant_id}}",
+          "user_condition": {
+            "role": "VEREADOR"
+          }
+        },
+        {
+          "data.tenant_id": "{{user.data.tenant_id}}",
+          "user_condition": {
+            "role": "ADMIN_CAMARA"
+          }
+        },
+        {
+          "data.tenant_id": "{{user.data.tenant_id}}",
+          "user_condition": {
+            "role": "OPERADOR_GERAL"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "SUPER_ADMIN"
+          }
+        }
+      ]
     },
     "read": {
       "$or": [
