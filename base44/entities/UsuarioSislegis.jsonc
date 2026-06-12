@@ -85,7 +85,10 @@
     "create": {
       "$or": [
         {
-          "data.tenant_id": "{{user.data.tenant_id}}"
+          "data.tenant_id": "{{user.data.tenant_id}}",
+          "user_condition": {
+            "role": "ADMIN_CAMARA"
+          }
         },
         {
           "user_condition": {
@@ -97,7 +100,13 @@
     "read": {
       "$or": [
         {
-          "data.tenant_id": "{{user.data.tenant_id}}"
+          "id": "{{user.id}}"
+        },
+        {
+          "data.tenant_id": "{{user.data.tenant_id}}",
+          "user_condition": {
+            "role": "ADMIN_CAMARA"
+          }
         },
         {
           "user_condition": {
@@ -109,7 +118,13 @@
     "update": {
       "$or": [
         {
-          "data.tenant_id": "{{user.data.tenant_id}}"
+          "id": "{{user.id}}"
+        },
+        {
+          "data.tenant_id": "{{user.data.tenant_id}}",
+          "user_condition": {
+            "role": "ADMIN_CAMARA"
+          }
         },
         {
           "user_condition": {
@@ -121,7 +136,10 @@
     "delete": {
       "$or": [
         {
-          "data.tenant_id": "{{user.data.tenant_id}}"
+          "data.tenant_id": "{{user.data.tenant_id}}",
+          "user_condition": {
+            "role": "ADMIN_CAMARA"
+          }
         },
         {
           "user_condition": {
