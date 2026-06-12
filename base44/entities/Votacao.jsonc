@@ -143,14 +143,25 @@
           }
         },
         {
-          "user_condition": {
-            "role": "ADMIN_CAMARA"
-          }
-        },
-        {
-          "user_condition": {
-            "role": "OPERADOR_GERAL"
-          }
+          "$and": [
+            {
+              "data.tenant_id": "{{user.data.tenant_id}}"
+            },
+            {
+              "$or": [
+                {
+                  "user_condition": {
+                    "role": "ADMIN_CAMARA"
+                  }
+                },
+                {
+                  "user_condition": {
+                    "role": "OPERADOR_GERAL"
+                  }
+                }
+              ]
+            }
+          ]
         }
       ]
     },
