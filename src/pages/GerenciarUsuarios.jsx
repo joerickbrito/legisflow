@@ -60,13 +60,18 @@ export default function GerenciarUsuarios() {
     e.stopPropagation();
     const nome = u.nome || u.full_name || u.email;
     if (u._source === 'sislegis' || !u.email) {
-      if (!confirm(`Deseja redefinir a senha de ${nome}?\n\nA senha será alterada para "mudar123" e o usuário deverá trocá-la no próximo acesso.`)) return;
+      if (!confirm(`Deseja redefinir a senha de ${nome}?\n\nUma nova senha temporária será gerada e o usuário deverá trocá-la no próximo acesso.`)) return;
       setResetandoSenha(u.id);
       try {
-        await base44.functions.invoke('resetarSenhaSislegis', {
+        const res = await base44.functions.invoke('resetarSenhaSislegis', {
           usuario_id: u.id,
-          nova_senha: 'mudar123',
         });
+        const senhaGerada = res.data?.senha_temporaria;
+        if (senhaGerada) {
+          alert(`Senha de ${nome} redefinida com sucesso.\n\nNova senha temporária: ${senhaGerada}\n\nAnote esta senha e repasse ao usuário. Ela não será exibida novamente.`);
+        } else {
+          alert(`Senha de ${nome} redefinida com sucesso.`);
+        }
         await loadUsuarios();
       } catch (err) {
         alert('Erro ao redefinir senha: ' + (err?.response?.data?.error || err.message));
@@ -74,10 +79,18 @@ export default function GerenciarUsuarios() {
         setResetandoSenha(null);
       }
     } else {
-      if (!confirm(`Deseja redefinir a senha de ${nome}?\n\nUm e-mail de redefinição será enviado.`)) return;
+      if (!confirm(`Deseja redefinir a senha de ${nome}?\n\nUma nova senha temporária será gerada e o usuário deverá trocá-la no próximo acesso.`)) return;
       setResetandoSenha(u.id);
       try {
-        await base44.functions.invoke('resetarSenhaAdmin', { email: u.email });
+        const res = await base44.functions.invoke('resetarSenhaSislegis', {
+          usuario_id: u.id,
+        });
+        const senhaGerada = res.data?.senha_temporaria;
+        if (senhaGerada) {
+          alert(`Senha de ${nome} redefinida com sucesso.\n\nNova senha temporária: ${senhaGerada}\n\nAnote esta senha e repasse ao usuário. Ela não será exibida novamente.`);
+        } else {
+          alert(`Senha de ${nome} redefinida com sucesso.`);
+        }
         await loadUsuarios();
       } catch (err) {
         alert('Erro ao redefinir senha: ' + (err?.response?.data?.error || err.message));
@@ -241,7 +254,7 @@ export default function GerenciarUsuarios() {
           email: form.email || null,
           role: form.role,
           tenant_id: form.tenant_id,
-          senha: form.senha || 'mudar123',
+          senha: form.senha || '',
           permissoes: form.permissoes,
           foto_url: form.foto_url,
           cargo: form.cargo,

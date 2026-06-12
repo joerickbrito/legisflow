@@ -15,6 +15,16 @@ async function hashPassword(password) {
   return JSON.stringify({ salt: saltArray, hash: hashArray });
 }
 
+function gerarSenhaAleatoria() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789"; // sem I,l,O,0,1 ambíguos
+  let senha = "";
+  const bytes = crypto.getRandomValues(new Uint8Array(10));
+  for (let i = 0; i < 10; i++) {
+    senha += chars[bytes[i] % chars.length];
+  }
+  return senha;
+}
+
 // Obtém o usuário autenticado via BaaS ou via session_token do SisLegis
 async function getAuthenticatedUser(base44) {
   try {
@@ -44,10 +54,11 @@ Deno.serve(async (req) => {
     const caller = await getAuthenticatedUser(base44);
     if (!caller) return Response.json({ error: 'Não autorizado. Faça login.' }, { status: 401 });
 
-    const { usuario_id, nova_senha } = await req.json();
+    const body = await req.json();
+    const { usuario_id, nova_senha } = body || {};
 
-    if (!usuario_id || !nova_senha || nova_senha.length < 6) {
-      return Response.json({ error: 'ID do usuário e nova senha (mín. 6 caracteres) são obrigatórios.' }, { status: 400 });
+    if (!usuario_id) {
+      return Response.json({ error: 'ID do usuário é obrigatório.' }, { status: 400 });
     }
 
     const isSuperAdmin = caller.role === 'SUPER_ADMIN';
@@ -77,7 +88,15 @@ Deno.serve(async (req) => {
       }
     }
 
-    const passwordHash = await hashPassword(nova_senha);
+    // Se fornecida, valida tamanho mínimo; senão, gera aleatória
+    let senhaFinal;
+    if (nova_senha && nova_senha.length >= 6) {
+      senhaFinal = nova_senha;
+    } else {
+      senhaFinal = gerarSenhaAleatoria();
+    }
+
+    const passwordHash = await hashPassword(senhaFinal);
 
     await base44.asServiceRole.entities.UsuarioSislegis.update(usuario_id, {
       password_hash: passwordHash,
@@ -86,7 +105,7 @@ Deno.serve(async (req) => {
       session_token: null,
     });
 
-    return Response.json({ success: true });
+    return Response.json({ success: true, senha_temporaria: senhaFinal });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

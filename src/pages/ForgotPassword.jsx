@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,18 +13,10 @@ export default function ForgotPassword() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    try {
-      // Resolver username → email
-      const response = await base44.functions.invoke("buscarEmailPorUsername", { username });
-      if (response.data?.email) {
-        await base44.auth.resetPasswordRequest(response.data.email);
-      }
-    } catch (e) {
-      // Sempre mostra sucesso por segurança
-    } finally {
-      setLoading(false);
-      setSent(true);
-    }
+    // Pequeno delay para UX, sem chamar backend nenhum
+    await new Promise(r => setTimeout(r, 800));
+    setLoading(false);
+    setSent(true);
   };
 
   return (
@@ -42,10 +33,10 @@ export default function ForgotPassword() {
         <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 shadow-2xl">
           {sent ? (
             <div className="text-center space-y-4">
-              <CheckCircle className="w-12 h-12 text-green-400 mx-auto" />
-              <h2 className="text-xl font-semibold text-white">Recuperação Solicitada</h2>
+              <CheckCircle className="w-12 h-12 text-blue-400 mx-auto" />
+              <h2 className="text-xl font-semibold text-white">Recuperação de Senha</h2>
               <p className="text-slate-400 text-sm">
-                Se o usuário estiver cadastrado com um e-mail válido, você receberá as instruções de recuperação em breve.
+                Se este usuário existir, um administrador poderá redefinir sua senha. Contate o administrador da sua câmara.
               </p>
               <Link to="/login">
                 <Button variant="outline" className="w-full border-white/20 text-slate-300 hover:bg-white/10">
@@ -57,7 +48,7 @@ export default function ForgotPassword() {
             <>
               <div className="mb-6">
                 <h2 className="text-xl font-semibold text-white">Recuperar Senha</h2>
-                <p className="text-slate-400 text-sm mt-1">Informe seu nome de usuário para receber o link de recuperação</p>
+                <p className="text-slate-400 text-sm mt-1">Informe seu nome de usuário para continuar</p>
               </div>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-1.5">
@@ -76,7 +67,7 @@ export default function ForgotPassword() {
                   </div>
                 </div>
                 <Button type="submit" className="w-full h-11 bg-blue-600 hover:bg-blue-500" disabled={loading}>
-                  {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Enviando...</> : "Enviar Link de Recuperação"}
+                  {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Verificando...</> : "Verificar"}
                 </Button>
               </form>
               <div className="mt-4 text-center">

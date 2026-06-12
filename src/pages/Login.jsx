@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
 import { autenticar, clearSession } from "@/lib/sislegisApi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,20 +22,12 @@ export default function Login() {
     setError("");
     setLoading(true);
     try {
-      // 1. Tentar autenticação SisLegis (usuário próprio)
+      // Autenticação SisLegis (usuário próprio)
       await autenticar(username, password);
       window.location.href = "/";
       return;
     } catch (sislegisErr) {
-      // 2. Fallback: autenticação Base44 (legado — username → email → loginViaEmailPassword)
-      try {
-        const response = await base44.functions.invoke("buscarEmailPorUsername", { username });
-        if (response.data?.email) {
-          await base44.auth.loginViaEmailPassword(response.data.email, password);
-          window.location.href = "/";
-          return;
-        }
-      } catch (_) { /* ignorar */ }
+      // Autenticação falhou
     }
     setError("Nome de usuário ou senha inválidos.");
     setLoading(false);
