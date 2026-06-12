@@ -8,7 +8,6 @@ import {
   Monitor, UserCheck, FileDiff, UsersRound, Mail, Shield, Settings, SlidersHorizontal,
   Landmark, Stamp, ClipboardList, DollarSign, BookMarked, ArrowLeftRight
 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
 import { useTenant, ROLE_LABELS } from '@/lib/TenantContext';
 import { useAuth } from '@/lib/AuthContext';
 import { canShowMenuItem } from '@/lib/perfis';
@@ -18,9 +17,11 @@ const getNavGroups = (user, isInChamberContext) => {
   if (!user) return [];
 
   const isSuperAdmin = user.role === 'SUPER_ADMIN';
+  const isAdminCamaraProfile = user.role === 'ADMIN_CAMARA';
+  const seesAll = isSuperAdmin || isAdminCamaraProfile;
 
-  // Filtra um array de items com base nas permissões do usuário
-  const filterItems = (items) => isSuperAdmin
+  // Admin (Master ou Câmara) vê tudo; demais perfis são filtrados por permissão
+  const filterItems = (items) => seesAll
     ? items
     : items.filter(item => canShowMenuItem(user, item.path));
 
@@ -51,7 +52,7 @@ const getNavGroups = (user, isInChamberContext) => {
     return groups.filter(g => g.items.length > 0);
   }
 
-  // ─── CONTEXTO 2: DENTRO DE UMA CÂMARA ───
+  // ─── CONTEXTO 2: DENTRO DE UMA CÂMARA (menu completo) ───
   const groups = [
     {
       label: 'Principal',
@@ -61,13 +62,13 @@ const getNavGroups = (user, isInChamberContext) => {
     },
     {
       label: 'Estrutura',
-      items: [
+      items: filterItems([
         { path: '/legislaturas', icon: BookOpen, label: 'Legislaturas' },
         { path: '/parlamentares', icon: Users, label: 'Parlamentares' },
         { path: '/partidos', icon: Scale, label: 'Partidos' },
         { path: '/mesa-diretora', icon: Gavel, label: 'Mesa Diretora' },
         { path: '/comissoes', icon: Building2, label: 'Comissões' },
-      ],
+      ]),
     },
     {
       label: 'Processo Legislativo',

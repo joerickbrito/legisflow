@@ -143,6 +143,18 @@ export const PERMISSION_GROUPS = [
     ],
   },
   {
+    label: 'ESTRUTURA DA CÂMARA',
+    keys: [
+      { key: 'estrutura_visualizar', label: 'Visualizar estrutura da câmara' },
+    ],
+  },
+  {
+    label: 'TRANSPARÊNCIA',
+    keys: [
+      { key: 'transparencia_visualizar', label: 'Visualizar portal de transparência' },
+    ],
+  },
+  {
     label: 'USUÁRIOS E PERMISSÕES',
     keys: [
       { key: 'usuarios_visualizar', label: 'Visualizar usuários' },
@@ -264,10 +276,20 @@ export const PERFIS_FOTO_OBRIGATORIA = ['VEREADOR', 'PRESIDENTE'];
 // SUPER_ADMIN ignora este filtro e vê tudo.
 // ============================================================
 export const MENU_PERMISSION_MAP = {
+  // Estrutura
+  '/legislaturas': 'estrutura_visualizar',
+  '/parlamentares': 'estrutura_visualizar',
+  '/partidos': 'estrutura_visualizar',
+  '/mesa-diretora': 'estrutura_visualizar',
+  '/comissoes': 'estrutura_visualizar',
+
+  // Administração
   '/gerenciar-usuarios': 'usuarios_visualizar',
+  '/casa-legislativa': 'estrutura_visualizar',
   '/configuracoes': 'usuarios_gerenciar_permissoes',
   '/auditoria': 'auditoria_logs',
 
+  // Processo Legislativo
   '/projetos-lei': 'projetos_lei_visualizar',
   '/leis': 'leis_visualizar',
   '/resolucoes': 'resolucoes_visualizar',
@@ -275,18 +297,23 @@ export const MENU_PERMISSION_MAP = {
   '/portarias': 'portarias_visualizar',
   '/emendas-impositivas': 'emendas_visualizar',
   '/emendas': 'emendas_visualizar',
+
+  // Documentos
   '/atas-sessoes': 'atas_visualizar',
   '/pautas-sessoes': 'pautas_visualizar',
 
+  // Sessões e Votação
   '/sessoes': 'sessoes_visualizar',
   '/quorum': 'sessoes_presenca',
   '/votacao': 'painel_votar',
   '/painel-eletronico': 'painel_votar',
   '/reuniao-comissao': 'sessoes_visualizar',
 
+  // Outros
   '/audiencias': 'audiencias_visualizar',
   '/documentos': 'documentos_visualizar',
   '/oficios': 'documentos_visualizar',
+  '/transparencia': 'estrutura_visualizar',
 
   '/normas': 'leis_visualizar',
   '/relatorios': 'relatorios_acessar',
@@ -300,8 +327,8 @@ export const MENU_PERMISSION_MAP = {
  */
 export function canShowMenuItem(user, path) {
   if (!user) return false;
-  // SUPER_ADMIN vê tudo
-  if (user.role === 'SUPER_ADMIN') return true;
+  // SUPER_ADMIN e ADMIN_CAMARA veem tudo
+  if (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_CAMARA') return true;
 
   const permKey = MENU_PERMISSION_MAP[path];
   if (!permKey) return true; // sem mapeamento = sempre visível
