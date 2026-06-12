@@ -38,6 +38,7 @@ export default function GerenciarCamaras() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
   const [createdInfo, setCreatedInfo] = useState(null);
 
   const [secaoExpandida, setSecaoExpandida] = useState("camara");
@@ -81,6 +82,7 @@ export default function GerenciarCamaras() {
 
   const handleSave = async () => {
     setSaving(true);
+    setErrorMsg('');
     try {
       if (editing) {
         await base44.entities.Camara.update(editing.id, form);
@@ -161,6 +163,8 @@ export default function GerenciarCamaras() {
           userError,
         });
       }
+    } catch (e) {
+      setErrorMsg(e?.message || 'Erro ao salvar câmara.');
     } finally {
       setSaving(false);
     }
@@ -474,8 +478,9 @@ export default function GerenciarCamaras() {
             )}
           </div>
 
+          {errorMsg && <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">{errorMsg}</p>}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+            <Button variant="outline" onClick={() => { setOpen(false); setErrorMsg(''); }}>Cancelar</Button>
             <Button
               onClick={handleSave}
               disabled={saving || !isFormValid(form) || (!editing && !isAdminValid(admin))}

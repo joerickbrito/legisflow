@@ -19,6 +19,8 @@ export default function Legislaturas() {
   const [form, setForm] = useState({ numero: '', ano_inicio: '', ano_fim: '', data_inicio: '', data_fim: '', data_eleicao: '', descricao: '', status: 'Ativa' });
   const [showSessaoForm, setShowSessaoForm] = useState(false);
   const [sessaoForm, setSessaoForm] = useState({ numero: '', ano: new Date().getFullYear(), data_inicio: '', data_fim: '', legislatura_id: '' });
+  const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => { if (canQuery) load(); }, [tenantId, canQuery]);
 
@@ -36,16 +38,53 @@ export default function Legislaturas() {
   }
 
   async function salvarLeg() {
-    const data = { ...form, tenant_id: tenantId || '', numero: Number(form.numero), ano_inicio: form.ano_inicio ? Number(form.ano_inicio) : undefined, ano_fim: form.ano_fim ? Number(form.ano_fim) : undefined };
-    if (editando) await base44.entities.Legislatura.update(editando.id, data);
-    else await base44.entities.Legislatura.create(data);
-    setShowForm(false); load();
+    setSaving(true);
+    setErrorMsg('');
+    try {
+      if (!form.numero || Number(form.numero) <= 0) {
+        setErrorMsg('O número da legislatura é obrigatório.');
+        setSaving(false);
+        return;
+      }
+      const data = {
+        ...form,
+        tenant_id: tenantId || '',
+        numero: Number(form.numero),
+        ano_inicio: form.ano_inicio ? Number(form.ano_inicio) : undefined,
+        ano_fim: form.ano_fim ? Number(form.ano_fim) : undefined,
+      };
+      if (editando) await base44.entities.Legislatura.update(editando.id, data);
+      else await base44.entities.Legislatura.create(data);
+      setShowForm(false);
+      setErrorMsg('');
+      load();
+    } catch (e) {
+      setErrorMsg(e?.message || 'Erro ao salvar legislatura.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function salvarSessao() {
-    const leg = legislaturas.find(l => l.id === sessaoForm.legislatura_id);
-    await base44.entities.SessaoLegislativa.create({ ...sessaoForm, tenant_id: tenantId || '', ano: Number(sessaoForm.ano), numero: Number(sessaoForm.numero), legislatura_numero: leg?.numero });
-    setShowSessaoForm(false); load();
+    setSaving(true);
+    setErrorMsg('');
+    try {
+      const leg = legislaturas.find(l => l.id === sessaoForm.legislatura_id);
+      await base44.entities.SessaoLegislativa.create({
+        ...sessaoForm,
+        tenant_id: tenantId || '',
+        ano: Number(sessaoForm.ano),
+        numero: Number(sessaoForm.numero),
+        legislatura_numero: leg?.numero,
+      });
+      setShowSessaoForm(false);
+      setErrorMsg('');
+      load();
+    } catch (e) {
+      setErrorMsg(e?.message || 'Erro ao salvar sessão legislativa.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -129,9 +168,10 @@ export default function Legislaturas() {
               </Select>
             </div>
           </div>
+          {errorMsg && <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">{errorMsg}</p>}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
-            <Button onClick={salvarLeg}>Salvar</Button>
+            <Button variant="outline" onClick={() => { setShowForm(false); setErrorMsg(''); }}>Cancelar</Button>
+            <Button onClick={salvarLeg} disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -156,9 +196,10 @@ export default function Legislaturas() {
               <div><label className="text-sm font-medium mb-1.5 block">Fim</label><Input type="date" value={sessaoForm.data_fim} onChange={e => setSessaoForm(f => ({ ...f, data_fim: e.target.value }))} /></div>
             </div>
           </div>
+          {errorMsg && <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">{errorMsg}</p>}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowSessaoForm(false)}>Cancelar</Button>
-            <Button onClick={salvarSessao}>Salvar</Button>
+            <Button variant="outline" onClick={() => { setShowSessaoForm(false); setErrorMsg(''); }}>Cancelar</Button>
+            <Button onClick={salvarSessao} disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

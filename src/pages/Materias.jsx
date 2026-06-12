@@ -28,6 +28,8 @@ export default function Materias() {
   const [showTimeline, setShowTimeline] = useState(null);
   const [form, setForm] = useState({ tipo: 'Projeto de Lei', ementa: '', autor_id: '', status: 'Em tramitação', regime_tramitacao: 'Normal', data_apresentacao: '', observacoes: '', texto_integral: '' });
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   // Apenas admin e secretaria podem criar matérias diretamente
   const canCreateDirect = ['SUPER_ADMIN', 'ADMIN_CAMARA', 'SECRETARIA_LEGISLATIVA'].includes(userRole);
@@ -58,15 +60,24 @@ export default function Materias() {
   }
 
   async function salvar() {
-    const autor = parlamentares.find(p => p.id === form.autor_id);
-    const data = { ...form, autor_nome: autor?.nome || '', tenant_id: tenantId || '' };
-    if (editando) {
-      await base44.entities.Materia.update(editando.id, data);
-    } else {
-      await base44.entities.Materia.create({ ...data, ano: new Date().getFullYear() });
+    setSaving(true);
+    setErrorMsg('');
+    try {
+      const autor = parlamentares.find(p => p.id === form.autor_id);
+      const data = { ...form, autor_nome: autor?.nome || '', tenant_id: tenantId || '' };
+      if (editando) {
+        await base44.entities.Materia.update(editando.id, data);
+      } else {
+        await base44.entities.Materia.create({ ...data, ano: new Date().getFullYear() });
+      }
+      setShowForm(false);
+      setErrorMsg('');
+      loadData();
+    } catch (e) {
+      setErrorMsg(e?.message || 'Erro ao salvar matéria.');
+    } finally {
+      setSaving(false);
     }
-    setShowForm(false);
-    loadData();
   }
 
   const filtradas = materias.filter(m => {
@@ -251,9 +262,10 @@ export default function Materias() {
               <Textarea value={form.observacoes} onChange={e => setForm(f => ({ ...f, observacoes: e.target.value }))} rows={2} />
             </div>
           </div>
+          {errorMsg && <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">{errorMsg}</p>}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
-            <Button onClick={salvar} disabled={!form.ementa}>Salvar</Button>
+            <Button variant="outline" onClick={() => { setShowForm(false); setErrorMsg(''); }}>Cancelar</Button>
+            <Button onClick={salvar} disabled={!form.ementa || saving}>{saving ? 'Salvando...' : 'Salvar'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

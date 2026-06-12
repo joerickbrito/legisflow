@@ -20,7 +20,8 @@ export default function Partidos() {
   const [editando, setEditando] = useState(null);
   const [form, setForm] = useState({ nome: '', sigla: '', numero: '', cor_hex: '#1d4ed8', data_fundacao: '', ativo: true });
   const [bancadaForm, setBancadaForm] = useState({ nome: '', sigla: '', tipo: 'Partidária', membros: [] });
-
+  const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => { if (canQuery) load(); }, [tenantId, canQuery]);
 
@@ -37,14 +38,34 @@ export default function Partidos() {
   }
 
   async function salvarPartido() {
-    if (editando) await base44.entities.Partido.update(editando.id, form);
-    else await base44.entities.Partido.create({ ...form, tenant_id: tenantId || '' });
-    setShowForm(false); load();
+    setSaving(true);
+    setErrorMsg('');
+    try {
+      if (editando) await base44.entities.Partido.update(editando.id, form);
+      else await base44.entities.Partido.create({ ...form, tenant_id: tenantId || '' });
+      setShowForm(false);
+      setErrorMsg('');
+      load();
+    } catch (e) {
+      setErrorMsg(e?.message || 'Erro ao salvar partido.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function salvarBancada() {
-    await base44.entities.Bancada.create({ ...bancadaForm, tenant_id: tenantId || '' });
-    setShowBancada(false); load();
+    setSaving(true);
+    setErrorMsg('');
+    try {
+      await base44.entities.Bancada.create({ ...bancadaForm, tenant_id: tenantId || '' });
+      setShowBancada(false);
+      setErrorMsg('');
+      load();
+    } catch (e) {
+      setErrorMsg(e?.message || 'Erro ao salvar bancada.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   function toggleMembro(p) {
@@ -136,9 +157,10 @@ export default function Partidos() {
             </div>
             <div><label className="text-sm font-medium mb-1.5 block">Data de Fundação</label><Input type="date" value={form.data_fundacao} onChange={e => setForm(f => ({ ...f, data_fundacao: e.target.value }))} /></div>
           </div>
+          {errorMsg && <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">{errorMsg}</p>}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
-            <Button onClick={salvarPartido} disabled={!form.nome || !form.sigla}>Salvar</Button>
+            <Button variant="outline" onClick={() => { setShowForm(false); setErrorMsg(''); }}>Cancelar</Button>
+            <Button onClick={salvarPartido} disabled={!form.nome || !form.sigla || saving}>{saving ? 'Salvando...' : 'Salvar'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

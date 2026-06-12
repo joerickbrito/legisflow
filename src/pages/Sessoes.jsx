@@ -39,6 +39,8 @@ export default function Sessoes() {
   const [editando, setEditando] = useState(null);
   const [tabAtiva, setTabAtiva] = useState('info');
   const [form, setForm] = useState(emptyForm);
+  const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   const podeGerenciar = isOperadorGeral || isPresidente;
 
@@ -92,15 +94,24 @@ export default function Sessoes() {
   }
 
   async function salvar() {
-    const num = editando?.numero || String(sessoes.filter(s => !editando || s.id !== editando.id).length + 1).padStart(3, '0');
-    const data = { ...form, tenant_id: tenantId || '', numero: editando?.numero || num };
-    if (editando) {
-      await base44.entities.Sessao.update(editando.id, data);
-    } else {
-      await base44.entities.Sessao.create(data);
+    setSaving(true);
+    setErrorMsg('');
+    try {
+      const num = editando?.numero || String(sessoes.filter(s => !editando || s.id !== editando.id).length + 1).padStart(3, '0');
+      const data = { ...form, tenant_id: tenantId || '', numero: editando?.numero || num };
+      if (editando) {
+        await base44.entities.Sessao.update(editando.id, data);
+      } else {
+        await base44.entities.Sessao.create(data);
+      }
+      setShowForm(false);
+      setErrorMsg('');
+      loadData();
+    } catch (e) {
+      setErrorMsg(e?.message || 'Erro ao salvar sessão.');
+    } finally {
+      setSaving(false);
     }
-    setShowForm(false);
-    loadData();
   }
 
   function togglePresenca(id) {
@@ -368,9 +379,10 @@ export default function Sessoes() {
             )}
           </div>
 
+          {errorMsg && <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">{errorMsg}</p>}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
-            <Button onClick={salvar} disabled={!form.tipo || !form.data}>Salvar</Button>
+            <Button variant="outline" onClick={() => { setShowForm(false); setErrorMsg(''); }}>Cancelar</Button>
+            <Button onClick={salvar} disabled={!form.tipo || !form.data || saving}>{saving ? 'Salvando...' : 'Salvar'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

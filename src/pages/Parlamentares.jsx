@@ -23,6 +23,8 @@ export default function Parlamentares() {
   const [showForm, setShowForm] = useState(false);
   const [editando, setEditando] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
   const emptyForm = {
     nome: '', nome_parlamentar: '', cpf: '', email: '', telefone: '',
     foto_url: '', partido_id: '', partido_sigla: '', cargo: 'Vereador',
@@ -64,11 +66,20 @@ export default function Parlamentares() {
   }
 
   async function salvar() {
-    const data = { ...form, ativo: form.situacao === 'Ativo' };
-    if (editando) await base44.entities.Parlamentar.update(editando.id, data);
-    else await base44.entities.Parlamentar.create(data);
-    setShowForm(false);
-    loadData();
+    setSaving(true);
+    setErrorMsg('');
+    try {
+      const data = { ...form, ativo: form.situacao === 'Ativo' };
+      if (editando) await base44.entities.Parlamentar.update(editando.id, data);
+      else await base44.entities.Parlamentar.create(data);
+      setShowForm(false);
+      setErrorMsg('');
+      loadData();
+    } catch (e) {
+      setErrorMsg(e?.message || 'Erro ao salvar parlamentar.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   const filtrados = parlamentares.filter(p =>
@@ -258,9 +269,10 @@ export default function Parlamentares() {
               </div>
             )}
           </div>
+          {errorMsg && <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">{errorMsg}</p>}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
-            <Button onClick={salvar} disabled={!form.nome}>Salvar</Button>
+            <Button variant="outline" onClick={() => { setShowForm(false); setErrorMsg(''); }}>Cancelar</Button>
+            <Button onClick={salvar} disabled={!form.nome || saving}>{saving ? 'Salvando...' : 'Salvar'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

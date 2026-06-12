@@ -27,6 +27,8 @@ export default function NormaSimples({ tipo, icon: Icon, title, subtitle, addLab
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({});
   const [editing, setEditing] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   const empty = { tipo, numero: '', ano: new Date().getFullYear(), ementa: '', data_publicacao: '', situacao: 'Vigente', arquivo_url: '' };
 
@@ -39,16 +41,25 @@ export default function NormaSimples({ tipo, icon: Icon, title, subtitle, addLab
     `${i.numero} ${i.ementa}`.toLowerCase().includes(search.toLowerCase())
   );
 
-  const openNew = () => { setForm(empty); setEditing(null); setOpen(true); };
-  const openEdit = (item) => { setForm({ ...item }); setEditing(item.id); setOpen(true); };
+  const openNew = () => { setForm(empty); setEditing(null); setErrorMsg(''); setOpen(true); };
+  const openEdit = (item) => { setForm({ ...item }); setEditing(item.id); setErrorMsg(''); setOpen(true); };
 
   const save = async () => {
-    const data = { ...form, tipo, tenant_id: tenantId || '' };
-    if (editing) await base44.entities.NormaJuridica.update(editing, data);
-    else await base44.entities.NormaJuridica.create(data);
-    const updated = await base44.entities.NormaJuridica.filter(withTenant({ tipo }));
-    setItems(updated);
-    setOpen(false);
+    setSaving(true);
+    setErrorMsg('');
+    try {
+      const data = { ...form, tipo, tenant_id: tenantId || '' };
+      if (editing) await base44.entities.NormaJuridica.update(editing, data);
+      else await base44.entities.NormaJuridica.create(data);
+      const updated = await base44.entities.NormaJuridica.filter(withTenant({ tipo }));
+      setItems(updated);
+      setOpen(false);
+      setErrorMsg('');
+    } catch (e) {
+      setErrorMsg(e?.message || 'Erro ao salvar registro.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const remove = async (id) => {
@@ -135,9 +146,10 @@ export default function NormaSimples({ tipo, icon: Icon, title, subtitle, addLab
               <FileUpload value={form.arquivo_url} onUploaded={url => set('arquivo_url', url)} label="Arquivo (PDF, DOC...)" />
             </div>
           </div>
+          {errorMsg && <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md mt-2">{errorMsg}</p>}
           <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-            <Button onClick={save}>Salvar</Button>
+            <Button variant="outline" onClick={() => { setOpen(false); setErrorMsg(''); }}>Cancelar</Button>
+            <Button onClick={save} disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</Button>
           </div>
         </DialogContent>
       </Dialog>

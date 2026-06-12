@@ -28,32 +28,55 @@ const statusColors = {
 const empty = { tipo: 'Projeto de Lei', numero: '', ano: new Date().getFullYear(), ementa: '', autor_nome: '', autor_tipo: 'Vereador', regime_tramitacao: 'Normal', status: 'Em tramitação', data_apresentacao: '', data_protocolo: '', observacoes: '', arquivo_url: '' };
 
 export default function ProjetosLei() {
-  const { tenant, withTenant, canQuery } = useTenant();
+  const { tenantId, withTenant, canQuery } = useTenant();
   const [items, setItems] = useState([]);
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(empty);
   const [editing, setEditing] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
     if (!canQuery) return;
     base44.entities.Materia.filter(withTenant({ tipo: { $in: TIPOS } })).then(setItems);
-  }, [canQuery, tenant]);
+  }, [canQuery, tenantId]);
 
   const filtered = items.filter(i =>
     `${i.numero} ${i.ementa} ${i.autor_nome}`.toLowerCase().includes(search.toLowerCase())
   );
 
-  const openNew = () => { setForm(empty); setEditing(null); setOpen(true); };
-  const openEdit = (item) => { setForm({ ...item }); setEditing(item.id); setOpen(true); };
+  const openNew = () => { setForm(empty); setEditing(null); setErrorMsg(''); setOpen(true); };
+  const openEdit = (item) => { setForm({ ...item }); setEditing(item.id); setErrorMsg(''); setOpen(true); };
 
   const save = async () => {
-    const data = { ...form, tenant_id: tenant?.id };
-    if (editing) await base44.entities.Materia.update(editing, data);
-    else await base44.entities.Materia.create(data);
-    const updated = await base44.entities.Materia.filter(withTenant({ tipo: { $in: TIPOS } }));
-    setItems(updated);
-    setOpen(false);
+    setSaving(true);
+    setErrorMsg('');
+    try {
+      // Mapear autor_tipo (campo do formulário) → origem (campo da entidade Materia)
+      const { autor_tipo, ...rest } = form;
+      const origemMap = {
+        'Vereador': 'Parlamentar',
+        'Executivo': 'Executivo',
+        'Comissão': 'Comissão',
+        'Popular': 'Popular',
+      };
+      const data = {
+        ...rest,
+        tenant_id: tenantId || '',
+        origem: origemMap[autor_tipo] || 'Parlamentar',
+      };
+      if (editing) await base44.entities.Materia.update(editing, data);
+      else await base44.entities.Materia.create(data);
+      const updated = await base44.entities.Materia.filter(withTenant({ tipo: { $in: TIPOS } }));
+      setItems(updated);
+      setOpen(false);
+      setErrorMsg('');
+    } catch (e) {
+      setErrorMsg(e?.message || 'Erro ao salvar projeto.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const remove = async (id) => {
@@ -176,9 +199,10 @@ export default function ProjetosLei() {
               <textarea className="w-full border rounded-md px-3 py-2 text-sm min-h-[60px] bg-background" value={form.observacoes} onChange={e => set('observacoes', e.target.value)} />
             </div>
           </div>
+          {errorMsg && <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md mt-2">{errorMsg}</p>}
           <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-            <Button onClick={save}>Salvar</Button>
+            <Button variant="outline" onClick={() => { setOpen(false); setErrorMsg(''); }}>Cancelar</Button>
+            <Button onClick={save} disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</Button>
           </div>
         </DialogContent>
       </Dialog>
