@@ -23,6 +23,8 @@ export default function Emendas() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ materia_id: "", numero: "", tipo: "Modificativa", ementa: "", texto: "", justificativa: "", autor_id: "", autor_nome: "", data_apresentacao: "", status: "Em análise" });
+  const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
     if (!canQuery) return;
@@ -36,14 +38,23 @@ export default function Emendas() {
   const openEdit = (e) => { setEditing(e); setForm(e); setOpen(true); };
 
   const handleSave = async () => {
-    const materia = materias.find(m => m.id === form.materia_id);
-    const autor = parlamentares.find(p => p.id === form.autor_id);
-    const data = { ...form, tenant_id: tenantId, materia_ementa: materia?.ementa || "", autor_nome: autor?.nome_parlamentar || autor?.nome || form.autor_nome };
-    if (editing) await base44.entities.Emenda.update(editing.id, data);
-    else await base44.entities.Emenda.create(data);
-    const filter = withTenant();
-    if (filter) setEmendas(await base44.entities.Emenda.filter(filter, "-created_date", 50));
-    setOpen(false);
+    setSaving(true);
+    setErrorMsg('');
+    try {
+      const materia = materias.find(m => m.id === form.materia_id);
+      const autor = parlamentares.find(p => p.id === form.autor_id);
+      const data = { ...form, tenant_id: tenantId, materia_ementa: materia?.ementa || "", autor_nome: autor?.nome_parlamentar || autor?.nome || form.autor_nome };
+      if (editing) await base44.entities.Emenda.update(editing.id, data);
+      else await base44.entities.Emenda.create(data);
+      const filter = withTenant();
+      if (filter) setEmendas(await base44.entities.Emenda.filter(filter, "-created_date", 50));
+      setOpen(false);
+      setErrorMsg('');
+    } catch (e) {
+      setErrorMsg(e?.message || 'Erro ao salvar emenda.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -114,9 +125,10 @@ export default function Emendas() {
                 <SelectContent>{STATUS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
               </Select>
             </div>
+            {errorMsg && <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">{errorMsg}</p>}
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-              <Button onClick={handleSave}>Salvar</Button>
+              <Button variant="outline" onClick={() => { setOpen(false); setErrorMsg(''); }}>Cancelar</Button>
+              <Button onClick={handleSave} disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</Button>
             </div>
           </div>
         </DialogContent>

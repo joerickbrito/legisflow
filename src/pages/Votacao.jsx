@@ -18,6 +18,8 @@ export default function Votacao() {
   const [novaVotacao, setNovaVotacao] = useState({ materia_id: '', tipo_votacao: 'Nominal' });
   const [votandoParlamentar, setVotandoParlamentar] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
     if (canQuery) loadData();
@@ -33,24 +35,33 @@ export default function Votacao() {
   }
 
   async function iniciarVotacao() {
-    const mat = materias.find(m => m.id === novaVotacao.materia_id);
-    const nova = await base44.entities.Votacao.create({
-      tenant_id: tenantId || '',
-      materia_id: novaVotacao.materia_id,
-      materia_ementa: mat?.ementa || 'Matéria',
-      materia_tipo: mat?.tipo || '',
-      tipo_votacao: novaVotacao.tipo_votacao,
-      status: 'Em Votação',
-      votos: [],
-      votos_sim: 0,
-      votos_nao: 0,
-      abstencoes: 0,
-      resultado: 'Em votação',
-      data_hora: new Date().toISOString(),
-    });
-    setVotacaoAtiva(nova);
-    setShowNovaVotacao(false);
-    loadData();
+    setSaving(true);
+    setErrorMsg('');
+    try {
+      const mat = materias.find(m => m.id === novaVotacao.materia_id);
+      const nova = await base44.entities.Votacao.create({
+        tenant_id: tenantId || '',
+        materia_id: novaVotacao.materia_id,
+        materia_ementa: mat?.ementa || 'Matéria',
+        materia_tipo: mat?.tipo || '',
+        tipo_votacao: novaVotacao.tipo_votacao,
+        status: 'Em Votação',
+        votos: [],
+        votos_sim: 0,
+        votos_nao: 0,
+        abstencoes: 0,
+        resultado: 'Em votação',
+        data_hora_inicio: new Date().toISOString(),
+      });
+      setVotacaoAtiva(nova);
+      setShowNovaVotacao(false);
+      setErrorMsg('');
+      loadData();
+    } catch (e) {
+      setErrorMsg(e?.message || 'Erro ao iniciar votação.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function registrarVoto(voto) {
@@ -77,8 +88,13 @@ export default function Votacao() {
     if (!votacaoAtiva) return;
     const sim = votacaoAtiva.votos_sim || 0;
     const nao = votacaoAtiva.votos_nao || 0;
-    const resultado = sim > nao ? 'Aprovada' : nao > sim ? 'Rejeitada' : 'Rejeitada';
-    await base44.entities.Votacao.update(votacaoAtiva.id, { status: 'Encerrada', resultado });
+    const resultado = sim > nao ? 'Aprovada' : nao > sim ? 'Rejeitada' : 'Empate';
+    await base44.entities.Votacao.update(votacaoAtiva.id, { status: 'Encerrada', resultado, data_hora_fim: new Date().toISOString() });
+    // Atualiza status da matéria
+    if (votacaoAtiva.materia_id && resultado !== 'Empate') {
+      const novoStatus = resultado === 'Aprovada' ? 'Aprovada' : 'Rejeitada';
+      try { await base44.entities.Materia.update(votacaoAtiva.materia_id, { status: novoStatus }); } catch (e) { /* ok */ }
+    }
     setVotacaoAtiva(null);
     loadData();
   }
@@ -264,10 +280,11 @@ export default function Votacao() {
               </Select>
             </div>
           </div>
+          {errorMsg && <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">{errorMsg}</p>}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNovaVotacao(false)}>Cancelar</Button>
-            <Button onClick={iniciarVotacao} disabled={!novaVotacao.materia_id} className="gap-2">
-              <Play size={16} /> Iniciar Votação
+            <Button variant="outline" onClick={() => { setShowNovaVotacao(false); setErrorMsg(''); }}>Cancelar</Button>
+            <Button onClick={iniciarVotacao} disabled={!novaVotacao.materia_id || saving} className="gap-2">
+              {saving ? 'Iniciando...' : <><Play size={16} /> Iniciar Votação</>}
             </Button>
           </DialogFooter>
         </DialogContent>

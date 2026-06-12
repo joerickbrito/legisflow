@@ -16,8 +16,11 @@ export default function PainelEletronico() {
   const [votacaoAtiva, setVotacaoAtiva] = useState(null);
   const [sessoes, setSessoes] = useState([]);
   const [materias, setMaterias] = useState([]);
+  const [normas, setNormas] = useState([]);
   const [parlamentares, setParlamentares] = useState([]);
   const [showConfig, setShowConfig] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
   const [modeTelao, setModeTelao] = useState(false);
   const [loading, setLoading] = useState(true);
   const [config, setConfig] = useState({
@@ -48,13 +51,15 @@ export default function PainelEletronico() {
 
   async function loadData() {
     const filter = withTenant({});
-    const [sess, mat, parl] = await Promise.all([
+    const [sess, mat, normasList, parl] = await Promise.all([
       base44.entities.Sessao.filter({ ...filter, status: 'Em Andamento' }, '-data', 20),
       base44.entities.Materia.filter({ ...filter, status: 'Em tramitação' }, '-created_date', 100),
+      base44.entities.NormaJuridica.filter({ ...filter, situacao: 'Vigente' }, '-created_date', 50).catch(() => []),
       base44.entities.Parlamentar.filter({ ...filter, ativo: true }, 'nome', 100),
     ]);
     setSessoes(sess);
     setMaterias(mat);
+    setNormas(normasList);
     setParlamentares(parl);
     await loadVotacaoAtiva();
     setLoading(false);
@@ -69,7 +74,10 @@ export default function PainelEletronico() {
   }
 
   async function iniciarVotacao() {
-    const mat = materias.find(m => m.id === config.materia_id);
+    setSaving(true);
+    setErrorMsg('');
+    try {
+    const mat = materias.find(m => m.id === config.materia_id) || normas.find(n => n.id === config.materia_id);
     const sessao = sessoes.find(s => s.id === config.sessao_id);
 
     // Usa presenças da sessão, ou todos os parlamentares
@@ -119,10 +127,18 @@ export default function PainelEletronico() {
     });
     setShowConfig(false);
     loadVotacaoAtiva();
+    } catch (e) {
+      setErrorMsg(e?.message || 'Erro ao iniciar votação.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function encerrarVotacao() {
     if (!votacaoAtiva) return;
+    setSaving(true);
+    setErrorMsg('');
+    try {
     const votos = votacaoAtiva.votos || [];
     // Contar apenas votos não-presidente para resultado base
     const votosNormais = votos.filter(v => !v.is_presidente);
@@ -151,13 +167,20 @@ export default function PainelEletronico() {
     if (votacaoAtiva.materia_id && resultado !== 'Empate') {
       const novoStatus = resultado.startsWith('Aprovada') ? 'Aprovada' : 'Rejeitada';
       const campoData = novoStatus === 'Aprovada' ? { data_aprovacao: new Date().toISOString().slice(0, 10) } : { data_rejeicao: new Date().toISOString().slice(0, 10) };
-      await base44.entities.Materia.update(votacaoAtiva.materia_id, {
-        status: novoStatus,
-        ...campoData,
-      });
+      try {
+        await base44.entities.Materia.update(votacaoAtiva.materia_id, {
+          status: novoStatus,
+          ...campoData,
+        });
+      } catch (e) { /* materia pode já ter sido excluída */ }
     }
 
     setVotacaoAtiva(null);
+    } catch (e) {
+      setErrorMsg(e?.message || 'Erro ao encerrar votação.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   const sessaoSelecionada = sessoes.find(s => s.id === config.sessao_id);
@@ -229,8 +252,8 @@ export default function PainelEletronico() {
             </Button>
           )}
           {isOperadorGeral && votacaoAtiva && (
-            <Button onClick={encerrarVotacao} variant="destructive" className="gap-2">
-              <StopCircle size={16} /> Encerrar Votação
+            <Button onClick={encerrarVotacao} variant="destructive" className="gap-2" disabled={saving}>
+              {saving ? 'Encerrando...' : <><StopCircle size={16} /> Encerrar Votação</>}
             </Button>
           )}
         </div>
@@ -298,17 +321,35 @@ export default function PainelEletronico() {
               )}
             </div>
 
-            {/* Matéria */}
+            {/* Matéria / Norma */}
             <div>
               <label className="text-sm font-medium mb-1.5 block">Matéria em Pauta *</label>
               <Select value={config.materia_id} onValueChange={v => setConfig(c => ({ ...c, materia_id: v }))}>
-                <SelectTrigger><SelectValue placeholder="Selecione a matéria..." /></SelectTrigger>
-                <SelectContent>
-                  {materias.map(m => (
-                    <SelectItem key={m.id} value={m.id}>
-                      {m.tipo}{m.numero ? ` nº ${m.numero}` : ''} — {m.ementa?.slice(0, 60)}{m.ementa?.length > 60 ? '...' : ''}
-                    </SelectItem>
-                  ))}
+                <SelectTrigger><SelectValue placeholder="Selecione a matéria ou norma..." /></SelectTrigger>
+                <SelectContent className="max-h-72">
+                  {materias.length > 0 && (
+                    <>
+                      <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Matérias em Tramitação</div>
+                      {materias.map(m => (
+                        <SelectItem key={`mat-${m.id}`} value={m.id}>
+                          {m.tipo}{m.numero ? ` nº ${m.numero}` : ''} — {m.ementa?.slice(0, 60)}{m.ementa?.length > 60 ? '...' : ''}
+                        </SelectItem>
+                      ))}
+                    </>
+                  )}
+                  {normas.length > 0 && (
+                    <>
+                      <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Normas Vigentes</div>
+                      {normas.map(n => (
+                        <SelectItem key={`norma-${n.id}`} value={n.id}>
+                          {n.tipo} nº {n.numero}/{n.ano} — {n.ementa?.slice(0, 60)}{n.ementa?.length > 60 ? '...' : ''}
+                        </SelectItem>
+                      ))}
+                    </>
+                  )}
+                  {materias.length === 0 && normas.length === 0 && (
+                    <SelectItem value="none" disabled>Nenhuma matéria ou norma disponível</SelectItem>
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -348,10 +389,11 @@ export default function PainelEletronico() {
               </div>
             </div>
           </div>
+          {errorMsg && <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md mt-2">{errorMsg}</p>}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowConfig(false)}>Cancelar</Button>
-            <Button onClick={iniciarVotacao} disabled={!config.materia_id} className="gap-2">
-              <Play size={15} /> Iniciar Votação
+            <Button variant="outline" onClick={() => { setShowConfig(false); setErrorMsg(''); }}>Cancelar</Button>
+            <Button onClick={iniciarVotacao} disabled={!config.materia_id || saving} className="gap-2">
+              {saving ? 'Iniciando...' : <><Play size={15} /> Iniciar Votação</>}
             </Button>
           </DialogFooter>
         </DialogContent>

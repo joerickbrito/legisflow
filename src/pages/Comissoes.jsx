@@ -21,6 +21,8 @@ export default function Comissoes() {
   const [editando, setEditando] = useState(null);
   const emptyForm = { nome: '', sigla: '', tipo: 'Permanente', objetivo: '', data_criacao: '', data_encerramento: '', membros: [], ativa: true, tenant_id: tenantId || '' };
   const [form, setForm] = useState(emptyForm);
+  const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => { if (canQuery) loadData(); }, [tenantId, canQuery]);
 
@@ -44,10 +46,19 @@ export default function Comissoes() {
   }
 
   async function salvar() {
-    if (editando) await base44.entities.Comissao.update(editando.id, form);
-    else await base44.entities.Comissao.create(form);
-    setShowForm(false);
-    loadData();
+    setSaving(true);
+    setErrorMsg('');
+    try {
+      if (editando) await base44.entities.Comissao.update(editando.id, form);
+      else await base44.entities.Comissao.create(form);
+      setShowForm(false);
+      setErrorMsg('');
+      loadData();
+    } catch (e) {
+      setErrorMsg(e?.message || 'Erro ao salvar comissão.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   function toggleMembro(parlamentar, cargo) {
@@ -164,9 +175,10 @@ export default function Comissoes() {
               </div>
             </div>
           </div>
+          {errorMsg && <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">{errorMsg}</p>}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
-            <Button onClick={salvar} disabled={!form.nome}>Salvar</Button>
+            <Button variant="outline" onClick={() => { setShowForm(false); setErrorMsg(''); }}>Cancelar</Button>
+            <Button onClick={salvar} disabled={!form.nome || saving}>{saving ? 'Salvando...' : 'Salvar'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -17,6 +17,8 @@ export default function Audiencias() {
   const [showForm, setShowForm] = useState(false);
   const [editando, setEditando] = useState(null);
   const [form, setForm] = useState({ tema: '', descricao: '', data: '', hora: '', local: '', status: 'Agendada', ata: '' });
+  const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => { if (canQuery) load(); }, [tenantId, canQuery]);
 
@@ -26,10 +28,19 @@ export default function Audiencias() {
   }
 
   async function salvar() {
-    if (editando) await base44.entities.AudienciaPublica.update(editando.id, form);
-    else await base44.entities.AudienciaPublica.create({ ...form, tenant_id: tenantId || '' });
-    setShowForm(false);
-    load();
+    setSaving(true);
+    setErrorMsg('');
+    try {
+      if (editando) await base44.entities.AudienciaPublica.update(editando.id, form);
+      else await base44.entities.AudienciaPublica.create({ ...form, tenant_id: tenantId || '' });
+      setShowForm(false);
+      setErrorMsg('');
+      load();
+    } catch (e) {
+      setErrorMsg(e?.message || 'Erro ao salvar audiência.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   function openEdit(a) {
@@ -93,9 +104,10 @@ export default function Audiencias() {
             </div>
             <div><label className="text-sm font-medium mb-1.5 block">Ata</label><Textarea value={form.ata} onChange={e => setForm(f => ({ ...f, ata: e.target.value }))} rows={5} placeholder="Registro da audiência..." /></div>
           </div>
+          {errorMsg && <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">{errorMsg}</p>}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
-            <Button onClick={salvar} disabled={!form.tema || !form.data}>Salvar</Button>
+            <Button variant="outline" onClick={() => { setShowForm(false); setErrorMsg(''); }}>Cancelar</Button>
+            <Button onClick={salvar} disabled={!form.tema || !form.data || saving}>{saving ? 'Salvando...' : 'Salvar'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

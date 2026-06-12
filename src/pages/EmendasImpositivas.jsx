@@ -20,6 +20,8 @@ export default function EmendasImpositivas() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(empty);
   const [editing, setEditing] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
     if (!canQuery) return;
@@ -48,12 +50,21 @@ export default function EmendasImpositivas() {
   };
 
   const save = async () => {
-    const data = { ...form, tenant_id: tenant?.id, valor: form.valor ? Number(form.valor) : null };
-    if (editing) await base44.entities.EmendaImpositiva.update(editing, data);
-    else await base44.entities.EmendaImpositiva.create(data);
-    const updated = await base44.entities.EmendaImpositiva.filter(withTenant({}));
-    setItems(updated);
-    setOpen(false);
+    setSaving(true);
+    setErrorMsg('');
+    try {
+      const data = { ...form, tenant_id: tenant?.id, valor: form.valor ? Number(form.valor) : null };
+      if (editing) await base44.entities.EmendaImpositiva.update(editing, data);
+      else await base44.entities.EmendaImpositiva.create(data);
+      const updated = await base44.entities.EmendaImpositiva.filter(withTenant({}));
+      setItems(updated);
+      setOpen(false);
+      setErrorMsg('');
+    } catch (e) {
+      setErrorMsg(e?.message || 'Erro ao salvar emenda.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const remove = async (id) => {
@@ -152,9 +163,10 @@ export default function EmendasImpositivas() {
               <textarea className="w-full border rounded-md px-3 py-2 text-sm min-h-[60px] bg-background" value={form.observacoes || ''} onChange={e => set('observacoes', e.target.value)} />
             </div>
           </div>
+          {errorMsg && <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md mt-2">{errorMsg}</p>}
           <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-            <Button onClick={save}>Salvar</Button>
+            <Button variant="outline" onClick={() => { setOpen(false); setErrorMsg(''); }}>Cancelar</Button>
+            <Button onClick={save} disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</Button>
           </div>
         </DialogContent>
       </Dialog>

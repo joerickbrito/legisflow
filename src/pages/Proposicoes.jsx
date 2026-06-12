@@ -40,6 +40,8 @@ export default function Proposicoes() {
   const [editando, setEditando] = useState(null);
   const [receberForm, setReceberForm] = useState({ acao: 'receber', motivo: '' });
   const [form, setForm] = useState({ tipo: 'Projeto de Lei', ementa: '', justificativa: '', texto: '', autor_id: '', autor_nome: '', data_apresentacao: format(new Date(), 'yyyy-MM-dd') });
+  const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   const canReceive = ['SUPER_ADMIN', 'ADMIN_CAMARA', 'SECRETARIA_LEGISLATIVA', 'PROTOCOLO'].includes(userRole);
   const canCreate = !['CONSULTA_PUBLICA'].includes(userRole);
@@ -55,16 +57,25 @@ export default function Proposicoes() {
   }
 
   async function salvar() {
-    const autor = parlamentares.find(p => p.id === form.autor_id);
-    const payload = { ...form, autor_nome: autor?.nome || form.autor_nome, tenant_id: tenantId || '', status: 'Rascunho' };
-    if (editando) {
-      await base44.entities.Proposicao.update(editando.id, payload);
-    } else {
-      await base44.entities.Proposicao.create(payload);
+    setSaving(true);
+    setErrorMsg('');
+    try {
+      const autor = parlamentares.find(p => p.id === form.autor_id);
+      const payload = { ...form, autor_nome: autor?.nome || form.autor_nome, tenant_id: tenantId || '', status: 'Rascunho' };
+      if (editando) {
+        await base44.entities.Proposicao.update(editando.id, payload);
+      } else {
+        await base44.entities.Proposicao.create(payload);
+      }
+      try { await registrarAuditoria({ acao: editando ? 'EDITAR' : 'CRIAR', modulo: 'Proposicao', descricao: `Proposição: ${form.ementa.substring(0, 60)}`, tenant_id: tenantId, user }); } catch (e) { /* auditoria não deve bloquear */ }
+      setShowForm(false);
+      setErrorMsg('');
+      load();
+    } catch (e) {
+      setErrorMsg(e?.message || 'Erro ao salvar proposição.');
+    } finally {
+      setSaving(false);
     }
-    await registrarAuditoria({ acao: editando ? 'EDITAR' : 'CRIAR', modulo: 'Proposicao', descricao: `Proposição: ${form.ementa.substring(0, 60)}`, tenant_id: tenantId, user });
-    setShowForm(false);
-    load();
   }
 
   async function protocolar(p) {
@@ -288,9 +299,10 @@ export default function Proposicoes() {
               <Input type="date" value={form.data_apresentacao} onChange={e => setForm(f => ({ ...f, data_apresentacao: e.target.value }))} />
             </div>
           </div>
+          {errorMsg && <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">{errorMsg}</p>}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
-            <Button onClick={salvar} disabled={!form.ementa || !form.tipo}>Salvar Rascunho</Button>
+            <Button variant="outline" onClick={() => { setShowForm(false); setErrorMsg(''); }}>Cancelar</Button>
+            <Button onClick={salvar} disabled={!form.ementa || !form.tipo || saving}>{saving ? 'Salvando...' : 'Salvar Rascunho'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

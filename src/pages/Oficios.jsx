@@ -23,6 +23,8 @@ export default function Oficios() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ numero: "", ano: new Date().getFullYear(), tipo: "Externo", direcao: "Enviado", assunto: "", remetente: "", destinatario: "", data: "", texto: "", status: "Rascunho", observacoes: "" });
+  const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
     if (!canQuery) return;
@@ -35,12 +37,21 @@ export default function Oficios() {
   const openEdit = (o) => { setEditing(o); setForm(o); setOpen(true); };
 
   const handleSave = async () => {
-    const data = { ...form, tenant_id: tenantId };
-    if (editing) await base44.entities.Oficio.update(editing.id, data);
-    else await base44.entities.Oficio.create(data);
-    const filter = withTenant();
-    if (filter) setOficios(await base44.entities.Oficio.filter(filter, "-created_date", 100));
-    setOpen(false);
+    setSaving(true);
+    setErrorMsg('');
+    try {
+      const data = { ...form, tenant_id: tenantId };
+      if (editing) await base44.entities.Oficio.update(editing.id, data);
+      else await base44.entities.Oficio.create(data);
+      const filter = withTenant();
+      if (filter) setOficios(await base44.entities.Oficio.filter(filter, "-created_date", 100));
+      setOpen(false);
+      setErrorMsg('');
+    } catch (e) {
+      setErrorMsg(e?.message || 'Erro ao salvar ofício.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const filtered = oficios.filter(o =>
@@ -126,9 +137,10 @@ export default function Oficios() {
               </Select>
             </div>
             <div><label className="text-xs text-muted-foreground">Observações</label><Input value={form.observacoes} onChange={e => setForm(f => ({ ...f, observacoes: e.target.value }))} /></div>
+            {errorMsg && <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">{errorMsg}</p>}
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-              <Button onClick={handleSave}>Salvar</Button>
+              <Button variant="outline" onClick={() => { setOpen(false); setErrorMsg(''); }}>Cancelar</Button>
+              <Button onClick={handleSave} disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</Button>
             </div>
           </div>
         </DialogContent>

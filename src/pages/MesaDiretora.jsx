@@ -21,6 +21,8 @@ export default function MesaDiretora() {
   const [showForm, setShowForm] = useState(false);
   const [editando, setEditando] = useState(null);
   const [form, setForm] = useState({ legislatura_id: '', legislatura_numero: '', sessao_legislativa_id: '', data_inicio: '', data_fim: '', presidente_id: '', presidente_nome: '', vice_presidente_id: '', vice_presidente_nome: '', primeiro_secretario_id: '', primeiro_secretario_nome: '', segundo_secretario_id: '', segundo_secretario_nome: '', status: 'Ativa' });
+  const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => { if (canQuery) load(); }, [canQuery]);
 
@@ -46,11 +48,21 @@ export default function MesaDiretora() {
   }
 
   async function salvar() {
-    const leg = legislaturas.find(l => l.id === form.legislatura_id);
-    const data = { ...form, tenant_id: tenantId, legislatura_numero: leg?.numero };
-    if (editando) await base44.entities.MesaDiretora.update(editando.id, data);
-    else await base44.entities.MesaDiretora.create(data);
-    setShowForm(false); load();
+    setSaving(true);
+    setErrorMsg('');
+    try {
+      const leg = legislaturas.find(l => l.id === form.legislatura_id);
+      const data = { ...form, tenant_id: tenantId, legislatura_numero: leg?.numero };
+      if (editando) await base44.entities.MesaDiretora.update(editando.id, data);
+      else await base44.entities.MesaDiretora.create(data);
+      setShowForm(false);
+      setErrorMsg('');
+      load();
+    } catch (e) {
+      setErrorMsg(e?.message || 'Erro ao salvar mesa diretora.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   const cargosDisplay = [
@@ -139,9 +151,10 @@ export default function MesaDiretora() {
               </div>
             ))}
           </div>
+          {errorMsg && <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">{errorMsg}</p>}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
-            <Button onClick={salvar}>Salvar</Button>
+            <Button variant="outline" onClick={() => { setShowForm(false); setErrorMsg(''); }}>Cancelar</Button>
+            <Button onClick={salvar} disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
