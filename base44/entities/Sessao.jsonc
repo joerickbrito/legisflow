@@ -120,17 +120,67 @@
     "data"
   ],
   "rls": {
-    "create": {
-      "data.tenant_id": "{{user.data.tenant_id}}"
+    "create": null,
+    "read": {
+      "$or": [
+        {
+          "data.tenant_id": "{{user.data.tenant_id}}"
+        },
+        {
+          "user_condition": {
+            "role": "SUPER_ADMIN"
+          }
+        }
+      ]
     },
-    "read": null,
     "update": {
-      "data.tenant_id": "{{user.data.tenant_id}}"
+      "$or": [
+        {
+          "data.tenant_id": "{{user.data.tenant_id}}",
+          "$or": [
+            {
+              "user_condition": {
+                "role": "ADMIN_CAMARA"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "OPERADOR_GERAL"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "SECRETARIO_LEGISLATIVO"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "PRESIDENTE"
+              }
+            }
+          ]
+        },
+        {
+          "user_condition": {
+            "role": "SUPER_ADMIN"
+          }
+        }
+      ]
     },
     "delete": {
-      "user_condition": {
-        "role": "SUPER_ADMIN"
-      }
+      "$or": [
+        {
+          "data.tenant_id": "{{user.data.tenant_id}}",
+          "user_condition": {
+            "role": "ADMIN_CAMARA"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "SUPER_ADMIN"
+          }
+        }
+      ]
     }
   }
 }
