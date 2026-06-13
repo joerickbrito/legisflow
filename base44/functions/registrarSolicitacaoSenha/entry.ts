@@ -38,10 +38,10 @@ Deno.serve(async (req) => {
       return Response.json({ status: 'ok' }, { status: 200 });
     }
 
-    // Buscar nome da câmara
+    // Buscar nome da câmara (usa asServiceRole pois a chamada é pública)
     let camaraNome = null;
     try {
-      const camaras = await base44.entities.Camara.filter({ id: usuario.tenant_id });
+      const camaras = await base44.asServiceRole.entities.Camara.filter({ id: usuario.tenant_id });
       if (camaras && camaras.length > 0) {
         camaraNome = camaras[0].nome;
       }
