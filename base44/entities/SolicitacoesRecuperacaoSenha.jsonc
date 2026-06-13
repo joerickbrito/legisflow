@@ -34,6 +34,11 @@
   ],
   "rls": {
     "create": {
+      "user_condition": {
+        "role": "NONE"
+      }
+    },
+    "read": {
       "data.tenant_id": "{{user.data.tenant_id}}",
       "$or": [
         {
@@ -48,22 +53,10 @@
         }
       ]
     },
-    "read": {
-      "$or": [
-        {
-          "data.tenant_id": "{{user.data.tenant_id}}"
-        },
-        {
-          "user_condition": {
-            "role": "SUPER_ADMIN"
-          }
-        }
-      ]
-    },
     "update": {
+      "data.tenant_id": "{{user.data.tenant_id}}",
       "$or": [
         {
-          "data.tenant_id": "{{user.data.tenant_id}}",
           "user_condition": {
             "role": "ADMIN_CAMARA"
           }
@@ -76,9 +69,9 @@
       ]
     },
     "delete": {
+      "data.tenant_id": "{{user.data.tenant_id}}",
       "$or": [
         {
-          "data.tenant_id": "{{user.data.tenant_id}}",
           "user_condition": {
             "role": "ADMIN_CAMARA"
           }
