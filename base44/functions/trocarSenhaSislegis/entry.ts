@@ -1,5 +1,9 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
+const MAX_TENTATIVAS = 5;
+const JANELA_MINUTOS = 15;
+const BLOQUEIO_MINUTOS = 15;
+
 async function hashPassword(password) {
   const encoder = new TextEncoder();
   const salt = crypto.getRandomValues(new Uint8Array(16));
@@ -38,38 +42,98 @@ function generateToken() {
   return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
 }
 
-// Controle simples de tentativas (em memória — reseta ao reiniciar a função)
-const attemptTracker = new Map(); // key: username, value: { count, lastAttempt }
+/**
+ * Rate limiting persistente via entidade TentativasAcesso.
+ * Retorna { permitido: true } ou { permitido: false, mensagem: string }.
+ */
+async function verificarRateLimit(base44, username, tipo) {
+  const agora = new Date().toISOString();
 
-function checkRateLimit(username) {
-  const now = Date.now();
-  const entry = attemptTracker.get(username);
+  const registros = await base44.asServiceRole.entities.TentativasAcesso.filter({
+    username,
+    tipo
+  });
 
-  // Limpar entradas expiradas
-  if (entry && (now - entry.lastAttempt) > 15 * 60 * 1000) {
-    attemptTracker.delete(username);
-    return true;
+  const registro = registros.length > 0 ? registros[0] : null;
+
+  // Se existe bloqueio ativo, verificar se já expirou
+  if (registro?.bloqueado_ate) {
+    if (new Date(registro.bloqueado_ate) > new Date()) {
+      return { permitido: false, mensagem: 'Muitas tentativas. Tente novamente em alguns minutos.' };
+    }
+    // Bloqueio expirado — resetar
+    await base44.asServiceRole.entities.TentativasAcesso.update(registro.id, {
+      tentativas: 0,
+      bloqueado_ate: null,
+      ultima_tentativa: null
+    });
+    return { permitido: true };
   }
 
-  if (!entry) {
-    attemptTracker.set(username, { count: 1, lastAttempt: now });
-    return true;
-  }
-
-  if (entry.count >= 5) {
-    return false; // bloqueado
-  }
-
-  entry.count++;
-  entry.lastAttempt = now;
-  return true;
+  return { permitido: true, registro };
 }
 
-function resetRateLimit(username) {
-  attemptTracker.delete(username);
+/**
+ * Registra uma tentativa falha.
+ */
+async function registrarFalha(base44, username, tipo, registroExistente) {
+  const agora = new Date().toISOString();
+
+  if (registroExistente) {
+    const novasTentativas = (registroExistente.tentativas || 0) + 1;
+
+    // Verificar se está dentro da janela de 15 min desde a primeira tentativa
+    // Se a última tentativa for muito antiga, resetar contagem
+    const ultimaData = registroExistente.ultima_tentativa
+      ? new Date(registroExistente.ultima_tentativa)
+      : new Date(0);
+    const diffMs = new Date() - ultimaData;
+
+    if (diffMs > JANELA_MINUTOS * 60 * 1000) {
+      // Fora da janela — resetar contagem para 1
+      await base44.asServiceRole.entities.TentativasAcesso.update(registroExistente.id, {
+        tentativas: 1,
+        ultima_tentativa: agora,
+        bloqueado_ate: null
+      });
+    } else if (novasTentativas >= MAX_TENTATIVAS) {
+      // Atingiu o limite — bloquear
+      const bloqueioAte = new Date(Date.now() + BLOQUEIO_MINUTOS * 60 * 1000).toISOString();
+      await base44.asServiceRole.entities.TentativasAcesso.update(registroExistente.id, {
+        tentativas: novasTentativas,
+        ultima_tentativa: agora,
+        bloqueado_ate: bloqueioAte
+      });
+    } else {
+      await base44.asServiceRole.entities.TentativasAcesso.update(registroExistente.id, {
+        tentativas: novasTentativas,
+        ultima_tentativa: agora
+      });
+    }
+  } else {
+    // Primeira tentativa falha
+    await base44.asServiceRole.entities.TentativasAcesso.create({
+      username,
+      tipo,
+      tentativas: 1,
+      ultima_tentativa: agora
+    });
+  }
 }
 
-// Obtém o usuário autenticado via session_token do SisLegis
+/**
+ * Reseta o contador em caso de sucesso.
+ */
+async function resetarRateLimit(base44, username, tipo) {
+  const registros = await base44.asServiceRole.entities.TentativasAcesso.filter({
+    username,
+    tipo
+  });
+  if (registros.length > 0) {
+    await base44.asServiceRole.entities.TentativasAcesso.delete(registros[0].id);
+  }
+}
+
 async function getAuthenticatedUser(base44) {
   const token = base44._requestHeaders?.get?.('x-sislegis-token') || '';
   if (!token) return null;
@@ -94,20 +158,18 @@ Deno.serve(async (req) => {
 
     const usernameLower = username.trim().toLowerCase();
 
-    // Rate limiting
-    if (!checkRateLimit(usernameLower)) {
-      return Response.json({
-        error: 'Muitas tentativas. Aguarde 15 minutos antes de tentar novamente.'
-      }, { status: 429 });
+    // Rate limiting persistente
+    const rateCheck = await verificarRateLimit(base44, usernameLower, 'troca_senha');
+    if (!rateCheck.permitido) {
+      return Response.json({ error: rateCheck.mensagem }, { status: 429 });
     }
 
-    // Autenticar o chamador: deve ser o próprio usuário (verificado via session_token)
+    // Autenticar o chamador
     const caller = await getAuthenticatedUser(base44);
     if (!caller) {
       return Response.json({ error: 'Não autorizado. Faça login para trocar a senha.' }, { status: 401 });
     }
 
-    // Verificar que o usuário autenticado é o mesmo que está tentando trocar a senha
     if (caller.username !== usernameLower) {
       return Response.json({ error: 'Acesso negado. Você só pode trocar sua própria senha.' }, { status: 403 });
     }
@@ -117,11 +179,12 @@ Deno.serve(async (req) => {
     // Verificar senha atual
     const senhaValida = await verifyPassword(senha_atual, usuario.password_hash);
     if (!senhaValida) {
+      await registrarFalha(base44, usernameLower, 'troca_senha', rateCheck.registro);
       return Response.json({ error: 'Senha atual incorreta.' }, { status: 401 });
     }
 
-    // Senha correta — resetar rate limit
-    resetRateLimit(usernameLower);
+    // Sucesso — resetar rate limit
+    await resetarRateLimit(base44, usernameLower, 'troca_senha');
 
     const novoHash = await hashPassword(nova_senha);
     const novoSessionToken = generateToken();

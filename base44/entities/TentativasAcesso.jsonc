@@ -1,0 +1,52 @@
+{
+  "name": "TentativasAcesso",
+  "type": "object",
+  "properties": {
+    "username": {
+      "type": "string"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "login",
+        "troca_senha"
+      ]
+    },
+    "tentativas": {
+      "type": "number",
+      "default": 0
+    },
+    "ultima_tentativa": {
+      "type": "string"
+    },
+    "bloqueado_ate": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "username",
+    "tipo"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "SUPER_ADMIN"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "SUPER_ADMIN"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "SUPER_ADMIN"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "SUPER_ADMIN"
+      }
+    }
+  }
+}

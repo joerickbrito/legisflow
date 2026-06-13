@@ -1,5 +1,9 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
+const MAX_TENTATIVAS = 5;
+const JANELA_MINUTOS = 15;
+const BLOQUEIO_MINUTOS = 15;
+
 async function hashPassword(password) {
   const encoder = new TextEncoder();
   const salt = crypto.getRandomValues(new Uint8Array(16));
@@ -38,6 +42,81 @@ function generateToken() {
   return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
 }
 
+async function verificarRateLimit(base44, username, tipo) {
+  const agora = new Date().toISOString();
+
+  const registros = await base44.asServiceRole.entities.TentativasAcesso.filter({
+    username,
+    tipo
+  });
+
+  const registro = registros.length > 0 ? registros[0] : null;
+
+  if (registro?.bloqueado_ate) {
+    if (new Date(registro.bloqueado_ate) > new Date()) {
+      return { permitido: false, mensagem: 'Muitas tentativas. Tente novamente em alguns minutos.' };
+    }
+    await base44.asServiceRole.entities.TentativasAcesso.update(registro.id, {
+      tentativas: 0,
+      bloqueado_ate: null,
+      ultima_tentativa: null
+    });
+    return { permitido: true };
+  }
+
+  return { permitido: true, registro };
+}
+
+async function registrarFalha(base44, username, tipo, registroExistente) {
+  const agora = new Date().toISOString();
+
+  if (registroExistente) {
+    const novasTentativas = (registroExistente.tentativas || 0) + 1;
+
+    const ultimaData = registroExistente.ultima_tentativa
+      ? new Date(registroExistente.ultima_tentativa)
+      : new Date(0);
+    const diffMs = new Date() - ultimaData;
+
+    if (diffMs > JANELA_MINUTOS * 60 * 1000) {
+      await base44.asServiceRole.entities.TentativasAcesso.update(registroExistente.id, {
+        tentativas: 1,
+        ultima_tentativa: agora,
+        bloqueado_ate: null
+      });
+    } else if (novasTentativas >= MAX_TENTATIVAS) {
+      const bloqueioAte = new Date(Date.now() + BLOQUEIO_MINUTOS * 60 * 1000).toISOString();
+      await base44.asServiceRole.entities.TentativasAcesso.update(registroExistente.id, {
+        tentativas: novasTentativas,
+        ultima_tentativa: agora,
+        bloqueado_ate: bloqueioAte
+      });
+    } else {
+      await base44.asServiceRole.entities.TentativasAcesso.update(registroExistente.id, {
+        tentativas: novasTentativas,
+        ultima_tentativa: agora
+      });
+    }
+  } else {
+    await base44.asServiceRole.entities.TentativasAcesso.create({
+      username,
+      tipo,
+      tentativas: 1,
+      ultima_tentativa: agora
+    });
+  }
+}
+
+async function resetarRateLimit(base44, username, tipo) {
+  const registros = await base44.asServiceRole.entities.TentativasAcesso.filter({
+    username,
+    tipo
+  });
+  if (registros.length > 0) {
+    await base44.asServiceRole.entities.TentativasAcesso.delete(registros[0].id);
+  }
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -47,11 +126,20 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Usuário e senha são obrigatórios.' }, { status: 400 });
     }
 
+    const usernameLower = username.trim().toLowerCase();
+
+    // Rate limiting persistente
+    const rateCheck = await verificarRateLimit(base44, usernameLower, 'login');
+    if (!rateCheck.permitido) {
+      return Response.json({ error: rateCheck.mensagem }, { status: 429 });
+    }
+
     const usuarios = await base44.asServiceRole.entities.UsuarioSislegis.filter({
-      username: username.trim().toLowerCase()
+      username: usernameLower
     });
 
     if (!usuarios || usuarios.length === 0) {
+      await registrarFalha(base44, usernameLower, 'login', rateCheck.registro);
       return Response.json({ error: 'Nome de usuário ou senha inválidos.' }, { status: 401 });
     }
 
@@ -63,8 +151,12 @@ Deno.serve(async (req) => {
 
     const senhaValida = await verifyPassword(password, usuario.password_hash);
     if (!senhaValida) {
+      await registrarFalha(base44, usernameLower, 'login', rateCheck.registro);
       return Response.json({ error: 'Nome de usuário ou senha inválidos.' }, { status: 401 });
     }
+
+    // Sucesso — resetar rate limit
+    await resetarRateLimit(base44, usernameLower, 'login');
 
     // Gerar token de sessão
     const sessionToken = generateToken();
