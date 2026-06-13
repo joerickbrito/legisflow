@@ -74,8 +74,25 @@ export default function GerenciarCamaras() {
   const [savingChamberUser, setSavingChamberUser] = useState(false);
   const [resettingUserId, setResettingUserId] = useState(null);
 
+  // Solicitações de recuperação de senha
+  const [solicitacoes, setSolicitacoes] = useState([]);
+  const [atendendoSolicitacao, setAtendendoSolicitacao] = useState(null);
+  const [solicitacoesCounts, setSolicitacoesCounts] = useState({});
+
   useEffect(() => {
-    if (isSuperAdmin) base44.entities.Camara.list("-created_date", 200).then(setCamaras);
+    if (isSuperAdmin) {
+      base44.entities.Camara.list("-created_date", 200).then(setCamaras);
+      // Carregar contagem de solicitações pendentes
+      base44.entities.SolicitacoesRecuperacaoSenha.filter({ status: 'pendente' }, '-created_date', 200)
+        .then(sols => {
+          const counts = {};
+          (sols || []).forEach(s => {
+            if (s.tenant_id) counts[s.tenant_id] = (counts[s.tenant_id] || 0) + 1;
+          });
+          setSolicitacoesCounts(counts);
+        })
+        .catch(() => {});
+    }
   }, [isSuperAdmin]);
 
   if (!isSuperAdmin) return (
@@ -91,6 +108,7 @@ export default function GerenciarCamaras() {
     setEditingAdmin(false);
     setAdminUser(null);
     setChamberUsers([]);
+    setSolicitacoes([]);
     setOpen(true);
     // Buscar admin da câmara
     try {
@@ -102,6 +120,11 @@ export default function GerenciarCamaras() {
       const users = await base44.entities.UsuarioSislegis.filter({ tenant_id: c.id }, 'nome', 200);
       setChamberUsers(users || []);
     } catch { setChamberUsers([]); }
+    // Buscar solicitações de recuperação de senha pendentes
+    try {
+      const sols = await base44.entities.SolicitacoesRecuperacaoSenha.filter({ tenant_id: c.id, status: 'pendente' }, '-created_date', 50);
+      setSolicitacoes(sols || []);
+    } catch { setSolicitacoes([]); }
   };
 
   async function handleUpload(e, tipo) {
@@ -296,6 +319,45 @@ export default function GerenciarCamaras() {
     }
   };
 
+  // ===== SOLICITAÇÕES DE RECUPERAÇÃO DE SENHA =====
+  const handleAtenderSolicitacao = async (sol) => {
+    if (!sol.usuario_id) {
+      alert('Esta solicitação não possui um usuário vinculado. O usuário pode ter sido removido.');
+      return;
+    }
+    if (!confirm(`Redefinir senha de "${sol.usuario_nome || sol.username}"?\n\nUma nova senha temporária será gerada e a solicitação será marcada como atendida.`)) return;
+    setAtendendoSolicitacao(sol.id);
+    try {
+      const res = await base44.functions.invoke('resetarSenhaSislegis', { usuario_id: sol.usuario_id });
+      // Marcar como atendida
+      await base44.entities.SolicitacoesRecuperacaoSenha.update(sol.id, { status: 'atendida' });
+      const senha = res.data?.senha_temporaria;
+      if (senha) {
+        alert(`Senha redefinida!\n\nNova senha temporária: ${senha}\n\nComunique ao usuário.`);
+      } else {
+        alert('Senha redefinida com sucesso. Solicitação marcada como atendida.');
+      }
+      setSolicitacoes(prev => prev.filter(s => s.id !== sol.id));
+    } catch (e) {
+      alert('Erro: ' + (e?.response?.data?.error || e?.message || 'Erro desconhecido.'));
+    } finally {
+      setAtendendoSolicitacao(null);
+    }
+  };
+
+  const handleIgnorarSolicitacao = async (sol) => {
+    if (!confirm(`Marcar solicitação de "${sol.usuario_nome || sol.username}" como atendida sem redefinir a senha?`)) return;
+    setAtendendoSolicitacao(sol.id);
+    try {
+      await base44.entities.SolicitacoesRecuperacaoSenha.update(sol.id, { status: 'atendida' });
+      setSolicitacoes(prev => prev.filter(s => s.id !== sol.id));
+    } catch (e) {
+      alert('Erro: ' + (e?.message || 'Erro desconhecido.'));
+    } finally {
+      setAtendendoSolicitacao(null);
+    }
+  };
+
   const ROLE_LABEL = {
     ADMIN_CAMARA: 'Admin da Câmara',
     OPERADOR_GERAL: 'Operador Geral',
@@ -390,6 +452,9 @@ export default function GerenciarCamaras() {
                       </div>
                     )}
                     <Badge variant="outline" className="text-[10px] px-1.5">{c.plano}</Badge>
+                    {solicitacoesCounts[c.id] > 0 && (
+                      <Badge variant="destructive" className="text-[10px] px-1.5">{solicitacoesCounts[c.id]} recuperação</Badge>
+                    )}
                   </div>
                 </div>
               </div>
@@ -753,6 +818,71 @@ export default function GerenciarCamaras() {
                               disabled={resettingUserId === u.id}
                             >
                               {resettingUserId === u.id ? '...' : 'Senha'}
+                            </Button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* SEÇÃO 5: SOLICITAÇÕES DE RECUPERAÇÃO DE SENHA (somente edição) */}
+            {editing && (
+              <div className="rounded-lg border border-border overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setSecaoExpandida(s => s === "solicitacoes" ? "" : "solicitacoes")}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-muted/40 hover:bg-muted/60 transition-colors"
+                >
+                  <span className="text-sm font-semibold text-foreground">
+                    Seção 5 — Solicitações de Recuperação de Senha
+                    {solicitacoes.length > 0 && (
+                      <Badge variant="destructive" className="ml-2 text-[10px]">{solicitacoes.length} pendente{solicitacoes.length !== 1 ? 's' : ''}</Badge>
+                    )}
+                    {solicitacoes.length === 0 && <span className="ml-2 text-xs font-normal text-muted-foreground">(0 pendentes)</span>}
+                  </span>
+                  {secaoExpandida === "solicitacoes" ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
+                </button>
+                {secaoExpandida === "solicitacoes" && (
+                  <div className="p-4 space-y-2 max-h-96 overflow-y-auto">
+                    {solicitacoes.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-4">Nenhuma solicitação pendente.</p>
+                    ) : (
+                      solicitacoes.map(sol => (
+                        <div key={sol.id} className="flex items-center gap-3 py-2.5 px-3 rounded-lg border border-border bg-amber-50/50 hover:bg-amber-50 transition-colors">
+                          <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                            <AlertCircle size={14} className="text-amber-600" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{sol.usuario_nome || sol.username}</p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {sol.username}
+                              {sol.usuario_role && <span className="ml-2 opacity-60">· {ROLE_LABEL[sol.usuario_role] || sol.usuario_role}</span>}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground mt-0.5">
+                              Solicitado {new Date(sol.created_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
+                          <div className="flex gap-1 flex-shrink-0">
+                            <Button
+                              size="sm"
+                              variant="default"
+                              className="h-7 px-2 text-xs bg-amber-500 hover:bg-amber-600"
+                              onClick={(e) => { e.stopPropagation(); handleAtenderSolicitacao(sol); }}
+                              disabled={atendendoSolicitacao === sol.id}
+                            >
+                              {atendendoSolicitacao === sol.id ? '...' : 'Redefinir'}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 px-2 text-xs"
+                              onClick={(e) => { e.stopPropagation(); handleIgnorarSolicitacao(sol); }}
+                              disabled={atendendoSolicitacao === sol.id || !sol.usuario_id}
+                            >
+                              Ignorar
                             </Button>
                           </div>
                         </div>

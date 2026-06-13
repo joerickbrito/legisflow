@@ -8,17 +8,21 @@ import StatusBadge from '@/components/StatusBadge';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { format, isAfter, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 export default function DashboardAdminCamara() {
   const { tenantId, camara, withTenant, canQuery } = useTenant();
   const [data, setData] = useState({ materias: [], sessoes: [], parlamentares: [], normas: [], protocolos: [], votacaoAtiva: null, aguardandoVotacao: [] });
   const [loading, setLoading] = useState(true);
+  const [solicitacoes, setSolicitacoes] = useState([]);
+  const [atendendoSolicitacao, setAtendendoSolicitacao] = useState(null);
 
   useEffect(() => {
     async function load() {
       if (!canQuery) return;
       const filter = withTenant({});
-      const [materias, sessoes, parlamentares, normas, protocolos, votacoes, aguardandoVot] = await Promise.all([
+      const [materias, sessoes, parlamentares, normas, protocolos, votacoes, aguardandoVot, solicitacoesPendentes] = await Promise.all([
         base44.entities.Materia.filter(filter, '-created_date', 50),
         base44.entities.Sessao.filter(filter, '-data', 20),
         base44.entities.Parlamentar.filter(filter),
@@ -26,6 +30,7 @@ export default function DashboardAdminCamara() {
         base44.entities.Protocolo.filter(filter, '-created_date', 8),
         base44.entities.Votacao.filter({ ...filter, status: 'Em Votação' }),
         base44.entities.Materia.filter({ ...filter, status: 'Aguardando Votação' }, '-created_date', 10),
+        base44.entities.SolicitacoesRecuperacaoSenha.filter({ ...filter, status: 'pendente' }, '-created_date', 20).catch(() => []),
       ]);
       const hoje = format(new Date(), 'yyyy-MM-dd');
       setData({
@@ -39,6 +44,7 @@ export default function DashboardAdminCamara() {
         urgentes: materias.filter(m => m.regime_tramitacao && m.regime_tramitacao !== 'Normal'),
         aguardandoVotacao: aguardandoVot,
       });
+      setSolicitacoes(solicitacoesPendentes || []);
       setLoading(false);
     }
     load();
@@ -55,6 +61,37 @@ export default function DashboardAdminCamara() {
   // Próximas sessões
   const hoje = format(new Date(), 'yyyy-MM-dd');
   const proximasSessoes = data.sessoes?.filter(s => s.data >= hoje && s.status !== 'Cancelada' && s.status !== 'Encerrada').slice(0, 3) || [];
+
+  // Handlers para solicitações de recuperação
+  const handleAtenderSol = async (sol) => {
+    if (!sol.usuario_id) return;
+    if (!confirm(`Redefinir senha de "${sol.usuario_nome || sol.username}"?`)) return;
+    setAtendendoSolicitacao(sol.id);
+    try {
+      const res = await base44.functions.invoke('resetarSenhaSislegis', { usuario_id: sol.usuario_id });
+      await base44.entities.SolicitacoesRecuperacaoSenha.update(sol.id, { status: 'atendida' });
+      const senha = res.data?.senha_temporaria;
+      alert(senha ? `Nova senha: ${senha}` : 'Senha redefinida.');
+      setSolicitacoes(prev => prev.filter(s => s.id !== sol.id));
+    } catch (e) {
+      alert('Erro: ' + (e?.response?.data?.error || e?.message || ''));
+    } finally {
+      setAtendendoSolicitacao(null);
+    }
+  };
+
+  const handleIgnorarSol = async (sol) => {
+    if (!confirm(`Marcar solicitação como atendida sem redefinir?`)) return;
+    setAtendendoSolicitacao(sol.id);
+    try {
+      await base44.entities.SolicitacoesRecuperacaoSenha.update(sol.id, { status: 'atendida' });
+      setSolicitacoes(prev => prev.filter(s => s.id !== sol.id));
+    } catch (e) {
+      alert('Erro: ' + (e?.message || ''));
+    } finally {
+      setAtendendoSolicitacao(null);
+    }
+  };
 
   const cards = [
     { label: 'Matérias em Tramitação', value: data.materias?.filter(m => m.status === 'Em tramitação').length || 0, icon: FileText, color: 'text-blue-600 bg-blue-50', link: '/materias' },

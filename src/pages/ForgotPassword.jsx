@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,9 +13,13 @@ export default function ForgotPassword() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!username.trim()) return;
     setLoading(true);
-    // Pequeno delay para UX, sem chamar backend nenhum
-    await new Promise(r => setTimeout(r, 800));
+    try {
+      await base44.functions.invoke('registrarSolicitacaoSenha', { username: username.trim() });
+    } catch {
+      // Ignorar erros — sempre mostrar mensagem genérica
+    }
     setLoading(false);
     setSent(true);
   };

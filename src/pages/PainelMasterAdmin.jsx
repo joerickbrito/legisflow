@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Building2, Search, LogIn, Plus, ShieldOff, Trash2, Shield, PlusCircle, ExternalLink } from 'lucide-react';
+import { Building2, Search, LogIn, Plus, ShieldOff, Trash2, Shield, PlusCircle, ExternalLink, AlertCircle } from 'lucide-react';
 
 const statusColor = { Ativa: 'default', Suspensa: 'secondary', Inativa: 'destructive' };
 
@@ -17,9 +17,11 @@ export default function PainelMasterAdmin() {
   const [camaras, setCamaras] = useState([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [solicitacoes, setSolicitacoes] = useState([]);
 
   useEffect(() => {
     base44.entities.Camara.list("-created_date", 200).then(setCamaras).finally(() => setLoading(false));
+    base44.entities.SolicitacoesRecuperacaoSenha.filter({ status: 'Pendente' }, '-data_solicitacao', 100).then(setSolicitacoes).catch(() => {});
   }, []);
 
   const filtered = camaras.filter(c =>
@@ -67,6 +69,46 @@ export default function PainelMasterAdmin() {
           </CardContent></Card>
         ))}
       </div>
+
+      {/* Solicitações de Recuperação de Senha */}
+      {solicitacoes.length > 0 && (
+        <Card className="border-amber-200">
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-2 mb-3">
+              <AlertCircle size={18} className="text-amber-600" />
+              <h3 className="text-sm font-semibold text-foreground">Solicitações de Recuperação de Senha Pendentes</h3>
+              <Badge variant="secondary" className="text-[10px] bg-amber-200 text-amber-800">{solicitacoes.length}</Badge>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+              {solicitacoes.map(s => {
+                const camara = camaras.find(c => c.id === s.tenant_id);
+                return (
+                  <div key={s.id} className="flex items-center gap-3 py-2 px-3 rounded-lg border border-amber-200 bg-amber-50/30">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-mono font-medium truncate">{s.username}</p>
+                      <p className="text-[11px] text-muted-foreground truncate">
+                        {camara ? `${camara.sigla || camara.nome}` : (s.tenant_id ? `ID: ${s.tenant_id.slice(0,8)}...` : 'Sem câmara')}
+                        {s.data_solicitacao ? ` · ${new Date(s.data_solicitacao).toLocaleDateString('pt-BR')}` : ''}
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 px-2 text-xs flex-shrink-0"
+                      onClick={() => {
+                        const c = camaras.find(cc => cc.id === s.tenant_id);
+                        if (c) navigate('/gerenciar-camaras');
+                      }}
+                    >
+                      Ver
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Search */}
       <div className="relative">
