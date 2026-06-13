@@ -94,6 +94,11 @@ export default function Votacao() {
     if (votacaoAtiva.materia_id && resultado !== 'Empate') {
       const novoStatus = resultado === 'Aprovada' ? 'Aprovada' : 'Rejeitada';
       try { await base44.entities.Materia.update(votacaoAtiva.materia_id, { status: novoStatus }); } catch (e) { /* ok */ }
+      // Também atualiza NormaJuridica (Leis, Resoluções, Decretos, Portarias)
+      try {
+        const novaSituacao = novoStatus === 'Aprovada' ? 'Vigente' : 'Não Vigente';
+        await base44.entities.NormaJuridica.update(votacaoAtiva.materia_id, { situacao: novaSituacao });
+      } catch (e) { /* pode não ser uma NormaJuridica */ }
     }
     setVotacaoAtiva(null);
     loadData();

@@ -63,8 +63,13 @@ export default function NormaSimples({ tipo, icon: Icon, title, subtitle, addLab
   };
 
   const remove = async (id) => {
-    await base44.entities.NormaJuridica.delete(id);
-    setItems(items.filter(i => i.id !== id));
+    if (!confirm('Tem certeza que deseja excluir este registro?')) return;
+    try {
+      await base44.entities.NormaJuridica.delete(id);
+      setItems(items.filter(i => i.id !== id));
+    } catch (e) {
+      setErrorMsg(e?.message || 'Erro ao excluir registro.');
+    }
   };
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));

@@ -60,8 +60,13 @@ export default function PautasSessoes() {
   };
 
   const remove = async (id) => {
-    await base44.entities.PautaSessao.delete(id);
-    setItems(items.filter(i => i.id !== id));
+    if (!confirm('Tem certeza que deseja excluir esta pauta?')) return;
+    try {
+      await base44.entities.PautaSessao.delete(id);
+      setItems(items.filter(i => i.id !== id));
+    } catch (e) {
+      setErrorMsg(e?.message || 'Erro ao excluir pauta.');
+    }
   };
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));

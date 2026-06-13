@@ -80,8 +80,13 @@ export default function ProjetosLei() {
   };
 
   const remove = async (id) => {
-    await base44.entities.Materia.delete(id);
-    setItems(items.filter(i => i.id !== id));
+    if (!confirm('Tem certeza que deseja excluir este projeto?')) return;
+    try {
+      await base44.entities.Materia.delete(id);
+      setItems(items.filter(i => i.id !== id));
+    } catch (e) {
+      setErrorMsg(e?.message || 'Erro ao excluir projeto.');
+    }
   };
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));

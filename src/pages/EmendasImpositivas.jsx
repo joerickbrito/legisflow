@@ -68,8 +68,13 @@ export default function EmendasImpositivas() {
   };
 
   const remove = async (id) => {
-    await base44.entities.EmendaImpositiva.delete(id);
-    setItems(items.filter(i => i.id !== id));
+    if (!confirm('Tem certeza que deseja excluir esta emenda?')) return;
+    try {
+      await base44.entities.EmendaImpositiva.delete(id);
+      setItems(items.filter(i => i.id !== id));
+    } catch (e) {
+      setErrorMsg(e?.message || 'Erro ao excluir emenda.');
+    }
   };
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));

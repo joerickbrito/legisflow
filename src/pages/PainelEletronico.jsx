@@ -163,16 +163,24 @@ export default function PainelEletronico() {
       data_hora_fim: new Date().toISOString(),
     });
 
-    // Atualiza status da matéria
+    // Atualiza status da matéria ou norma
     if (votacaoAtiva.materia_id && resultado !== 'Empate') {
       const novoStatus = resultado.startsWith('Aprovada') ? 'Aprovada' : 'Rejeitada';
-      const campoData = novoStatus === 'Aprovada' ? { data_aprovacao: new Date().toISOString().slice(0, 10) } : { data_rejeicao: new Date().toISOString().slice(0, 10) };
+      const campoData = novoStatus === 'Aprovada' ? { data_publicacao: new Date().toISOString().slice(0, 10) } : {};
       try {
         await base44.entities.Materia.update(votacaoAtiva.materia_id, {
           status: novoStatus,
-          ...campoData,
+          ...(novoStatus === 'Aprovada' ? { data_aprovacao: new Date().toISOString().slice(0, 10) } : { data_rejeicao: new Date().toISOString().slice(0, 10) }),
         });
       } catch (e) { /* materia pode já ter sido excluída */ }
+      // Também atualiza NormaJuridica (Leis, Resoluções, Decretos, Portarias)
+      try {
+        const novaSituacao = novoStatus === 'Aprovada' ? 'Vigente' : 'Não Vigente';
+        await base44.entities.NormaJuridica.update(votacaoAtiva.materia_id, {
+          situacao: novaSituacao,
+          ...(novoStatus === 'Aprovada' ? campoData : {}),
+        });
+      } catch (e) { /* pode não ser uma NormaJuridica */ }
     }
 
     setVotacaoAtiva(null);

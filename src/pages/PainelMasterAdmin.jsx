@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Building2, Search, LogIn, Plus, ShieldOff, Trash2, Shield, PlusCircle, ExternalLink, AlertCircle } from 'lucide-react';
+import { Building2, Search, LogIn, Plus, ShieldOff, Trash2, Shield, PlusCircle, ExternalLink, AlertCircle, XCircle, CheckCircle } from 'lucide-react';
 
 const statusColor = { Ativa: 'default', Suspensa: 'secondary', Inativa: 'destructive' };
 
@@ -18,11 +18,42 @@ export default function PainelMasterAdmin() {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [solicitacoes, setSolicitacoes] = useState([]);
+  const [atendendoSolicitacao, setAtendendoSolicitacao] = useState(null);
 
   useEffect(() => {
     base44.entities.Camara.list("-created_date", 200).then(setCamaras).finally(() => setLoading(false));
-    base44.entities.SolicitacoesRecuperacaoSenha.filter({ status: 'Pendente' }, '-data_solicitacao', 100).then(setSolicitacoes).catch(() => {});
+    base44.entities.SolicitacoesRecuperacaoSenha.filter({ status: 'pendente' }, '-created_date', 100).then(setSolicitacoes).catch(() => {});
   }, []);
+
+  const handleAtenderSol = async (sol) => {
+    if (!sol.usuario_id) return;
+    if (!confirm(`Redefinir senha de "${sol.usuario_nome || sol.username}"?`)) return;
+    setAtendendoSolicitacao(sol.id);
+    try {
+      const res = await base44.functions.invoke('resetarSenhaSislegis', { usuario_id: sol.usuario_id });
+      await base44.entities.SolicitacoesRecuperacaoSenha.update(sol.id, { status: 'atendida' });
+      const senha = res.data?.senha_temporaria;
+      alert(senha ? `Nova senha: ${senha}` : 'Senha redefinida.');
+      setSolicitacoes(prev => prev.filter(s => s.id !== sol.id));
+    } catch (e) {
+      alert('Erro: ' + (e?.response?.data?.error || e?.message || ''));
+    } finally {
+      setAtendendoSolicitacao(null);
+    }
+  };
+
+  const handleFecharSol = async (sol) => {
+    if (!confirm(`Encerrar a solicitação de "${sol.usuario_nome || sol.username}" sem redefinir senha?`)) return;
+    setAtendendoSolicitacao(sol.id);
+    try {
+      await base44.entities.SolicitacoesRecuperacaoSenha.update(sol.id, { status: 'atendida' });
+      setSolicitacoes(prev => prev.filter(s => s.id !== sol.id));
+    } catch (e) {
+      alert('Erro: ' + (e?.response?.data?.error || e?.message || ''));
+    } finally {
+      setAtendendoSolicitacao(null);
+    }
+  };
 
   const filtered = camaras.filter(c =>
     !search || c.nome?.toLowerCase().includes(search.toLowerCase()) ||
@@ -82,26 +113,38 @@ export default function PainelMasterAdmin() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
               {solicitacoes.map(s => {
                 const camara = camaras.find(c => c.id === s.tenant_id);
+                const disabled = atendendoSolicitacao === s.id;
                 return (
                   <div key={s.id} className="flex items-center gap-3 py-2 px-3 rounded-lg border border-amber-200 bg-amber-50/30">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-mono font-medium truncate">{s.username}</p>
                       <p className="text-[11px] text-muted-foreground truncate">
                         {camara ? `${camara.sigla || camara.nome}` : (s.tenant_id ? `ID: ${s.tenant_id.slice(0,8)}...` : 'Sem câmara')}
-                        {s.data_solicitacao ? ` · ${new Date(s.data_solicitacao).toLocaleDateString('pt-BR')}` : ''}
+                        {s.created_date ? ` · ${new Date(s.created_date).toLocaleDateString('pt-BR')}` : ''}
                       </p>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 px-2 text-xs flex-shrink-0"
-                      onClick={() => {
-                        const c = camaras.find(cc => cc.id === s.tenant_id);
-                        if (c) navigate('/gerenciar-camaras');
-                      }}
-                    >
-                      Ver
-                    </Button>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      {s.usuario_id && (
+                        <Button
+                          size="sm"
+                          className="h-7 px-2 text-xs bg-amber-500 hover:bg-amber-600"
+                          onClick={() => handleAtenderSol(s)}
+                          disabled={disabled}
+                        >
+                          {disabled ? '...' : 'Redefinir'}
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 w-7 p-0 text-muted-foreground hover:text-green-600"
+                        onClick={() => handleFecharSol(s)}
+                        disabled={disabled}
+                        title="Fechar solicitação"
+                      >
+                        <CheckCircle size={14} />
+                      </Button>
+                    </div>
                   </div>
                 );
               })}
