@@ -96,6 +96,11 @@
           "user_condition": {
             "role": "SECRETARIO_LEGISLATIVO"
           }
+        },
+        {
+          "user_condition": {
+            "role": "SUPER_ADMIN"
+          }
         }
       ]
     },
