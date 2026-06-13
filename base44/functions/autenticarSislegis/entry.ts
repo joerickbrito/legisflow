@@ -43,77 +43,67 @@ function generateToken() {
 }
 
 async function verificarRateLimit(base44, username, tipo) {
-  const agora = new Date().toISOString();
+  try {
+    const registros = await base44.asServiceRole.entities.TentativasAcesso.filter({ username, tipo });
+    const registro = registros.length > 0 ? registros[0] : null;
 
-  const registros = await base44.asServiceRole.entities.TentativasAcesso.filter({
-    username,
-    tipo
-  });
-
-  const registro = registros.length > 0 ? registros[0] : null;
-
-  if (registro?.bloqueado_ate) {
-    if (new Date(registro.bloqueado_ate) > new Date()) {
-      return { permitido: false, mensagem: 'Muitas tentativas. Tente novamente em alguns minutos.' };
+    if (registro?.bloqueado_ate) {
+      if (new Date(registro.bloqueado_ate) > new Date()) {
+        return { permitido: false, mensagem: 'Muitas tentativas. Tente novamente em alguns minutos.' };
+      }
+      // Bloqueio expirado — resetar
+      await base44.asServiceRole.entities.TentativasAcesso.update(registro.id, {
+        tentativas: 0, bloqueado_ate: null, ultima_tentativa: null
+      });
+      return { permitido: true };
     }
-    await base44.asServiceRole.entities.TentativasAcesso.update(registro.id, {
-      tentativas: 0,
-      bloqueado_ate: null,
-      ultima_tentativa: null
-    });
+    return { permitido: true, registro };
+  } catch {
+    // Se falhar ao verificar, permitir (fail-open)
     return { permitido: true };
   }
-
-  return { permitido: true, registro };
 }
 
 async function registrarFalha(base44, username, tipo, registroExistente) {
-  const agora = new Date().toISOString();
+  try {
+    const agora = new Date().toISOString();
+    if (registroExistente) {
+      const novasTentativas = (registroExistente.tentativas || 0) + 1;
+      const ultimaData = registroExistente.ultima_tentativa ? new Date(registroExistente.ultima_tentativa) : new Date(0);
+      const diffMs = new Date() - ultimaData;
 
-  if (registroExistente) {
-    const novasTentativas = (registroExistente.tentativas || 0) + 1;
-
-    const ultimaData = registroExistente.ultima_tentativa
-      ? new Date(registroExistente.ultima_tentativa)
-      : new Date(0);
-    const diffMs = new Date() - ultimaData;
-
-    if (diffMs > JANELA_MINUTOS * 60 * 1000) {
-      await base44.asServiceRole.entities.TentativasAcesso.update(registroExistente.id, {
-        tentativas: 1,
-        ultima_tentativa: agora,
-        bloqueado_ate: null
-      });
-    } else if (novasTentativas >= MAX_TENTATIVAS) {
-      const bloqueioAte = new Date(Date.now() + BLOQUEIO_MINUTOS * 60 * 1000).toISOString();
-      await base44.asServiceRole.entities.TentativasAcesso.update(registroExistente.id, {
-        tentativas: novasTentativas,
-        ultima_tentativa: agora,
-        bloqueado_ate: bloqueioAte
-      });
+      if (diffMs > JANELA_MINUTOS * 60 * 1000) {
+        await base44.asServiceRole.entities.TentativasAcesso.update(registroExistente.id, {
+          tentativas: 1, ultima_tentativa: agora, bloqueado_ate: null
+        });
+      } else if (novasTentativas >= MAX_TENTATIVAS) {
+        const bloqueioAte = new Date(Date.now() + BLOQUEIO_MINUTOS * 60 * 1000).toISOString();
+        await base44.asServiceRole.entities.TentativasAcesso.update(registroExistente.id, {
+          tentativas: novasTentativas, ultima_tentativa: agora, bloqueado_ate: bloqueioAte
+        });
+      } else {
+        await base44.asServiceRole.entities.TentativasAcesso.update(registroExistente.id, {
+          tentativas: novasTentativas, ultima_tentativa: agora
+        });
+      }
     } else {
-      await base44.asServiceRole.entities.TentativasAcesso.update(registroExistente.id, {
-        tentativas: novasTentativas,
-        ultima_tentativa: agora
+      await base44.asServiceRole.entities.TentativasAcesso.create({
+        username, tipo, tentativas: 1, ultima_tentativa: agora
       });
     }
-  } else {
-    await base44.asServiceRole.entities.TentativasAcesso.create({
-      username,
-      tipo,
-      tentativas: 1,
-      ultima_tentativa: agora
-    });
+  } catch {
+    // Falha ao registrar não deve interromper o fluxo de autenticação
   }
 }
 
 async function resetarRateLimit(base44, username, tipo) {
-  const registros = await base44.asServiceRole.entities.TentativasAcesso.filter({
-    username,
-    tipo
-  });
-  if (registros.length > 0) {
-    await base44.asServiceRole.entities.TentativasAcesso.delete(registros[0].id);
+  try {
+    const registros = await base44.asServiceRole.entities.TentativasAcesso.filter({ username, tipo });
+    if (registros.length > 0) {
+      await base44.asServiceRole.entities.TentativasAcesso.delete(registros[0].id);
+    }
+  } catch {
+    // Ignorar falha no reset
   }
 }
 
@@ -128,7 +118,7 @@ Deno.serve(async (req) => {
 
     const usernameLower = username.trim().toLowerCase();
 
-    // Rate limiting persistente
+    // Rate limiting persistente (fail-open se entidade indisponível)
     const rateCheck = await verificarRateLimit(base44, usernameLower, 'login');
     if (!rateCheck.permitido) {
       return Response.json({ error: rateCheck.mensagem }, { status: 429 });
@@ -158,7 +148,6 @@ Deno.serve(async (req) => {
     // Sucesso — resetar rate limit
     await resetarRateLimit(base44, usernameLower, 'login');
 
-    // Gerar token de sessão
     const sessionToken = generateToken();
     await base44.asServiceRole.entities.UsuarioSislegis.update(usuario.id, {
       session_token: sessionToken
