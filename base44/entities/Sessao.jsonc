@@ -120,7 +120,31 @@
     "data"
   ],
   "rls": {
-    "create": null,
+    "create": {
+      "data.tenant_id": "{{user.data.tenant_id}}",
+      "$or": [
+        {
+          "user_condition": {
+            "role": "ADMIN_CAMARA"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "OPERADOR_GERAL"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "SECRETARIO_LEGISLATIVO"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "PRESIDENTE"
+          }
+        }
+      ]
+    },
     "read": {
       "$or": [
         {
