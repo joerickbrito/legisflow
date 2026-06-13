@@ -30,22 +30,22 @@
   "rls": {
     "create": {
       "user_condition": {
-        "role": "SUPER_ADMIN"
+        "role": "NONE"
       }
     },
     "read": {
       "user_condition": {
-        "role": "SUPER_ADMIN"
+        "role": "NONE"
       }
     },
     "update": {
       "user_condition": {
-        "role": "SUPER_ADMIN"
+        "role": "NONE"
       }
     },
     "delete": {
       "user_condition": {
-        "role": "SUPER_ADMIN"
+        "role": "NONE"
       }
     }
   }
