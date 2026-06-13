@@ -42,10 +42,51 @@ function generateToken() {
   return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
 }
 
+/**
+ * Consolida registros duplicados (causados por race condition em chamadas paralelas).
+ * Retorna o registro único consolidado.
+ */
+async function consolidarRegistros(base44, username, tipo) {
+  const registros = await base44.asServiceRole.entities.TentativasAcesso.filter({ username, tipo });
+
+  if (registros.length === 0) return null;
+
+  // Ordenar por updated_date decrescente
+  registros.sort((a, b) => new Date(b.updated_date) - new Date(a.updated_date));
+
+  if (registros.length === 1) return registros[0];
+
+  // Consolidar múltiplos registros: somar tentativas, pegar dados do mais recente
+  let totalTentativas = 0;
+  let bloqueadoAte = null;
+  for (const r of registros) {
+    totalTentativas += r.tentativas || 0;
+    if (r.bloqueado_ate && (!bloqueadoAte || new Date(r.bloqueado_ate) > new Date(bloqueadoAte))) {
+      bloqueadoAte = r.bloqueado_ate;
+    }
+  }
+
+  const principal = registros[0];
+  await base44.asServiceRole.entities.TentativasAcesso.update(principal.id, {
+    tentativas: totalTentativas,
+    bloqueado_ate: bloqueadoAte
+  });
+
+  // Deletar duplicatas
+  for (let i = 1; i < registros.length; i++) {
+    await base44.asServiceRole.entities.TentativasAcesso.delete(registros[i].id);
+  }
+
+  return { ...principal, tentativas: totalTentativas, bloqueado_ate: bloqueadoAte };
+}
+
+/**
+ * Rate limiting persistente.
+ * Retorna { permitido: true, registro } ou { permitido: false, mensagem }
+ */
 async function verificarRateLimit(base44, username, tipo) {
   try {
-    const registros = await base44.asServiceRole.entities.TentativasAcesso.filter({ username, tipo });
-    const registro = registros.length > 0 ? registros[0] : null;
+    const registro = await consolidarRegistros(base44, username, tipo);
 
     if (registro?.bloqueado_ate) {
       if (new Date(registro.bloqueado_ate) > new Date()) {
@@ -55,11 +96,10 @@ async function verificarRateLimit(base44, username, tipo) {
       await base44.asServiceRole.entities.TentativasAcesso.update(registro.id, {
         tentativas: 0, bloqueado_ate: null, ultima_tentativa: null
       });
-      return { permitido: true };
+      return { permitido: true, registro: null };
     }
     return { permitido: true, registro };
   } catch {
-    // Se falhar ao verificar, permitir (fail-open)
     return { permitido: true };
   }
 }
@@ -67,10 +107,11 @@ async function verificarRateLimit(base44, username, tipo) {
 async function registrarFalha(base44, username, tipo, registroExistente) {
   try {
     const agora = new Date().toISOString();
+
     if (registroExistente) {
       const novasTentativas = (registroExistente.tentativas || 0) + 1;
       const ultimaData = registroExistente.ultima_tentativa ? new Date(registroExistente.ultima_tentativa) : new Date(0);
-      const diffMs = new Date() - ultimaData;
+      const diffMs = Date.now() - ultimaData.getTime();
 
       if (diffMs > JANELA_MINUTOS * 60 * 1000) {
         await base44.asServiceRole.entities.TentativasAcesso.update(registroExistente.id, {
@@ -92,18 +133,18 @@ async function registrarFalha(base44, username, tipo, registroExistente) {
       });
     }
   } catch {
-    // Falha ao registrar não deve interromper o fluxo de autenticação
+    // Fail-open: não interromper fluxo de autenticação
   }
 }
 
 async function resetarRateLimit(base44, username, tipo) {
   try {
     const registros = await base44.asServiceRole.entities.TentativasAcesso.filter({ username, tipo });
-    if (registros.length > 0) {
-      await base44.asServiceRole.entities.TentativasAcesso.delete(registros[0].id);
+    for (const r of registros) {
+      await base44.asServiceRole.entities.TentativasAcesso.delete(r.id);
     }
   } catch {
-    // Ignorar falha no reset
+    // Ignorar
   }
 }
 
@@ -118,7 +159,6 @@ Deno.serve(async (req) => {
 
     const usernameLower = username.trim().toLowerCase();
 
-    // Rate limiting persistente (fail-open se entidade indisponível)
     const rateCheck = await verificarRateLimit(base44, usernameLower, 'login');
     if (!rateCheck.permitido) {
       return Response.json({ error: rateCheck.mensagem }, { status: 429 });
@@ -145,7 +185,6 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Nome de usuário ou senha inválidos.' }, { status: 401 });
     }
 
-    // Sucesso — resetar rate limit
     await resetarRateLimit(base44, usernameLower, 'login');
 
     const sessionToken = generateToken();
