@@ -28,25 +28,9 @@
     "tipo"
   ],
   "rls": {
-    "create": {
-      "user_condition": {
-        "role": "SUPER_ADMIN"
-      }
-    },
-    "read": {
-      "user_condition": {
-        "role": "SUPER_ADMIN"
-      }
-    },
-    "update": {
-      "user_condition": {
-        "role": "SUPER_ADMIN"
-      }
-    },
-    "delete": {
-      "user_condition": {
-        "role": "SUPER_ADMIN"
-      }
-    }
+    "create": {},
+    "read": {},
+    "update": {},
+    "delete": {}
   }
 }
