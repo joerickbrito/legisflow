@@ -74,7 +74,12 @@ export async function autenticar(username, password) {
 }
 
 export async function criarUsuario(data) {
-  const response = await base44.functions.invoke('criarUsuarioSislegis', data);
+  const token = getSessionToken();
+  const invokeOpts = {};
+  if (token) {
+    invokeOpts.headers = { 'x-sislegis-token': token };
+  }
+  const response = await base44.functions.invoke('criarUsuarioSislegis', data, invokeOpts);
   if (response.data?.error) {
     throw new Error(response.data.error);
   }
@@ -82,11 +87,16 @@ export async function criarUsuario(data) {
 }
 
 export async function trocarSenha(username, senhaAtual, novaSenha) {
+  const token = getSessionToken();
+  const invokeOpts = {};
+  if (token) {
+    invokeOpts.headers = { 'x-sislegis-token': token };
+  }
   const response = await base44.functions.invoke('trocarSenhaSislegis', {
     username,
     senha_atual: senhaAtual,
     nova_senha: novaSenha,
-  });
+  }, invokeOpts);
 
   if (response.data?.error) {
     throw new Error(response.data.error);
