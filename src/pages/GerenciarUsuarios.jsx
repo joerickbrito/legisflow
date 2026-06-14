@@ -89,12 +89,12 @@ export default function GerenciarUsuarios() {
   const [form, setForm] = useState(emptyForm);
 
   useEffect(() => {
-    if (!isAdminCamara) return;
+    if (!isAdminCamara && !isSuperAdmin) return;
     loadUsuarios();
-    if (isSuperAdmin) base44.entities.Camara.list().then(setCamaras);
+    if (isSuperAdmin) base44.entities.Camara.list().then(setCamaras).catch(() => {});
     const pFilter = withTenant({});
     if (pFilter) base44.entities.Partido.filter(pFilter).then(setPartidos).catch(() => {});
-  }, [isAdminCamara, tenantId]);
+  }, [isAdminCamara, isSuperAdmin, tenantId]);
 
   const loadUsuarios = async () => {
     try {
@@ -204,6 +204,8 @@ export default function GerenciarUsuarios() {
       }
       await loadUsuarios();
       setOpen(false);
+    } catch (err) {
+      alert('Erro ao salvar: ' + (err?.response?.data?.error || err.message));
     } finally {
       setSaving(false);
     }

@@ -32,17 +32,16 @@ export function getSessionUser() {
 
 async function operarEntidade(entity, operation, params = {}) {
   const token = getSessionToken();
-  if (!token) throw new Error('Não autenticado.');
+  const invokeOpts = {};
+  if (token) {
+    invokeOpts.headers = { 'x-sislegis-token': token };
+  }
 
   const response = await base44.functions.invoke('operarEntidade', {
     entity,
     operation,
     params,
-  }, {
-    headers: {
-      'x-sislegis-token': token,
-    },
-  });
+  }, invokeOpts);
 
   if (response.data?.error) {
     throw new Error(response.data.error);

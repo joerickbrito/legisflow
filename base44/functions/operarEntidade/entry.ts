@@ -31,6 +31,11 @@ async function getAuthenticatedUser(base44) {
       if (sislegisUsers && sislegisUsers.length > 0) {
         return sislegisUsers[0];
       }
+      // Verificar se é o Master Admin registrado via ConfiguracaoSistema
+      const configs = await base44.asServiceRole.entities.ConfiguracaoSistema.filter({ chave: 'master_admin' });
+      if (configs && configs.length > 0 && configs[0].master_admin_id === baasUser.id) {
+        return { ...baasUser, role: 'SUPER_ADMIN', tenant_id: null };
+      }
       return { ...baasUser, role: baasUser.role || 'user', tenant_id: baasUser.tenant_id };
     }
   } catch { /* BaaS auth falhou, tenta SisLegis */ }
