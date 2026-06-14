@@ -71,7 +71,52 @@ export const AuthProvider = ({ children }) => {
         return;
       }
 
-      // Sem sessão SisLegis e sem token Base44 → não autenticado
+      // ─── FALLBACK: verificar autenticação Base44 nativa (Master Admin) ───
+      // O Master Admin NÃO possui registro em UsuarioSislegis por decisão arquitetural.
+      // Ele é reconhecido via base44.auth.me() e o primeiro usuário Base44 a autenticar
+      // é automaticamente registrado como Master Admin na ConfiguracaoSistema.
+      // ⚠️ NÃO REMOVER este bloco: ele foi restaurado após a remoção acidental durante
+      //    a limpeza das dependências do User nativo. Sem ele, o Master Admin fica bloqueado.
+      try {
+        const base44User = await base44.auth.me();
+        if (base44User && base44User.id) {
+          const configs = await base44.entities.ConfiguracaoSistema.filter({ chave: 'master_admin' });
+
+          if (configs.length === 0) {
+            // Primeiro usuário Base44 a autenticar → torna-se o Master Admin
+            await base44.entities.ConfiguracaoSistema.create({
+              chave: 'master_admin',
+              master_admin_id: base44User.id,
+              master_admin_email: base44User.email || '',
+            });
+            setUser({ ...base44User, role: 'SUPER_ADMIN' });
+            setIsAuthenticated(true);
+            setAuthMode('base44');
+            setPrimeiroAcesso(false);
+            setIsLoadingAuth(false);
+            setAuthChecked(true);
+            return;
+          }
+
+          const config = configs[0];
+          if (config.master_admin_id === base44User.id) {
+            // Master Admin reconhecido — acesso concedido
+            setUser({ ...base44User, role: 'SUPER_ADMIN' });
+            setIsAuthenticated(true);
+            setAuthMode('base44');
+            setPrimeiroAcesso(false);
+            setIsLoadingAuth(false);
+            setAuthChecked(true);
+            return;
+          }
+
+          // Usuário Base44 que NÃO é o Master Admin → sem privilégios especiais
+        }
+      } catch (_) {
+        // base44.auth.me() lança se não houver sessão Base44 → ignorar silenciosamente
+      }
+
+      // Sem sessão SisLegis e sem Master Admin reconhecido → não autenticado
       setIsLoadingAuth(false);
       setIsAuthenticated(false);
       setAuthChecked(true);
@@ -95,8 +140,14 @@ export const AuthProvider = ({ children }) => {
     } else if (authMode === 'base44') {
       try {
         const currentUser = await base44.auth.me();
-        setUser(currentUser);
-        setPrimeiroAcesso(!!currentUser.senha_temporaria);
+        // Re-verificar Master Admin para manter o role SUPER_ADMIN
+        const configs = await base44.entities.ConfiguracaoSistema.filter({ chave: 'master_admin' });
+        if (configs.length > 0 && configs[0].master_admin_id === currentUser.id) {
+          setUser({ ...currentUser, role: 'SUPER_ADMIN' });
+        } else {
+          setUser(currentUser);
+        }
+        setPrimeiroAcesso(false);
       } catch (_) { /* silencioso */ }
     }
   };

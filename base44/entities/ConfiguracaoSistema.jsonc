@@ -1,0 +1,30 @@
+{
+  "name": "ConfiguracaoSistema",
+  "type": "object",
+  "properties": {
+    "chave": {
+      "type": "string"
+    },
+    "master_admin_id": {
+      "type": "string"
+    },
+    "master_admin_email": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "chave"
+  ],
+  "rls": {
+    "create": {},
+    "read": {},
+    "update": {
+      "created_by_id": "{{user.id}}"
+    },
+    "delete": {
+      "user_condition": {
+        "role": "NONE"
+      }
+    }
+  }
+}
