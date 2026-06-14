@@ -71,14 +71,10 @@ export const AuthProvider = ({ children }) => {
         return;
       }
 
-      // Fallback: autenticação Base44 (legado)
-      if (appParams.token) {
-        await checkBase44Auth();
-      } else {
-        setIsLoadingAuth(false);
-        setIsAuthenticated(false);
-        setAuthChecked(true);
-      }
+      // Sem sessão SisLegis e sem token Base44 → não autenticado
+      setIsLoadingAuth(false);
+      setIsAuthenticated(false);
+      setAuthChecked(true);
     } catch (error) {
       console.error('Unexpected error:', error);
       setAuthError({ type: 'unknown', message: error.message || 'An unexpected error occurred' });
@@ -87,53 +83,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const checkBase44Auth = async () => {
-    try {
-      setIsLoadingAuth(true);
-      const currentUser = await base44.auth.me();
-      setUser(currentUser);
-      setIsAuthenticated(true);
-      setAuthMode('base44');
 
-      // Primeiro usuário → SUPER_ADMIN
-      let roleUpdated = false;
-      try {
-        const totalUsers = await base44.entities.User.list();
-        if (totalUsers.length <= 1 && currentUser.role !== 'SUPER_ADMIN') {
-          await base44.entities.User.update(currentUser.id, { role: 'SUPER_ADMIN' });
-          roleUpdated = true;
-        }
-      } catch (_) { /* silencioso */ }
-
-      // Vincular admin de câmara (convite aceito)
-      let adminVinculado = false;
-      if (currentUser.role === 'user') {
-        try {
-          await base44.functions.invoke('vincularAdminCamara', {});
-          adminVinculado = true;
-        } catch (_) { /* silencioso */ }
-      }
-
-      if (roleUpdated || adminVinculado) {
-        const refreshed = await base44.auth.me();
-        setUser(refreshed);
-        setPrimeiroAcesso(!!refreshed.senha_temporaria);
-      } else {
-        setPrimeiroAcesso(!!currentUser.senha_temporaria);
-      }
-
-      setIsLoadingAuth(false);
-      setAuthChecked(true);
-    } catch (error) {
-      console.error('User auth check failed:', error);
-      setIsLoadingAuth(false);
-      setIsAuthenticated(false);
-      setAuthChecked(true);
-      if (error.status === 401 || error.status === 403) {
-        setAuthError({ type: 'auth_required', message: 'Authentication required' });
-      }
-    }
-  };
 
   const refreshUser = async () => {
     if (authMode === 'sislegis') {
@@ -192,7 +142,6 @@ export const AuthProvider = ({ children }) => {
       authMode,
       logout,
       navigateToLogin,
-      checkUserAuth: checkBase44Auth,
       checkAppState,
       refreshUser,
     }}>

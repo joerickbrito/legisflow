@@ -1,3 +1,25 @@
+/**
+ * SISTEMA DE USUÁRIOS DO SISLEGIS — ARQUITETURA DEFINITIVA
+ *
+ * Confirmado pela documentação oficial do Base44: não existe forma
+ * de criar usuários nativos (User) administrativamente sem convite
+ * por e-mail e ativação imediata. Por isso, TODOS os usuários do
+ * SisLegis exceto o Master Admin existem EXCLUSIVAMENTE na entidade
+ * UsuarioSislegis, sem qualquer sincronização com User nativo.
+ *
+ * Master Admin = login nativo Base44 (única exceção, via fallback
+ * getAuthenticatedUser).
+ * Todos os demais = UsuarioSislegis (username + senha própria).
+ *
+ * Funções removidas em 2026-06-14: configurarAdminCamara,
+ * vincularAdminCamara, verificarAdminsPendentes, resetarSenhaAdmin.
+ *
+ * NÃO recriar pontes, sincronizações ou vínculos entre os dois
+ * sistemas. Repetir teste de ponta a ponta (criar câmara → criar
+ * admin → login → troca de senha → verificar listagem de usuários)
+ * antes de qualquer alteração futura neste arquivo.
+ */
+
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
 async function hashPassword(password) {

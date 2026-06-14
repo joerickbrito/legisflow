@@ -58,45 +58,24 @@ export default function GerenciarUsuarios() {
 
   const handleResetarSenha = async (e, u) => {
     e.stopPropagation();
-    const nome = u.nome || u.full_name || u.email;
-    if (u._source === 'sislegis' || !u.email) {
-      if (!confirm(`Deseja redefinir a senha de ${nome}?\n\nUma nova senha temporária será gerada e o usuário deverá trocá-la no próximo acesso.`)) return;
-      setResetandoSenha(u.id);
-      try {
-        const res = await base44.functions.invoke('resetarSenhaSislegis', {
-          usuario_id: u.id,
-        });
-        const senhaGerada = res.data?.senha_temporaria;
-        if (senhaGerada) {
-          alert(`Senha de ${nome} redefinida com sucesso.\n\nNova senha temporária: ${senhaGerada}\n\nAnote esta senha e repasse ao usuário. Ela não será exibida novamente.`);
-        } else {
-          alert(`Senha de ${nome} redefinida com sucesso.`);
-        }
-        await loadUsuarios();
-      } catch (err) {
-        alert('Erro ao redefinir senha: ' + (err?.response?.data?.error || err.message));
-      } finally {
-        setResetandoSenha(null);
+    const nome = u.nome || u.full_name || u.email || u.username;
+    if (!confirm(`Deseja redefinir a senha de ${nome}?\n\nUma nova senha temporária será gerada e o usuário deverá trocá-la no próximo acesso.`)) return;
+    setResetandoSenha(u.id);
+    try {
+      const res = await base44.functions.invoke('resetarSenhaSislegis', {
+        usuario_id: u.id,
+      });
+      const senhaGerada = res.data?.senha_temporaria;
+      if (senhaGerada) {
+        alert(`Senha de ${nome} redefinida com sucesso.\n\nNova senha temporária: ${senhaGerada}\n\nAnote esta senha e repasse ao usuário. Ela não será exibida novamente.`);
+      } else {
+        alert(`Senha de ${nome} redefinida com sucesso.`);
       }
-    } else {
-      if (!confirm(`Deseja redefinir a senha de ${nome}?\n\nUma nova senha temporária será gerada e o usuário deverá trocá-la no próximo acesso.`)) return;
-      setResetandoSenha(u.id);
-      try {
-        const res = await base44.functions.invoke('resetarSenhaSislegis', {
-          usuario_id: u.id,
-        });
-        const senhaGerada = res.data?.senha_temporaria;
-        if (senhaGerada) {
-          alert(`Senha de ${nome} redefinida com sucesso.\n\nNova senha temporária: ${senhaGerada}\n\nAnote esta senha e repasse ao usuário. Ela não será exibida novamente.`);
-        } else {
-          alert(`Senha de ${nome} redefinida com sucesso.`);
-        }
-        await loadUsuarios();
-      } catch (err) {
-        alert('Erro ao redefinir senha: ' + (err?.response?.data?.error || err.message));
-      } finally {
-        setResetandoSenha(null);
-      }
+      await loadUsuarios();
+    } catch (err) {
+      alert('Erro ao redefinir senha: ' + (err?.response?.data?.error || err.message));
+    } finally {
+      setResetandoSenha(null);
     }
   };
 
@@ -119,34 +98,11 @@ export default function GerenciarUsuarios() {
 
   const loadUsuarios = async () => {
     try {
-      // Buscar usuários do SisLegis (novo sistema)
       const sislegisUsers = await listarUsuariosSislegis({}, 'nome', 500);
-      // Buscar usuários do Base44 (legado)
-      const base44Users = await base44.entities.User.list();
-      // Mapear Base44 para formato compatível
-      const legacyUsers = base44Users
-        .filter(u => !sislegisUsers?.some(s => s.email && s.email === u.email))
-        .map(u => ({
-          id: u.id,
-          username: u.username || u.email?.split('@')[0] || '',
-          nome: u.full_name || '',
-          email: u.email || '',
-          role: u.role || 'user',
-          tenant_id: u.tenant_id || '',
-          status: u.status || 'Ativo',
-          senha_temporaria: !!u.senha_temporaria,
-          permissoes: u.permissoes || {},
-          foto_url: u.foto_url || null,
-          cargo: u.cargo || null,
-          partido_id: u.partido_id || null,
-          partido_sigla: u.partido_sigla || null,
-          cpf: u.cpf || null,
-          telefone: u.telefone || null,
-          _source: 'base44',
-        }));
-      const all = [...(sislegisUsers || []).map(u => ({ ...u, _source: 'sislegis' })), ...legacyUsers];
       // Master: apenas SUPER_ADMIN. Câmara: apenas usuários do tenant_id desta câmara.
-      setUsuarios(isInChamberContext ? all.filter(u => u.tenant_id === tenantId) : all.filter(u => u.role === 'SUPER_ADMIN'));
+      setUsuarios(isInChamberContext
+        ? (sislegisUsers || []).filter(u => u.tenant_id === tenantId)
+        : (sislegisUsers || []).filter(u => u.role === 'SUPER_ADMIN'));
     } catch (err) {
       console.warn('Erro ao carregar usuários:', err);
     }
@@ -213,39 +169,21 @@ export default function GerenciarUsuarios() {
     setSaving(true);
     try {
       if (editing) {
-        if (editing._source === 'base44') {
-          // Atualizar no Base44 (legado)
-          await base44.entities.User.update(editing.id, {
-            username: form.username,
-            cpf: form.cpf,
-            telefone: form.telefone,
-            cargo: form.cargo,
-            foto_url: form.foto_url,
-            partido_id: form.partido_id,
-            partido_sigla: form.partido_sigla,
-            login: form.login,
-            role: form.role,
-            tenant_id: form.tenant_id,
-            status: form.status,
-            permissoes: form.permissoes,
-          });
-        } else {
-          // Atualizar no SisLegis
-          await atualizarUsuarioSislegis(editing.id, {
-            username: form.username,
-            nome: form.nome || form.full_name,
-            cpf: form.cpf,
-            telefone: form.telefone,
-            cargo: form.cargo,
-            foto_url: form.foto_url,
-            partido_id: form.partido_id,
-            partido_sigla: form.partido_sigla,
-            role: form.role,
-            tenant_id: form.tenant_id,
-            status: form.status,
-            permissoes: form.permissoes,
-          });
-        }
+        // Atualizar no SisLegis
+        await atualizarUsuarioSislegis(editing.id, {
+          username: form.username,
+          nome: form.nome || form.full_name,
+          cpf: form.cpf,
+          telefone: form.telefone,
+          cargo: form.cargo,
+          foto_url: form.foto_url,
+          partido_id: form.partido_id,
+          partido_sigla: form.partido_sigla,
+          role: form.role,
+          tenant_id: form.tenant_id,
+          status: form.status,
+          permissoes: form.permissoes,
+        });
       } else {
         // Criar novo usuário no SisLegis (sem convite por e-mail)
         await criarUsuario({
@@ -336,7 +274,7 @@ export default function GerenciarUsuarios() {
                   {u.cargo && <p className="text-xs text-muted-foreground">{u.cargo}</p>}
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  {isSuperAdmin && (u.role === 'ADMIN_CAMARA' || u._source === 'sislegis') && (
+                  {isSuperAdmin && (
                     <Button
                       size="sm"
                       variant="ghost"

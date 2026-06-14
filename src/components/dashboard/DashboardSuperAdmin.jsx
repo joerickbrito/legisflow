@@ -14,7 +14,7 @@ export default function DashboardSuperAdmin() {
   useEffect(() => {
     Promise.all([
       base44.entities.Camara.list('-created_date', 200),
-      base44.entities.User.list(),
+      base44.entities.UsuarioSislegis.filter({}),
       base44.entities.Materia.list('-created_date', 50),
       base44.entities.NormaJuridica.list('-created_date', 20),
       base44.entities.Sessao.list('-data', 20),

@@ -40,6 +40,8 @@ export default function GerenciarCamaras() {
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [createdInfo, setCreatedInfo] = useState(null);
+  const [retryingAdmin, setRetryingAdmin] = useState(false);
+  const [retryError, setRetryError] = useState('');
 
   const [secaoExpandida, setSecaoExpandida] = useState("camara");
 
@@ -995,19 +997,61 @@ export default function GerenciarCamaras() {
                   </p>
                 </div>
               ) : (
-                <div className="space-y-2">
-                  <div className="flex items-start gap-2 rounded-lg bg-red-50 border border-red-200 p-3">
-                    <AlertCircle size={16} className="text-red-600 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="text-xs text-red-800 font-medium">Falha ao criar usuário</p>
-                      {createdInfo.userError && (
-                        <p className="text-xs text-red-700 mt-1">{createdInfo.userError}</p>
-                      )}
-                    </div>
+                <div className="space-y-3">
+                 <div className="flex items-start gap-2 rounded-lg bg-red-50 border border-red-200 p-3">
+                  <AlertCircle size={16} className="text-red-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs text-red-800 font-medium">Falha ao criar usuário administrador</p>
+                    {createdInfo.userError && (
+                      <p className="text-xs text-red-700 mt-1">{createdInfo.userError}</p>
+                    )}
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    A câmara foi criada. Crie o usuário manualmente em <strong>Gerenciar Usuários</strong>.
-                  </p>
+                </div>
+                {retryError && (
+                  <div className="flex items-start gap-2 rounded-lg bg-red-50 border border-red-200 p-3">
+                    <AlertCircle size={14} className="text-red-600 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-red-700">{retryError}</p>
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={async () => {
+                      setRetryingAdmin(true);
+                      setRetryError('');
+                      try {
+                        // Gerar senha aleatória para a nova tentativa
+                        const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+                        let novaSenha = "";
+                        for (let i = 0; i < 10; i++) novaSenha += chars[Math.floor(Math.random() * chars.length)];
+                        await criarUsuario({
+                          username: createdInfo.adminUsername,
+                          nome: createdInfo.adminNome,
+                          email: createdInfo.adminEmail || null,
+                          role: 'ADMIN_CAMARA',
+                          tenant_id: createdInfo.tenantId,
+                          camara_id: createdInfo.tenantId,
+                          camara_nome: createdInfo.camara?.nome,
+                          senha: novaSenha,
+                          permissoes: {},
+                        });
+                        alert(`Administrador criado com sucesso!\n\nUsuário: ${createdInfo.adminUsername}\nSenha temporária: ${novaSenha}\n\nAnote esta senha.`);
+                        setCreatedInfo(prev => ({ ...prev, userCreated: true, userError: null }));
+                      } catch (err) {
+                        setRetryError(err?.response?.data?.error || err?.message || 'Erro ao tentar novamente.');
+                      } finally {
+                        setRetryingAdmin(false);
+                      }
+                    }}
+                    disabled={retryingAdmin}
+                  >
+                    {retryingAdmin ? 'Tentando...' : 'Tentar criar administrador novamente'}
+                  </Button>
+                  <span className="text-xs text-muted-foreground self-center">
+                    ou crie manualmente em <strong>Gerenciar Usuários</strong>
+                  </span>
+                </div>
                 </div>
               )}
             </div>
