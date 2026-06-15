@@ -84,11 +84,7 @@
     "nome"
   ],
   "rls": {
-    "create": {
-      "user_condition": {
-        "role": "SUPER_ADMIN"
-      }
-    },
+    "create": null,
     "read": {
       "$or": [
         {
