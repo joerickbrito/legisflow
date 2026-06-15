@@ -42,25 +42,32 @@ async function getAuthenticatedUser(base44) {
   } catch { /* BaaS auth falhou, tenta SisLegis */ }
 
   const token = base44._requestHeaders?.get?.('x-sislegis-token') || '';
-  if (!token) return null;
-
-  const usuarios = await base44.asServiceRole.entities.UsuarioSislegis.filter({
-    session_token: token
-  });
-  if (!usuarios || usuarios.length === 0) return null;
-  return usuarios[0];
+  if (token) {
+    const usuarios = await base44.asServiceRole.entities.UsuarioSislegis.filter({
+      session_token: token
+    });
+    if (usuarios && usuarios.length > 0) return usuarios[0];
+  }
+  return null;
 }
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await getAuthenticatedUser(base44);
+    let user = await getAuthenticatedUser(base44);
+
+    // Fallback: autenticar via sislegis_token no body
+    if (!user && sislegis_token) {
+      const usuarios = await base44.asServiceRole.entities.UsuarioSislegis.filter({ session_token: sislegis_token });
+      if (usuarios && usuarios.length > 0) user = usuarios[0];
+    }
 
     if (!user) {
       return Response.json({ error: 'Não autorizado. Faça login.' }, { status: 401 });
     }
 
-    const { entity, operation, params } = await req.json();
+    const body = await req.json();
+    const { entity, operation, params, sislegis_token } = body;
 
     if (!entity || !operation) {
       return Response.json({ error: 'entity e operation são obrigatórios.' }, { status: 400 });

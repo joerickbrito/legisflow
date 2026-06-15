@@ -30,36 +30,27 @@ export function getSessionUser() {
   return getSession()?.user || null;
 }
 
-// Helper: chama backend function com header x-sislegis-token
-async function invokeWithAuth(functionName, payload = {}) {
+// Helper: injeta o sislegis_token no payload quando disponível
+function withAuth(payload = {}) {
   const token = getSessionToken();
-  const headers = { 'Content-Type': 'application/json' };
   if (token) {
-    headers['x-sislegis-token'] = token;
+    return { ...payload, sislegis_token: token };
   }
-
-  const response = await base44.functions.fetch(`/${functionName}`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(payload),
-  });
-
-  const data = await response.json();
-
-  if (data.error) {
-    throw new Error(data.error);
-  }
-
-  return data;
+  return payload;
 }
 
 async function operarEntidade(entity, operation, params = {}) {
-  const data = await invokeWithAuth('operarEntidade', {
+  const response = await base44.functions.invoke('operarEntidade', withAuth({
     entity,
     operation,
     params,
-  });
-  return data.data;
+  }));
+
+  if (response.data?.error) {
+    throw new Error(response.data.error);
+  }
+
+  return response.data?.data;
 }
 
 // Proxy que cria APIs de entidade com a mesma interface do Base44 SDK
@@ -86,21 +77,28 @@ export async function autenticar(username, password) {
 }
 
 export async function criarUsuario(data) {
-  const result = await invokeWithAuth('criarUsuarioSislegis', data);
-  return result;
+  const response = await base44.functions.invoke('criarUsuarioSislegis', withAuth(data));
+  if (response.data?.error) {
+    throw new Error(response.data.error);
+  }
+  return response.data;
 }
 
 export async function trocarSenha(username, senhaAtual, novaSenha) {
-  const result = await invokeWithAuth('trocarSenhaSislegis', {
+  const response = await base44.functions.invoke('trocarSenhaSislegis', withAuth({
     username,
     senha_atual: senhaAtual,
     nova_senha: novaSenha,
-  });
+  }));
+
+  if (response.data?.error) {
+    throw new Error(response.data.error);
+  }
 
   // Atualizar sessão com novo token
-  if (result.session_token) {
+  if (response.data.session_token) {
     const session = getSession();
-    session.session_token = result.session_token;
+    session.session_token = response.data.session_token;
     if (session.user) {
       session.user.senha_temporaria = false;
       session.user.status = 'Ativo';
@@ -108,7 +106,7 @@ export async function trocarSenha(username, senhaAtual, novaSenha) {
     saveSession(session);
   }
 
-  return result;
+  return response.data;
 }
 
 export async function atualizarUsuarioSislegis(id, data) {

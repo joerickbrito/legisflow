@@ -68,7 +68,14 @@ async function getAuthenticatedUser(base44) {
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const caller = await getAuthenticatedUser(base44);
+    let caller = await getAuthenticatedUser(base44);
+
+    // Fallback: autenticar via sislegis_token no body
+    if (!caller && sislegis_token) {
+      const usuarios = await base44.asServiceRole.entities.UsuarioSislegis.filter({ session_token: sislegis_token });
+      if (usuarios && usuarios.length > 0) caller = usuarios[0];
+    }
+
     if (!caller) return Response.json({ error: 'Não autorizado. Faça login.' }, { status: 401 });
 
     const isSuperAdmin = caller.role === 'SUPER_ADMIN';
@@ -81,7 +88,7 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { username, nome, email, role, tenant_id, camara_id, camara_nome, senha, permissoes, foto_url, cargo, partido_id, partido_sigla, cpf, telefone, status, senha_temporaria } = body;
+    const { username, nome, email, role, tenant_id, camara_id, camara_nome, senha, permissoes, foto_url, cargo, partido_id, partido_sigla, cpf, telefone, status, senha_temporaria, sislegis_token } = body;
 
     if (!username || !nome || !role || !senha) {
       return Response.json({ error: 'Campos obrigatórios: username, nome, role, senha.' }, { status: 400 });

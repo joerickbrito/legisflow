@@ -135,8 +135,9 @@ async function resetarRateLimit(base44, username, tipo) {
   }
 }
 
-async function getAuthenticatedUser(base44) {
-  const token = base44._requestHeaders?.get?.('x-sislegis-token') || '';
+// Obtém o usuário autenticado: tenta header x-sislegis-token, depois body.sislegis_token
+async function getAuthenticatedUser(base44, bodyToken) {
+  const token = base44._requestHeaders?.get?.('x-sislegis-token') || bodyToken || '';
   if (!token) return null;
   const usuarios = await base44.asServiceRole.entities.UsuarioSislegis.filter({ session_token: token });
   if (!usuarios || usuarios.length === 0) return null;
@@ -146,7 +147,8 @@ async function getAuthenticatedUser(base44) {
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const { username, senha_atual, nova_senha } = await req.json();
+    const body = await req.json();
+    const { username, senha_atual, nova_senha, sislegis_token } = body;
 
     if (!username || !senha_atual || !nova_senha) {
       return Response.json({ error: 'Todos os campos são obrigatórios.' }, { status: 400 });
@@ -163,7 +165,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: rateCheck.mensagem }, { status: 429 });
     }
 
-    const caller = await getAuthenticatedUser(base44);
+    const caller = await getAuthenticatedUser(base44, sislegis_token);
     if (!caller) {
       return Response.json({ error: 'Não autorizado. Faça login para trocar a senha.' }, { status: 401 });
     }
