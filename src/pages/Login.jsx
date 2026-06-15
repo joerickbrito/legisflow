@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { autenticar, clearSession } from "@/lib/sislegisApi";
-import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -124,14 +123,7 @@ export default function Login() {
           <p className="text-center text-slate-500 text-xs mt-4">
             Acesso restrito. Usuários são cadastrados pelos administradores da Câmara.
           </p>
-          <div className="mt-4 text-center">
-            <button
-              onClick={() => base44.auth.redirectToLogin(window.location.href)}
-              className="text-[11px] text-slate-600 hover:text-slate-400 underline underline-offset-4 transition-colors"
-            >
-              Acesso da Plataforma (Master Admin)
-            </button>
-          </div>
+
         </div>
 
         <p className="text-center text-slate-600 text-xs mt-6">

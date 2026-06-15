@@ -54,9 +54,9 @@ import ResetPassword from '@/pages/ResetPassword';
 import TrocarSenha from '@/pages/TrocarSenha.jsx';
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, user, primeiroAcesso } = useAuth();
+  const { isLoadingAuth, authError, navigateToLogin, user, primeiroAcesso } = useAuth();
 
-  if (isLoadingPublicSettings || isLoadingAuth) {
+  if (isLoadingAuth) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-background">
         <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>

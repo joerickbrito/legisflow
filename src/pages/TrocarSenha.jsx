@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { trocarSenha, getSessionUser } from '@/lib/sislegisApi';
 import { Button } from '@/components/ui/button';
@@ -7,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Loader2, Scale, Lock, Eye, EyeOff } from 'lucide-react';
 
 export default function TrocarSenha() {
-  const { authMode, refreshUser } = useAuth();
+  const { refreshUser } = useAuth();
   const [senhaAtual, setSenhaAtual] = useState('');
   const [novaSenha, setNovaSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
@@ -36,20 +35,8 @@ export default function TrocarSenha() {
 
     setLoading(true);
     try {
-      if (authMode === 'sislegis') {
-        // Autenticação SisLegis
-        const sessionUser = getSessionUser();
-        await trocarSenha(sessionUser.username, senhaAtual, novaSenha);
-      } else {
-        // Autenticação Base44 (legado)
-        const user = await base44.auth.me();
-        await base44.auth.changePassword({
-          userId: user.id,
-          currentPassword: senhaAtual,
-          newPassword: novaSenha
-        });
-        await base44.functions.invoke('limparSenhaTemporaria', { email: user.email });
-      }
+      const sessionUser = getSessionUser();
+      await trocarSenha(sessionUser.username, senhaAtual, novaSenha);
       setSuccess(true);
       refreshUser?.();
       setTimeout(() => { window.location.href = '/'; }, 1500);
@@ -66,21 +53,7 @@ export default function TrocarSenha() {
   };
 
   const handleRedefinirPorEmail = async () => {
-    if (authMode === 'sislegis') {
-      setError('Entre em contato com o administrador master para redefinir sua senha.');
-      return;
-    }
-    setLoading(true);
-    setError('');
-    try {
-      const user = await base44.auth.me();
-      await base44.auth.resetPasswordRequest(user.email);
-      setSuccess(true);
-    } catch (err) {
-      setError('Não foi possível enviar o e-mail de redefinição.');
-    } finally {
-      setLoading(false);
-    }
+    setError('Entre em contato com o administrador para redefinir sua senha.');
   };
 
   return (
