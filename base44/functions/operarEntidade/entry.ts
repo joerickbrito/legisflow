@@ -122,11 +122,11 @@ Deno.serve(async (req) => {
       }
 
       case 'get': {
-        const record = await base44.asServiceRole.entities[entity].get(params.id);
-        if (!record) {
+        const results = await base44.asServiceRole.entities[entity].filter({ id: params.id }, null, 1);
+        if (!results || results.length === 0) {
           return Response.json({ error: 'Registro não encontrado.' }, { status: 404 });
         }
-        // Verificar isolamento de tenant
+        const record = results[0];
         if (!isSuperAdmin && record.tenant_id && record.tenant_id !== user.tenant_id) {
           return Response.json({ error: 'Acesso negado. Registro de outra câmara.' }, { status: 403 });
         }
@@ -143,11 +143,11 @@ Deno.serve(async (req) => {
       }
 
       case 'update': {
-        const existing = await base44.asServiceRole.entities[entity].get(params.id);
-        if (!existing) {
+        const results = await base44.asServiceRole.entities[entity].filter({ id: params.id }, null, 1);
+        if (!results || results.length === 0) {
           return Response.json({ error: 'Registro não encontrado.' }, { status: 404 });
         }
-        // Verificar tenant antes de atualizar
+        const existing = results[0];
         if (!isSuperAdmin && existing.tenant_id && existing.tenant_id !== user.tenant_id) {
           return Response.json({ error: 'Acesso negado. Registro de outra câmara.' }, { status: 403 });
         }
@@ -156,10 +156,9 @@ Deno.serve(async (req) => {
       }
 
       case 'delete': {
-        // SUPER_ADMIN já validado acima
-        const existing = await base44.asServiceRole.entities[entity].get(params.id);
-        if (!existing) {
-          return Response.json({ error: 'Registro não encontrado.' }, { status: 404 });
+        const results = await base44.asServiceRole.entities[entity].filter({ id: params.id }, null, 1);
+        if (!results || results.length === 0) {
+          return Response.json({ error: 'Registro não encontrado (v3).' }, { status: 404 });
         }
         await base44.asServiceRole.entities[entity].delete(params.id);
         return Response.json({ data: { id: params.id, deleted: true } });
