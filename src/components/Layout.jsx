@@ -171,7 +171,7 @@ export default function Layout() {
         {/* User info */}
         {!collapsed && user && (
           <div className="px-4 py-2.5 border-b border-sidebar-border/50 bg-sidebar-accent/30">
-            <p className="text-xs font-medium text-sidebar-foreground truncate">{user.full_name || user.email}</p>
+            <p className="text-xs font-medium text-sidebar-foreground truncate">{user.nome || user.email || user.username}</p>
             <p className="text-[10px] text-sidebar-foreground/50 truncate">{ROLE_LABELS[userRole] || userRole}</p>
           </div>
         )}
