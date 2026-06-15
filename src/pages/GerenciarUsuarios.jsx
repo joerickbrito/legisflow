@@ -138,7 +138,8 @@ export default function GerenciarUsuarios() {
 
   const openNew = () => {
     setEditing(null);
-    setForm({ ...emptyForm, tenant_id: tenantId || "", permissoes: { ...DEFAULT_PERMISSIONS.VEREADOR } });
+    const defaultRole = isInChamberContext ? 'VEREADOR' : 'SUPER_ADMIN';
+    setForm({ ...emptyForm, role: defaultRole, tenant_id: tenantId || "", permissoes: { ...(DEFAULT_PERMISSIONS[defaultRole] || {}) } });
     setOpen(true);
   };
 
@@ -227,6 +228,8 @@ export default function GerenciarUsuarios() {
           role: form.role,
           tenant_id: form.tenant_id,
           senha: form.senha || '',
+          status: form.status,
+          senha_temporaria: form.senha_temporaria,
           camara_id: form.camara_id || null,
           camara_nome: form.camara_nome || null,
           permissoes: form.permissoes,
@@ -247,9 +250,11 @@ export default function GerenciarUsuarios() {
     }
   };
 
-  const availableRoles = isSuperAdmin
-    ? ['SUPER_ADMIN', ...PERFIS_ORDER]
-    : PERFIS_ORDER;
+  // "Usuários Master" (fora do contexto de câmara): apenas SUPER_ADMIN
+  // Perfis de câmara (ADMIN_CAMARA, VEREADOR, etc.) são criados dentro do contexto da câmara
+  const availableRoles = isInChamberContext
+    ? PERFIS_ORDER
+    : ['SUPER_ADMIN'];
   const isParlamentar = PERFIS_PARTIDO_OBRIGATORIO.includes(form.role);
   const fotoObrigatoria = PERFIS_FOTO_OBRIGATORIA.includes(form.role);
 

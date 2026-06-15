@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { username, nome, email, role, tenant_id, camara_id, camara_nome, senha, permissoes, foto_url, cargo, partido_id, partido_sigla, cpf, telefone } = body;
+    const { username, nome, email, role, tenant_id, camara_id, camara_nome, senha, permissoes, foto_url, cargo, partido_id, partido_sigla, cpf, telefone, status, senha_temporaria } = body;
 
     if (!username || !nome || !role || !senha) {
       return Response.json({ error: 'Campos obrigatórios: username, nome, role, senha.' }, { status: 400 });
@@ -129,8 +129,8 @@ Deno.serve(async (req) => {
       tenant_id: effectiveTenantId,
       camara_id: camara_id || null,
       camara_nome: camara_nome || null,
-      status: 'Pendente de Ativação',
-      senha_temporaria: true,
+      status: status || 'Pendente de Ativação',
+      senha_temporaria: senha_temporaria !== undefined ? senha_temporaria : true,
       permissoes: permissoes || {},
       foto_url: foto_url || null,
       cargo: cargo || null,
