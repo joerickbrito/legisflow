@@ -151,7 +151,7 @@ Deno.serve(async (req) => {
         tenant_id: novoUsuario.tenant_id,
         camara_nome: novoUsuario.camara_nome,
         status: novoUsuario.status,
-        senha_temporaria: true,
+        senha_temporaria: novoUsuario.senha_temporaria,
       }
     });
   } catch (error) {

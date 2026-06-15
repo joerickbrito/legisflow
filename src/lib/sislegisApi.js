@@ -30,24 +30,36 @@ export function getSessionUser() {
   return getSession()?.user || null;
 }
 
-async function operarEntidade(entity, operation, params = {}) {
+// Helper: chama backend function com header x-sislegis-token
+async function invokeWithAuth(functionName, payload = {}) {
   const token = getSessionToken();
-  const invokeOpts = {};
+  const headers = { 'Content-Type': 'application/json' };
   if (token) {
-    invokeOpts.headers = { 'x-sislegis-token': token };
+    headers['x-sislegis-token'] = token;
   }
 
-  const response = await base44.functions.invoke('operarEntidade', {
+  const response = await base44.functions.fetch(`/${functionName}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json();
+
+  if (data.error) {
+    throw new Error(data.error);
+  }
+
+  return data;
+}
+
+async function operarEntidade(entity, operation, params = {}) {
+  const data = await invokeWithAuth('operarEntidade', {
     entity,
     operation,
     params,
-  }, invokeOpts);
-
-  if (response.data?.error) {
-    throw new Error(response.data.error);
-  }
-
-  return response.data?.data;
+  });
+  return data.data;
 }
 
 // Proxy que cria APIs de entidade com a mesma interface do Base44 SDK
@@ -74,38 +86,21 @@ export async function autenticar(username, password) {
 }
 
 export async function criarUsuario(data) {
-  const token = getSessionToken();
-  const invokeOpts = {};
-  if (token) {
-    invokeOpts.headers = { 'x-sislegis-token': token };
-  }
-  const response = await base44.functions.invoke('criarUsuarioSislegis', data, invokeOpts);
-  if (response.data?.error) {
-    throw new Error(response.data.error);
-  }
-  return response.data;
+  const result = await invokeWithAuth('criarUsuarioSislegis', data);
+  return result;
 }
 
 export async function trocarSenha(username, senhaAtual, novaSenha) {
-  const token = getSessionToken();
-  const invokeOpts = {};
-  if (token) {
-    invokeOpts.headers = { 'x-sislegis-token': token };
-  }
-  const response = await base44.functions.invoke('trocarSenhaSislegis', {
+  const result = await invokeWithAuth('trocarSenhaSislegis', {
     username,
     senha_atual: senhaAtual,
     nova_senha: novaSenha,
-  }, invokeOpts);
-
-  if (response.data?.error) {
-    throw new Error(response.data.error);
-  }
+  });
 
   // Atualizar sessão com novo token
-  if (response.data.session_token) {
+  if (result.session_token) {
     const session = getSession();
-    session.session_token = response.data.session_token;
+    session.session_token = result.session_token;
     if (session.user) {
       session.user.senha_temporaria = false;
       session.user.status = 'Ativo';
@@ -113,7 +108,7 @@ export async function trocarSenha(username, senhaAtual, novaSenha) {
     saveSession(session);
   }
 
-  return response.data;
+  return result;
 }
 
 export async function atualizarUsuarioSislegis(id, data) {
