@@ -82,12 +82,12 @@
     "role"
   ],
   "rls": {
-    "create": {},
-    "read": {},
-    "update": {},
+    "create": null,
+    "read": null,
+    "update": null,
     "delete": {
       "user_condition": {
-        "role": "NONE"
+        "role": "admin"
       }
     }
   }
