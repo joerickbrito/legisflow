@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
+import { sislegisEntities } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
 import PageHeader from '@/components/PageHeader';
 import EmptyState from '@/components/EmptyState';
@@ -39,7 +40,7 @@ export default function ProjetosLei() {
 
   useEffect(() => {
     if (!canQuery) return;
-    base44.entities.Materia.filter(withTenant({ tipo: { $in: TIPOS } })).then(setItems);
+    sislegisEntities.Materia.filter(withTenant({ tipo: { $in: TIPOS } })).then(setItems);
   }, [canQuery, tenantId]);
 
   const filtered = items.filter(i =>
@@ -66,9 +67,9 @@ export default function ProjetosLei() {
         tenant_id: tenantId || '',
         origem: origemMap[autor_tipo] || 'Parlamentar',
       };
-      if (editing) await base44.entities.Materia.update(editing, data);
-      else await base44.entities.Materia.create(data);
-      const updated = await base44.entities.Materia.filter(withTenant({ tipo: { $in: TIPOS } }));
+      if (editing) await sislegisEntities.Materia.update(editing, data);
+      else await sislegisEntities.Materia.create(data);
+      const updated = await sislegisEntities.Materia.filter(withTenant({ tipo: { $in: TIPOS } }));
       setItems(updated);
       setOpen(false);
       setErrorMsg('');
@@ -82,7 +83,7 @@ export default function ProjetosLei() {
   const remove = async (id) => {
     if (!confirm('Tem certeza que deseja excluir este projeto?')) return;
     try {
-      await base44.entities.Materia.delete(id);
+      await sislegisEntities.Materia.delete(id);
       setItems(items.filter(i => i.id !== id));
     } catch (e) {
       setErrorMsg(e?.message || 'Erro ao excluir projeto.');
