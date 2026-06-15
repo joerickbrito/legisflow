@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { criarUsuario, sislegisEntities } from "@/lib/sislegisApi";
+import { sislegisEntities } from "@/lib/sislegisApi";
 import { useTenant } from "@/lib/TenantContext";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -9,17 +9,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Building2, Plus, Search, Users, Upload, MapPin, CheckCircle2, Copy, AlertCircle, ChevronDown, ChevronUp, Eye, EyeOff } from "lucide-react";
+
+import { Building2, Plus, Search, Users, Upload, MapPin, ChevronDown, ChevronUp, AlertCircle } from "lucide-react";
 
 const REQUIRED_FIELDS = ['nome', 'municipio', 'estado', 'cnpj', 'email', 'telefone'];
 
 function isFormValid(form) {
   return REQUIRED_FIELDS.every(f => form[f]?.trim?.() || form[f]);
-}
-
-function isAdminValid(admin) {
-  return admin.nome?.trim() && admin.username?.trim() && admin.senha?.trim() && admin.senha.length >= 6 && admin.senha === admin.confirmarSenha;
 }
 
 const FormField = ({ label, required, children }) => (
@@ -39,9 +35,6 @@ export default function GerenciarCamaras() {
   const [editing, setEditing] = useState(null);
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  const [createdInfo, setCreatedInfo] = useState(null);
-  const [retryingAdmin, setRetryingAdmin] = useState(false);
-  const [retryError, setRetryError] = useState('');
 
   const [secaoExpandida, setSecaoExpandida] = useState("camara");
 
@@ -52,12 +45,6 @@ export default function GerenciarCamaras() {
     total_vereadores: 9, observacoes: "",
   };
   const [form, setForm] = useState(emptyForm);
-
-  const emptyAdmin = {
-    nome: "", username: "", email: "", senha: "", confirmarSenha: "", enviarEmail: false,
-  };
-  const [admin, setAdmin] = useState(emptyAdmin);
-  const [showSenha, setShowSenha] = useState(false);
 
   const [uploadingBrasao, setUploadingBrasao] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -101,11 +88,10 @@ export default function GerenciarCamaras() {
     <div className="p-6 text-center text-muted-foreground">Acesso restrito ao Master Admin.</div>
   );
 
-  const openNew = () => { setEditing(null); setForm(emptyForm); setAdmin(emptyAdmin); setSecaoExpandida("camara"); setOpen(true); };
+  const openNew = () => { setEditing(null); setForm(emptyForm); setSecaoExpandida("camara"); setOpen(true); };
   const openEdit = async (c) => {
     setEditing(c);
     setForm({ ...emptyForm, ...c });
-    setAdmin(emptyAdmin);
     setSecaoExpandida("camara");
     setEditingAdmin(false);
     setAdminUser(null);
@@ -147,79 +133,10 @@ export default function GerenciarCamaras() {
         setCamaras(await sislegisEntities.Camara.list("-created_date", 200));
         setOpen(false);
       } else {
-        if (!isAdminValid(admin)) {
-          alert("Preencha todos os dados do administrador corretamente (nome, usuário e senha). A senha deve ter no mínimo 6 caracteres e as senhas devem ser iguais.");
-          setSaving(false);
-          return;
-        }
-
-        // 1. Criar a Câmara
-        const novaCamara = await sislegisEntities.Camara.create({
-          ...form,
-          admin_email: admin.email.trim().toLowerCase() || null,
-          admin_username: admin.username.trim(),
-          admin_nome: admin.nome.trim(),
-          admin_configurado: true,
-        });
-
-        // 2. Criar usuário diretamente no SisLegis (sem convite por e-mail)
-        let userCreated = false;
-        let userError = null;
-        try {
-          await criarUsuario({
-            username: admin.username.trim(),
-            nome: admin.nome.trim(),
-            email: admin.email?.trim().toLowerCase() || null,
-            role: 'ADMIN_CAMARA',
-            tenant_id: novaCamara.id,
-            camara_id: novaCamara.id,
-            camara_nome: novaCamara.nome,
-            senha: admin.senha,
-            permissoes: {},
-          });
-          userCreated = true;
-        } catch (err) {
-          userError = err?.message || "Erro ao criar usuário.";
-          console.warn("Erro ao criar usuário SisLegis:", err);
-        }
-
-        if (admin.enviarEmail && admin.email) {
-          try {
-            await base44.integrations.Core.SendEmail({
-              to: admin.email,
-              subject: `SisLegis — Credenciais de Acesso — ${novaCamara.nome}`,
-              body: [
-                `Olá ${admin.nome},`,
-                ``,
-                `Suas credenciais de acesso ao SisLegis foram criadas:`,
-                ``,
-                `Câmara: ${novaCamara.nome}`,
-                `Usuário: ${admin.username}`,
-                `Senha temporária: ${admin.senha}`,
-                ``,
-                `Acesse o sistema e altere sua senha no primeiro acesso.`,
-                ``,
-                `Atenciosamente,`,
-                `Equipe SisLegis`
-              ].join('\n')
-            });
-          } catch (err) {
-            console.warn("Erro ao enviar e-mail:", err);
-          }
-        }
-
+        const novaCamara = await sislegisEntities.Camara.create(form);
         setCamaras(await sislegisEntities.Camara.list("-created_date", 200));
         setOpen(false);
-
-        setCreatedInfo({
-          camara: novaCamara,
-          adminEmail: admin.email,
-          adminNome: admin.nome,
-          adminUsername: admin.username,
-          tenantId: novaCamara.id,
-          userCreated,
-          userError,
-        });
+        alert(`Câmara "${novaCamara.nome}" criada com sucesso!`);
       }
     } catch (e) {
       setErrorMsg(e?.message || 'Erro ao salvar câmara.');
@@ -609,90 +526,7 @@ export default function GerenciarCamaras() {
               )}
             </div>
 
-            {/* SEÇÃO 2: ADMINISTRADOR DA CÂMARA (somente criação) */}
-            {!editing && (
-              <div className="rounded-lg border border-border overflow-hidden">
-                <button
-                  type="button"
-                  onClick={() => setSecaoExpandida(s => s === "admin" ? "" : "admin")}
-                  className="w-full flex items-center justify-between px-4 py-3 bg-muted/40 hover:bg-muted/60 transition-colors"
-                >
-                  <span className="text-sm font-semibold text-foreground">Seção 2 — Administrador da Câmara</span>
-                  {secaoExpandida === "admin" ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
-                </button>
-                {secaoExpandida === "admin" && (
-                  <div className="p-4 space-y-4">
-                    <p className="text-xs text-muted-foreground">
-                      O administrador será criado com status <strong>Pendente de Ativação</strong>. No primeiro acesso, será obrigatória a troca da senha.
-                    </p>
-
-                    <FormField label="Nome do Administrador" required>
-                      <Input value={admin.nome} onChange={e => setAdmin(a => ({ ...a, nome: e.target.value }))} placeholder="Nome completo" />
-                    </FormField>
-
-                    <FormField label="Nome de Usuário" required>
-                      <Input value={admin.username} onChange={e => setAdmin(a => ({ ...a, username: e.target.value }))} placeholder="admin.saopaulo" />
-                    </FormField>
-                    <p className="text-[11px] text-muted-foreground -mt-3">
-                      Recomendamos incluir uma referência da câmara no nome de usuário para facilitar a identificação. Exemplo: joao.saj
-                    </p>
-
-                    <FormField label="E-mail (opcional)">
-                      <Input type="email" value={admin.email} onChange={e => setAdmin(a => ({ ...a, email: e.target.value }))} placeholder="admin@camara.sp.gov.br" />
-                    </FormField>
-                    <p className="text-[11px] text-muted-foreground -mt-3">
-                      Opcional. Usado apenas para notificações e recuperação de senha.
-                    </p>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <FormField label="Senha Temporária" required>
-                        <div className="relative">
-                          <Input
-                            type={showSenha ? 'text' : 'password'}
-                            value={admin.senha}
-                            onChange={e => setAdmin(a => ({ ...a, senha: e.target.value }))}
-                            placeholder="Mínimo 6 caracteres"
-                            className="pr-10"
-                          />
-                          <button type="button" onClick={() => setShowSenha(!showSenha)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                            {showSenha ? <EyeOff size={14} /> : <Eye size={14} />}
-                          </button>
-                        </div>
-                      </FormField>
-                      <FormField label="Confirmar Senha" required>
-                        <Input
-                          type="password"
-                          value={admin.confirmarSenha}
-                          onChange={e => setAdmin(a => ({ ...a, confirmarSenha: e.target.value }))}
-                          placeholder="Repita a senha"
-                          className={
-                            admin.confirmarSenha && admin.senha !== admin.confirmarSenha
-                              ? 'border-destructive focus-visible:ring-destructive'
-                              : admin.confirmarSenha && admin.senha === admin.confirmarSenha
-                                ? 'border-green-500 focus-visible:ring-green-500'
-                                : ''
-                          }
-                        />
-                      </FormField>
-                    </div>
-
-                    <div className="flex items-center gap-2 pt-1">
-                      <Checkbox
-                        id="enviar-email"
-                        checked={admin.enviarEmail && !!admin.email?.trim()}
-                        disabled={!admin.email?.trim()}
-                        onCheckedChange={(c) => setAdmin(a => ({ ...a, enviarEmail: !!c }))}
-                      />
-                      <label htmlFor="enviar-email" className={`text-sm cursor-pointer select-none ${!admin.email?.trim() ? 'text-muted-foreground/50' : 'text-muted-foreground'}`}>
-                        Enviar credenciais por e-mail
-                      </label>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* SEÇÃO 3: ADMIN DA CÂMARA (somente edição) */}
+            {/* SEÇÃO 2: ADMIN DA CÂMARA (somente edição) */}
             {editing && (
               <div className="rounded-lg border border-border overflow-hidden">
                 <button
@@ -700,7 +534,7 @@ export default function GerenciarCamaras() {
                   onClick={() => setSecaoExpandida(s => s === "admin-edit" ? "" : "admin-edit")}
                   className="w-full flex items-center justify-between px-4 py-3 bg-muted/40 hover:bg-muted/60 transition-colors"
                 >
-                  <span className="text-sm font-semibold text-foreground">Seção 3 — Usuário Administrador da Câmara</span>
+                  <span className="text-sm font-semibold text-foreground">Seção 2 — Usuário Administrador da Câmara</span>
                   {secaoExpandida === "admin-edit" ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
                 </button>
                 {secaoExpandida === "admin-edit" && (
@@ -778,7 +612,7 @@ export default function GerenciarCamaras() {
               </div>
             )}
 
-            {/* SEÇÃO 4: USUÁRIOS DA CÂMARA (somente edição) */}
+            {/* SEÇÃO 3: USUÁRIOS DA CÂMARA (somente edição) */}
             {editing && (
               <div className="rounded-lg border border-border overflow-hidden">
                 <button
@@ -787,7 +621,7 @@ export default function GerenciarCamaras() {
                   className="w-full flex items-center justify-between px-4 py-3 bg-muted/40 hover:bg-muted/60 transition-colors"
                 >
                   <span className="text-sm font-semibold text-foreground">
-                    Seção 4 — Usuários da Câmara
+                    Seção 3 — Usuários da Câmara
                     {chamberUsers.length > 0 && <span className="ml-2 text-xs font-normal text-muted-foreground">({chamberUsers.length} usuário{chamberUsers.length !== 1 ? 's' : ''})</span>}
                   </span>
                   {secaoExpandida === "users" ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
@@ -830,7 +664,7 @@ export default function GerenciarCamaras() {
               </div>
             )}
 
-            {/* SEÇÃO 5: SOLICITAÇÕES DE RECUPERAÇÃO DE SENHA (somente edição) */}
+            {/* SEÇÃO 4: SOLICITAÇÕES DE RECUPERAÇÃO DE SENHA (somente edição) */}
             {editing && (
               <div className="rounded-lg border border-border overflow-hidden">
                 <button
@@ -839,7 +673,7 @@ export default function GerenciarCamaras() {
                   className="w-full flex items-center justify-between px-4 py-3 bg-muted/40 hover:bg-muted/60 transition-colors"
                 >
                   <span className="text-sm font-semibold text-foreground">
-                    Seção 5 — Solicitações de Recuperação de Senha
+                    Seção 4 — Solicitações de Recuperação de Senha
                     {solicitacoes.length > 0 && (
                       <Badge variant="destructive" className="ml-2 text-[10px]">{solicitacoes.length} pendente{solicitacoes.length !== 1 ? 's' : ''}</Badge>
                     )}
@@ -936,7 +770,7 @@ export default function GerenciarCamaras() {
             <Button variant="outline" onClick={() => { setOpen(false); setErrorMsg(''); }}>Cancelar</Button>
             <Button
               onClick={handleSave}
-              disabled={saving || !isFormValid(form) || (!editing && !isAdminValid(admin))}
+              disabled={saving || !isFormValid(form)}
             >
               {saving ? "Salvando..." : editing ? "Salvar Alterações" : "Criar Câmara"}
             </Button>
@@ -944,123 +778,7 @@ export default function GerenciarCamaras() {
         </DialogContent>
       </Dialog>
 
-      {/* Post-creation info modal */}
-      <Dialog open={!!createdInfo} onOpenChange={() => setCreatedInfo(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-heading flex items-center gap-2">
-              <CheckCircle2 className="text-green-600" size={22} />
-              Câmara criada com sucesso!
-            </DialogTitle>
-          </DialogHeader>
-          {createdInfo && (
-            <div className="space-y-4 py-1">
-              <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
-                <div>
-                  <p className="text-xs text-muted-foreground">Nome da Câmara</p>
-                  <p className="font-semibold">{createdInfo.camara?.nome}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">ID / Tenant ID</p>
-                  <div className="flex items-center gap-2">
-                    <code className="text-xs bg-muted px-2 py-1 rounded font-mono flex-1 truncate">{createdInfo.tenantId}</code>
-                    <button onClick={() => navigator.clipboard.writeText(createdInfo.tenantId)} className="text-muted-foreground hover:text-foreground">
-                      <Copy size={14} />
-                    </button>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Administrador</p>
-                  <p className="font-medium text-sm">{createdInfo.adminNome}</p>
-                  <p className="text-xs text-muted-foreground">Usuário: {createdInfo.adminUsername}</p>
-                  <p className="text-xs text-muted-foreground">{createdInfo.adminEmail}</p>
-                </div>
-                <div>
-                  <Badge variant="secondary" className="text-xs">Pendente de Ativação</Badge>
-                  <span className="text-xs text-muted-foreground ml-2">O admin deverá trocar a senha no primeiro acesso.</span>
-                </div>
-              </div>
 
-              {createdInfo.userCreated ? (
-                <div className="space-y-3">
-                  <div className="flex items-start gap-2 rounded-lg bg-green-50 border border-green-200 p-3">
-                    <CheckCircle2 size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="text-xs text-green-800 font-medium">Usuário criado com sucesso</p>
-                      <p className="text-xs text-green-700 mt-1">
-                        O administrador <strong>{createdInfo.adminNome}</strong> já pode fazer login com o usuário <strong>{createdInfo.adminUsername}</strong> e a senha definida.
-                      </p>
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    No primeiro acesso, será obrigatória a troca da senha. Nenhum e-mail foi enviado.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                 <div className="flex items-start gap-2 rounded-lg bg-red-50 border border-red-200 p-3">
-                  <AlertCircle size={16} className="text-red-600 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-xs text-red-800 font-medium">Falha ao criar usuário administrador</p>
-                    {createdInfo.userError && (
-                      <p className="text-xs text-red-700 mt-1">{createdInfo.userError}</p>
-                    )}
-                  </div>
-                </div>
-                {retryError && (
-                  <div className="flex items-start gap-2 rounded-lg bg-red-50 border border-red-200 p-3">
-                    <AlertCircle size={14} className="text-red-600 mt-0.5 flex-shrink-0" />
-                    <p className="text-xs text-red-700">{retryError}</p>
-                  </div>
-                )}
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={async () => {
-                      setRetryingAdmin(true);
-                      setRetryError('');
-                      try {
-                        // Gerar senha aleatória para a nova tentativa
-                        const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
-                        let novaSenha = "";
-                        for (let i = 0; i < 10; i++) novaSenha += chars[Math.floor(Math.random() * chars.length)];
-                        await criarUsuario({
-                          username: createdInfo.adminUsername,
-                          nome: createdInfo.adminNome,
-                          email: createdInfo.adminEmail || null,
-                          role: 'ADMIN_CAMARA',
-                          tenant_id: createdInfo.tenantId,
-                          camara_id: createdInfo.tenantId,
-                          camara_nome: createdInfo.camara?.nome,
-                          senha: novaSenha,
-                          permissoes: {},
-                        });
-                        alert(`Administrador criado com sucesso!\n\nUsuário: ${createdInfo.adminUsername}\nSenha temporária: ${novaSenha}\n\nAnote esta senha.`);
-                        setCreatedInfo(prev => ({ ...prev, userCreated: true, userError: null }));
-                      } catch (err) {
-                        setRetryError(err?.response?.data?.error || err?.message || 'Erro ao tentar novamente.');
-                      } finally {
-                        setRetryingAdmin(false);
-                      }
-                    }}
-                    disabled={retryingAdmin}
-                  >
-                    {retryingAdmin ? 'Tentando...' : 'Tentar criar administrador novamente'}
-                  </Button>
-                  <span className="text-xs text-muted-foreground self-center">
-                    ou crie manualmente em <strong>Gerenciar Usuários</strong>
-                  </span>
-                </div>
-                </div>
-              )}
-            </div>
-          )}
-          <DialogFooter>
-            <Button onClick={() => setCreatedInfo(null)}>Entendido</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

@@ -55,6 +55,7 @@ export default function GerenciarUsuarios() {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [resetandoSenha, setResetandoSenha] = useState(null);
+  const [camarasAtivas, setCamarasAtivas] = useState([]);
 
   const handleResetarSenha = async (e, u) => {
     e.stopPropagation();
@@ -102,6 +103,7 @@ export default function GerenciarUsuarios() {
     foto_url: "", partido_id: "", partido_sigla: "",
     login: "", role: "VEREADOR", tenant_id: tenantId || "",
     status: "Ativo", senha_temporaria: true,
+    camara_id: "", camara_nome: "",
     permissoes: { ...DEFAULT_PERMISSIONS.VEREADOR },
   };
   const [form, setForm] = useState(emptyForm);
@@ -109,7 +111,11 @@ export default function GerenciarUsuarios() {
   useEffect(() => {
     if (!isAdminCamara && !isSuperAdmin) return;
     loadUsuarios();
-    if (isSuperAdmin) sislegisEntities.Camara.list().then(setCamaras).catch(() => {});
+    if (isSuperAdmin) {
+      sislegisEntities.Camara.list().then(setCamaras).catch(() => {});
+      // Carregar câmaras ativas para o select de vínculo
+      sislegisEntities.Camara.filter({ status: 'Ativa' }, 'nome', 200).then(setCamarasAtivas).catch(() => {});
+    }
     const pFilter = withTenant({});
     if (pFilter) sislegisEntities.Partido.filter(pFilter).then(setPartidos).catch(() => {});
   }, [isAdminCamara, isSuperAdmin, tenantId]);
@@ -153,6 +159,8 @@ export default function GerenciarUsuarios() {
       tenant_id: u.tenant_id || tenantId || '',
       status: u.status || 'Ativo',
       senha_temporaria: !!u.senha_temporaria,
+      camara_id: u.camara_id || '',
+      camara_nome: u.camara_nome || '',
       permissoes: u.permissoes || DEFAULT_PERMISSIONS[u.role] || { ...DEFAULT_PERMISSIONS.VEREADOR },
     });
     setOpen(true);
@@ -173,6 +181,8 @@ export default function GerenciarUsuarios() {
       ...f,
       role: newRole,
       permissoes: { ...defaults },
+      camara_id: newRole === 'ADMIN_CAMARA' ? f.camara_id : '',
+      camara_nome: newRole === 'ADMIN_CAMARA' ? f.camara_nome : '',
     }));
   };
 
@@ -184,6 +194,10 @@ export default function GerenciarUsuarios() {
   };
 
   const handleSave = async () => {
+    if (form.role === 'ADMIN_CAMARA' && !form.camara_id) {
+      alert('Selecione a Câmara vinculada para o perfil Admin da Câmara.');
+      return;
+    }
     setSaving(true);
     try {
       if (editing) {
@@ -200,6 +214,8 @@ export default function GerenciarUsuarios() {
           role: form.role,
           tenant_id: form.tenant_id,
           status: form.status,
+          camara_id: form.camara_id || null,
+          camara_nome: form.camara_nome || null,
           permissoes: form.permissoes,
         });
       } else {
@@ -211,6 +227,8 @@ export default function GerenciarUsuarios() {
           role: form.role,
           tenant_id: form.tenant_id,
           senha: form.senha || '',
+          camara_id: form.camara_id || null,
+          camara_nome: form.camara_nome || null,
           permissoes: form.permissoes,
           foto_url: form.foto_url,
           cargo: form.cargo,
@@ -469,8 +487,37 @@ export default function GerenciarUsuarios() {
               )}
             </FormField>
 
-            {/* Câmara — Super Admin */}
-            {isSuperAdmin && camaras.length > 0 && (
+            {/* Câmara vinculada — campo obrigatório para ADMIN_CAMARA */}
+            {form.role === 'ADMIN_CAMARA' && (
+              <FormField label="Câmara vinculada" required>
+                {camarasAtivas.length > 0 ? (
+                  <Select
+                    value={form.camara_id || ""}
+                    onValueChange={v => {
+                      const c = camarasAtivas.find(c => c.id === v);
+                      setForm(f => ({ ...f, camara_id: v, camara_nome: c?.nome || '' }));
+                    }}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Selecione a câmara..." /></SelectTrigger>
+                    <SelectContent>
+                      {camarasAtivas.map(c => (
+                        <SelectItem key={c.id} value={c.id}>{c.nome}{c.municipio ? ` — ${c.municipio}` : ''}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Nenhuma câmara ativa encontrada.</p>
+                )}
+                {form.camara_nome && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Vinculado a: <strong>{form.camara_nome}</strong>
+                  </p>
+                )}
+              </FormField>
+            )}
+
+            {/* Câmara — Super Admin (seleção de tenant) */}
+            {isSuperAdmin && camaras.length > 0 && form.role !== 'ADMIN_CAMARA' && (
               <FormField label="Câmara" required>
                 <Select value={form.tenant_id} onValueChange={v => setForm(f => ({ ...f, tenant_id: v }))}>
                   <SelectTrigger><SelectValue placeholder="Selecione a câmara..." /></SelectTrigger>
