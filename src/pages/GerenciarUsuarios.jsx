@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Users, Plus, Search, Upload, UserCircle, Shield, KeyRound, Loader2 } from "lucide-react";
+import { Users, Plus, Search, Upload, UserCircle, Shield, KeyRound, Loader2, Trash2 } from "lucide-react";
 
 const STATUS_OPTIONS = ["Pendente de Ativação", "Ativo", "Inativo", "Bloqueado", "Pendente"];
 const STATUS_COLOR = { "Pendente de Ativação": "outline", Ativo: "default", Inativo: "secondary", Bloqueado: "destructive", Pendente: "outline" };
@@ -95,6 +95,18 @@ export default function GerenciarUsuarios() {
       alert('Erro ao redefinir senha: ' + (err?.response?.data?.error || err.message));
     } finally {
       setResetandoSenha(null);
+    }
+  };
+
+  const handleDeleteUser = async (e, u) => {
+    e.stopPropagation();
+    const nome = u.nome || u.full_name || u.username || u.email;
+    if (!confirm(`Excluir permanentemente o usuário "${nome}"?\n\nEsta ação é irreversível.`)) return;
+    try {
+      await sislegisEntities.UsuarioSislegis.delete(u.id);
+      await loadUsuarios();
+    } catch (err) {
+      alert('Erro ao excluir: ' + (err?.response?.data?.error || err.message));
     }
   };
 
@@ -254,7 +266,7 @@ export default function GerenciarUsuarios() {
   // Perfis de câmara (ADMIN_CAMARA, VEREADOR, etc.) são criados dentro do contexto da câmara
   const availableRoles = isInChamberContext
     ? PERFIS_ORDER
-    : ['SUPER_ADMIN'];
+    : ['SUPER_ADMIN', 'ADMIN_CAMARA'];
   const isParlamentar = PERFIS_PARTIDO_OBRIGATORIO.includes(form.role);
   const fotoObrigatoria = PERFIS_FOTO_OBRIGATORIA.includes(form.role);
 
@@ -329,6 +341,15 @@ export default function GerenciarUsuarios() {
                       {resetandoSenha === u.id ? <Loader2 size={12} className="animate-spin" /> : <KeyRound size={12} />}
                     </Button>
                   )}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                    onClick={(e) => handleDeleteUser(e, u)}
+                    title="Excluir usuário"
+                  >
+                    <Trash2 size={13} />
+                  </Button>
                   <div className="flex flex-col items-end gap-1.5">
                     <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${ROLE_BADGE_COLOR[u.role] || 'bg-muted text-muted-foreground'}`}>
                       {PERFIL_LABELS[u.role] || u.role}
