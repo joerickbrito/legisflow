@@ -68,6 +68,9 @@ async function getAuthenticatedUser(base44) {
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
+    const body = await req.json();
+    const { username, nome, email, role, tenant_id, camara_id, camara_nome, senha, permissoes, foto_url, cargo, partido_id, partido_sigla, cpf, telefone, status, senha_temporaria, sislegis_token } = body;
+
     let caller = await getAuthenticatedUser(base44);
 
     // Fallback: autenticar via sislegis_token no body
@@ -86,9 +89,6 @@ Deno.serve(async (req) => {
     if (!isSuperAdmin && !callerPermissoes.usuarios_criar) {
       return Response.json({ error: 'Acesso negado. Sem permissão para criar usuários.' }, { status: 403 });
     }
-
-    const body = await req.json();
-    const { username, nome, email, role, tenant_id, camara_id, camara_nome, senha, permissoes, foto_url, cargo, partido_id, partido_sigla, cpf, telefone, status, senha_temporaria, sislegis_token } = body;
 
     if (!username || !nome || !role || !senha) {
       return Response.json({ error: 'Campos obrigatórios: username, nome, role, senha.' }, { status: 400 });

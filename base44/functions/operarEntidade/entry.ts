@@ -54,6 +54,9 @@ async function getAuthenticatedUser(base44) {
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
+    const body = await req.json();
+    const { entity, operation, params, sislegis_token } = body;
+
     let user = await getAuthenticatedUser(base44);
 
     // Fallback: autenticar via sislegis_token no body
@@ -65,9 +68,6 @@ Deno.serve(async (req) => {
     if (!user) {
       return Response.json({ error: 'Não autorizado. Faça login.' }, { status: 401 });
     }
-
-    const body = await req.json();
-    const { entity, operation, params, sislegis_token } = body;
 
     if (!entity || !operation) {
       return Response.json({ error: 'entity e operation são obrigatórios.' }, { status: 400 });
