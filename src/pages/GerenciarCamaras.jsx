@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { criarUsuario } from "@/lib/sislegisApi";
+import { criarUsuario, sislegisEntities } from "@/lib/sislegisApi";
 import { useTenant } from "@/lib/TenantContext";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -83,9 +83,9 @@ export default function GerenciarCamaras() {
 
   useEffect(() => {
     if (isSuperAdmin) {
-      base44.entities.Camara.list("-created_date", 200).then(setCamaras);
+      sislegisEntities.Camara.list("-created_date", 200).then(setCamaras);
       // Carregar contagem de solicitações pendentes
-      base44.entities.SolicitacoesRecuperacaoSenha.filter({ status: 'pendente' }, '-created_date', 200)
+      sislegisEntities.SolicitacoesRecuperacaoSenha.filter({ status: 'pendente' }, '-created_date', 200)
         .then(sols => {
           const counts = {};
           (sols || []).forEach(s => {
@@ -114,17 +114,17 @@ export default function GerenciarCamaras() {
     setOpen(true);
     // Buscar admin da câmara
     try {
-      const admins = await base44.entities.UsuarioSislegis.filter({ username: c.admin_username, tenant_id: c.id });
+      const admins = await sislegisEntities.UsuarioSislegis.filter({ username: c.admin_username, tenant_id: c.id });
       setAdminUser(admins?.[0] || null);
     } catch { setAdminUser(null); }
     // Buscar todos os usuários da câmara
     try {
-      const users = await base44.entities.UsuarioSislegis.filter({ tenant_id: c.id }, 'nome', 200);
+      const users = await sislegisEntities.UsuarioSislegis.filter({ tenant_id: c.id }, 'nome', 200);
       setChamberUsers(users || []);
     } catch { setChamberUsers([]); }
     // Buscar solicitações de recuperação de senha pendentes
     try {
-      const sols = await base44.entities.SolicitacoesRecuperacaoSenha.filter({ tenant_id: c.id, status: 'pendente' }, '-created_date', 50);
+      const sols = await sislegisEntities.SolicitacoesRecuperacaoSenha.filter({ tenant_id: c.id, status: 'pendente' }, '-created_date', 50);
       setSolicitacoes(sols || []);
     } catch { setSolicitacoes([]); }
   };
@@ -143,8 +143,8 @@ export default function GerenciarCamaras() {
     setErrorMsg('');
     try {
       if (editing) {
-        await base44.entities.Camara.update(editing.id, form);
-        setCamaras(await base44.entities.Camara.list("-created_date", 200));
+        await sislegisEntities.Camara.update(editing.id, form);
+        setCamaras(await sislegisEntities.Camara.list("-created_date", 200));
         setOpen(false);
       } else {
         if (!isAdminValid(admin)) {
@@ -154,7 +154,7 @@ export default function GerenciarCamaras() {
         }
 
         // 1. Criar a Câmara
-        const novaCamara = await base44.entities.Camara.create({
+        const novaCamara = await sislegisEntities.Camara.create({
           ...form,
           admin_email: admin.email.trim().toLowerCase() || null,
           admin_username: admin.username.trim(),
@@ -208,7 +208,7 @@ export default function GerenciarCamaras() {
           }
         }
 
-        setCamaras(await base44.entities.Camara.list("-created_date", 200));
+        setCamaras(await sislegisEntities.Camara.list("-created_date", 200));
         setOpen(false);
 
         setCreatedInfo({
@@ -241,7 +241,7 @@ export default function GerenciarCamaras() {
     if (!adminUser || !adminForm.nome.trim() || !adminForm.username.trim()) return;
     setSavingAdmin(true);
     try {
-      await base44.entities.UsuarioSislegis.update(adminUser.id, {
+      await sislegisEntities.UsuarioSislegis.update(adminUser.id, {
         nome: adminForm.nome.trim(),
         username: adminForm.username.trim(),
         status: adminForm.status,
@@ -289,7 +289,7 @@ export default function GerenciarCamaras() {
     if (!editingChamberUser || !chamberUserForm.nome.trim()) return;
     setSavingChamberUser(true);
     try {
-      await base44.entities.UsuarioSislegis.update(editingChamberUser.id, {
+      await sislegisEntities.UsuarioSislegis.update(editingChamberUser.id, {
         nome: chamberUserForm.nome.trim(),
         username: chamberUserForm.username.trim(),
         status: chamberUserForm.status,
@@ -332,7 +332,7 @@ export default function GerenciarCamaras() {
     try {
       const res = await base44.functions.invoke('resetarSenhaSislegis', { usuario_id: sol.usuario_id });
       // Marcar como atendida
-      await base44.entities.SolicitacoesRecuperacaoSenha.update(sol.id, { status: 'atendida' });
+      await sislegisEntities.SolicitacoesRecuperacaoSenha.update(sol.id, { status: 'atendida' });
       const senha = res.data?.senha_temporaria;
       if (senha) {
         alert(`Senha redefinida!\n\nNova senha temporária: ${senha}\n\nComunique ao usuário.`);
@@ -351,7 +351,7 @@ export default function GerenciarCamaras() {
     if (!confirm(`Marcar solicitação de "${sol.usuario_nome || sol.username}" como atendida sem redefinir a senha?`)) return;
     setAtendendoSolicitacao(sol.id);
     try {
-      await base44.entities.SolicitacoesRecuperacaoSenha.update(sol.id, { status: 'atendida' });
+      await sislegisEntities.SolicitacoesRecuperacaoSenha.update(sol.id, { status: 'atendida' });
       setSolicitacoes(prev => prev.filter(s => s.id !== sol.id));
     } catch (e) {
       alert('Erro: ' + (e?.message || 'Erro desconhecido.'));

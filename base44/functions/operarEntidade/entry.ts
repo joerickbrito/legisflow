@@ -8,6 +8,7 @@ const ALLOWED_ENTITIES = [
   'NormaJuridica', 'Emenda', 'EmendaImpositiva', 'AudienciaPublica',
   'DocumentoAdministrativo', 'Oficio', 'Quorum', 'Relatoria',
   'ReuniaoComissao', 'Protocolo', 'LogAuditoria', 'UsuarioSislegis',
+  'SolicitacoesRecuperacaoSenha', 'ConfiguracaoSistema',
   // Entidades auxiliares
   'SessaoLegislativa', 'Mandato', 'Bancada', 'CargoMesa', 'TipoComissao',
   'UnidadeTramitacao', 'Orgao', 'FrentesParlamentares',

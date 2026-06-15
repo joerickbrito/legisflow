@@ -69,7 +69,7 @@ function generateToken() {
  * Retorna o registro único consolidado.
  */
 async function consolidarRegistros(base44, username, tipo) {
-  const registros = await base44.entities.TentativasAcesso.filter({ username, tipo });
+  const registros = await base44.asServiceRole.entities.TentativasAcesso.filter({ username, tipo });
 
   if (registros.length === 0) return null;
 
@@ -89,14 +89,14 @@ async function consolidarRegistros(base44, username, tipo) {
   }
 
   const principal = registros[0];
-  await base44.entities.TentativasAcesso.update(principal.id, {
+  await base44.asServiceRole.entities.TentativasAcesso.update(principal.id, {
     tentativas: totalTentativas,
     bloqueado_ate: bloqueadoAte
   });
 
   // Deletar duplicatas
   for (let i = 1; i < registros.length; i++) {
-    await base44.entities.TentativasAcesso.delete(registros[i].id);
+    await base44.asServiceRole.entities.TentativasAcesso.delete(registros[i].id);
   }
 
   return { ...principal, tentativas: totalTentativas, bloqueado_ate: bloqueadoAte };
@@ -115,7 +115,7 @@ async function verificarRateLimit(base44, username, tipo) {
         return { permitido: false, mensagem: 'Muitas tentativas. Tente novamente em alguns minutos.' };
       }
       // Bloqueio expirado — resetar
-      await base44.entities.TentativasAcesso.update(registro.id, {
+      await base44.asServiceRole.entities.TentativasAcesso.update(registro.id, {
         tentativas: 0, bloqueado_ate: null, ultima_tentativa: null
       });
       return { permitido: true, registro: null };
@@ -136,21 +136,21 @@ async function registrarFalha(base44, username, tipo, registroExistente) {
       const diffMs = Date.now() - ultimaData.getTime();
 
       if (diffMs > JANELA_MINUTOS * 60 * 1000) {
-        await base44.entities.TentativasAcesso.update(registroExistente.id, {
+        await base44.asServiceRole.entities.TentativasAcesso.update(registroExistente.id, {
           tentativas: 1, ultima_tentativa: agora, bloqueado_ate: null
         });
       } else if (novasTentativas >= MAX_TENTATIVAS) {
         const bloqueioAte = new Date(Date.now() + BLOQUEIO_MINUTOS * 60 * 1000).toISOString();
-        await base44.entities.TentativasAcesso.update(registroExistente.id, {
+        await base44.asServiceRole.entities.TentativasAcesso.update(registroExistente.id, {
           tentativas: novasTentativas, ultima_tentativa: agora, bloqueado_ate: bloqueioAte
         });
       } else {
-        await base44.entities.TentativasAcesso.update(registroExistente.id, {
+        await base44.asServiceRole.entities.TentativasAcesso.update(registroExistente.id, {
           tentativas: novasTentativas, ultima_tentativa: agora
         });
       }
     } else {
-      await base44.entities.TentativasAcesso.create({
+      await base44.asServiceRole.entities.TentativasAcesso.create({
         username, tipo, tentativas: 1, ultima_tentativa: agora
       });
     }
@@ -161,9 +161,9 @@ async function registrarFalha(base44, username, tipo, registroExistente) {
 
 async function resetarRateLimit(base44, username, tipo) {
   try {
-    const registros = await base44.entities.TentativasAcesso.filter({ username, tipo });
+    const registros = await base44.asServiceRole.entities.TentativasAcesso.filter({ username, tipo });
     for (const r of registros) {
-      await base44.entities.TentativasAcesso.delete(r.id);
+      await base44.asServiceRole.entities.TentativasAcesso.delete(r.id);
     }
   } catch {
     // Ignorar
@@ -186,7 +186,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: rateCheck.mensagem }, { status: 429 });
     }
 
-    const usuarios = await base44.entities.UsuarioSislegis.filter({
+    const usuarios = await base44.asServiceRole.entities.UsuarioSislegis.filter({
       username: usernameLower
     });
 
@@ -210,7 +210,7 @@ Deno.serve(async (req) => {
     await resetarRateLimit(base44, usernameLower, 'login');
 
     const sessionToken = generateToken();
-    await base44.entities.UsuarioSislegis.update(usuario.id, {
+    await base44.asServiceRole.entities.UsuarioSislegis.update(usuario.id, {
       session_token: sessionToken
     });
 

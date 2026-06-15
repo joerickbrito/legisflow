@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
     const usernameLower = username.trim().toLowerCase();
 
     // Buscar o usuário SisLegis (se existir)
-    const usuarios = await base44.entities.UsuarioSislegis.filter({ username: usernameLower });
+    const usuarios = await base44.asServiceRole.entities.UsuarioSislegis.filter({ username: usernameLower });
 
     if (!usuarios || usuarios.length === 0) {
       // Usuário não existe — não registramos nada, mas retornamos OK
@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
     }
 
     // Verificar se já existe solicitação pendente para este username
-    const existentes = await base44.entities.SolicitacoesRecuperacaoSenha.filter({
+    const existentes = await base44.asServiceRole.entities.SolicitacoesRecuperacaoSenha.filter({
       username: usernameLower,
       status: 'pendente'
     });
@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
     }
 
     // Registrar solicitação
-    await base44.entities.SolicitacoesRecuperacaoSenha.create({
+    await base44.asServiceRole.entities.SolicitacoesRecuperacaoSenha.create({
       username: usernameLower,
       tenant_id: usuario.tenant_id,
       camara_nome: camaraNome || null,

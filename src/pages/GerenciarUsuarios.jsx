@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { criarUsuario, listarUsuariosSislegis, atualizarUsuarioSislegis } from "@/lib/sislegisApi";
+import { criarUsuario, listarUsuariosSislegis, atualizarUsuarioSislegis, sislegisEntities } from "@/lib/sislegisApi";
 import { useTenant } from "@/lib/TenantContext";
 import { PERFIS_ORDER, PERFIL_LABELS, PERFIL_DESCRIPTIONS, DEFAULT_PERMISSIONS, PERMISSION_GROUPS, PERFIS_PARTIDO_OBRIGATORIO, PERFIS_FOTO_OBRIGATORIA } from "@/lib/perfis";
 import PageHeader from "@/components/PageHeader";
@@ -91,9 +91,9 @@ export default function GerenciarUsuarios() {
   useEffect(() => {
     if (!isAdminCamara && !isSuperAdmin) return;
     loadUsuarios();
-    if (isSuperAdmin) base44.entities.Camara.list().then(setCamaras).catch(() => {});
+    if (isSuperAdmin) sislegisEntities.Camara.list().then(setCamaras).catch(() => {});
     const pFilter = withTenant({});
-    if (pFilter) base44.entities.Partido.filter(pFilter).then(setPartidos).catch(() => {});
+    if (pFilter) sislegisEntities.Partido.filter(pFilter).then(setPartidos).catch(() => {});
   }, [isAdminCamara, isSuperAdmin, tenantId]);
 
   const loadUsuarios = async () => {

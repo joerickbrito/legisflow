@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
+import { sislegisEntities } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
 import PageHeader from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -21,8 +22,8 @@ export default function PainelMasterAdmin() {
   const [atendendoSolicitacao, setAtendendoSolicitacao] = useState(null);
 
   useEffect(() => {
-    base44.entities.Camara.list("-created_date", 200).then(setCamaras).finally(() => setLoading(false));
-    base44.entities.SolicitacoesRecuperacaoSenha.filter({ status: 'pendente' }, '-created_date', 100).then(setSolicitacoes).catch(() => {});
+    sislegisEntities.Camara.list("-created_date", 200).then(setCamaras).finally(() => setLoading(false));
+    sislegisEntities.SolicitacoesRecuperacaoSenha.filter({ status: 'pendente' }, '-created_date', 100).then(setSolicitacoes).catch(() => {});
   }, []);
 
   const handleAtenderSol = async (sol) => {
@@ -31,7 +32,7 @@ export default function PainelMasterAdmin() {
     setAtendendoSolicitacao(sol.id);
     try {
       const res = await base44.functions.invoke('resetarSenhaSislegis', { usuario_id: sol.usuario_id });
-      await base44.entities.SolicitacoesRecuperacaoSenha.update(sol.id, { status: 'atendida' });
+      await sislegisEntities.SolicitacoesRecuperacaoSenha.update(sol.id, { status: 'atendida' });
       const senha = res.data?.senha_temporaria;
       alert(senha ? `Nova senha: ${senha}` : 'Senha redefinida.');
       setSolicitacoes(prev => prev.filter(s => s.id !== sol.id));
@@ -46,7 +47,7 @@ export default function PainelMasterAdmin() {
     if (!confirm(`Encerrar a solicitação de "${sol.usuario_nome || sol.username}" sem redefinir senha?`)) return;
     setAtendendoSolicitacao(sol.id);
     try {
-      await base44.entities.SolicitacoesRecuperacaoSenha.update(sol.id, { status: 'atendida' });
+      await sislegisEntities.SolicitacoesRecuperacaoSenha.update(sol.id, { status: 'atendida' });
       setSolicitacoes(prev => prev.filter(s => s.id !== sol.id));
     } catch (e) {
       alert('Erro: ' + (e?.response?.data?.error || e?.message || ''));
@@ -63,13 +64,13 @@ export default function PainelMasterAdmin() {
 
   async function toggleStatus(camara) {
     const next = camara.status === 'Ativa' ? 'Suspensa' : 'Ativa';
-    await base44.entities.Camara.update(camara.id, { status: next });
+    await sislegisEntities.Camara.update(camara.id, { status: next });
     setCamaras(cs => cs.map(c => c.id === camara.id ? { ...c, status: next } : c));
   }
 
   async function deleteCamara(camara) {
     if (!confirm(`Excluir "${camara.nome}"? Esta ação é irreversível.`)) return;
-    await base44.entities.Camara.delete(camara.id);
+    await sislegisEntities.Camara.delete(camara.id);
     setCamaras(cs => cs.filter(c => c.id !== camara.id));
   }
 
