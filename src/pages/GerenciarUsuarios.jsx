@@ -49,6 +49,7 @@ export default function GerenciarUsuarios() {
   const [camaras, setCamaras] = useState([]);
   const [partidos, setPartidos] = useState([]);
   const [search, setSearch] = useState("");
+  const [filterCamara, setFilterCamara] = useState("todas");
   const [filterRole, setFilterRole] = useState("todos");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -135,10 +136,11 @@ export default function GerenciarUsuarios() {
   const loadUsuarios = async () => {
     try {
       const sislegisUsers = await listarUsuariosSislegis({}, 'nome', 500);
-      // Master: apenas SUPER_ADMIN. Câmara: apenas usuários do tenant_id desta câmara.
+      // Câmara: apenas usuários do tenant_id desta câmara.
+      // Master: todos os usuários (todas as câmaras + master)
       setUsuarios(isInChamberContext
         ? (sislegisUsers || []).filter(u => u.tenant_id === tenantId)
-        : (sislegisUsers || []).filter(u => u.role === 'SUPER_ADMIN'));
+        : (sislegisUsers || []));
     } catch (err) {
       console.warn('Erro ao carregar usuários:', err);
     }
@@ -262,8 +264,8 @@ export default function GerenciarUsuarios() {
     }
   };
 
-  // "Usuários Master" (fora do contexto de câmara): apenas SUPER_ADMIN
-  // Perfis de câmara (ADMIN_CAMARA, VEREADOR, etc.) são criados dentro do contexto da câmara
+  // "Usuários" (fora do contexto de câmara): todos os usuários, filtráveis por câmara e perfil
+  // Perfis de câmara (ADMIN_CAMARA, VEREADOR, etc.) podem ser criados também pelo Master Admin
   const availableRoles = isInChamberContext
     ? PERFIS_ORDER
     : ['SUPER_ADMIN', 'ADMIN_CAMARA'];
@@ -274,9 +276,14 @@ export default function GerenciarUsuarios() {
     const matchSearch = (u.nome || u.full_name || '').toLowerCase().includes(search.toLowerCase()) ||
       (u.username || '').toLowerCase().includes(search.toLowerCase()) ||
       (u.email || '').toLowerCase().includes(search.toLowerCase());
+    const matchCamara = isInChamberContext || filterCamara === "todas" || u.tenant_id === filterCamara;
     const matchRole = filterRole === "todos" || u.role === filterRole;
-    return matchSearch && matchRole;
+    return matchSearch && matchCamara && matchRole;
   });
+
+  // Mapeia tenant_id → nome da câmara para exibição no Master
+  const camaraMap = {};
+  camaras.forEach(c => { camaraMap[c.id] = c.nome; });
 
   const todasPermKeys = PERMISSION_GROUPS.flatMap(g => g.keys.map(k => k.key));
 
@@ -284,7 +291,7 @@ export default function GerenciarUsuarios() {
     <div className="p-6 space-y-6">
       <PageHeader
         icon={Users}
-        title={isInChamberContext ? "Usuários da Câmara" : "Usuários Master"}
+        title={isInChamberContext ? "Usuários da Câmara" : "Usuários"}
         subtitle={`${usuarios.length} usuário(s) cadastrado(s)`}
         action={
           (isInChamberContext || isSuperAdmin) && (
@@ -294,11 +301,20 @@ export default function GerenciarUsuarios() {
       />
 
       {/* Filtros */}
-      <div className="flex gap-3">
-        <div className="relative flex-1">
+      <div className="flex gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input className="pl-9" placeholder="Buscar por nome, username ou e-mail..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
+        {!isInChamberContext && (
+          <Select value={filterCamara} onValueChange={setFilterCamara}>
+            <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todas">Todas as câmaras</SelectItem>
+              {camaras.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        )}
         <Select value={filterRole} onValueChange={setFilterRole}>
           <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -327,6 +343,11 @@ export default function GerenciarUsuarios() {
                   <p className="font-medium text-sm truncate">{displayName(u)}</p>
                   <p className="text-xs text-muted-foreground truncate">{u.username || u.email}</p>
                   {u.cargo && <p className="text-xs text-muted-foreground">{u.cargo}</p>}
+                  {!isInChamberContext && u.tenant_id && (
+                    <span className="text-[10px] text-primary/70 bg-primary/5 px-1.5 py-0.5 rounded mt-0.5 inline-block">
+                      {camaraMap[u.tenant_id] || u.camara_nome || u.tenant_id}
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   {isSuperAdmin && (

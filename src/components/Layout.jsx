@@ -38,7 +38,7 @@ const getNavGroups = (user, isInChamberContext) => {
         label: 'Gestão',
         items: [
           { path: '/gerenciar-camaras', icon: Building2, label: 'Câmaras' },
-          { path: '/gerenciar-usuarios', icon: Users, label: 'Usuários Master' },
+          { path: '/gerenciar-usuarios', icon: Users, label: 'Usuários' },
           { path: '/configuracoes', icon: SlidersHorizontal, label: 'Configurações' },
         ]
       },
