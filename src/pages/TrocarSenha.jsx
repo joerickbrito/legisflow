@@ -3,10 +3,10 @@ import { useAuth } from '@/lib/AuthContext';
 import { trocarSenha, getSessionUser } from '@/lib/sislegisApi';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, Scale, Lock, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Scale, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 
 export default function TrocarSenha() {
-  const { refreshUser } = useAuth();
+  const { refreshUser, logout } = useAuth();
   const [senhaAtual, setSenhaAtual] = useState('');
   const [novaSenha, setNovaSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
@@ -54,6 +54,10 @@ export default function TrocarSenha() {
 
   const handleRedefinirPorEmail = async () => {
     setError('Entre em contato com o administrador para redefinir sua senha.');
+  };
+
+  const handleVoltarLogin = () => {
+    logout(true);
   };
 
   return (
@@ -153,13 +157,21 @@ export default function TrocarSenha() {
                 </Button>
               </form>
 
-              <div className="mt-4 text-center">
+              <div className="mt-4 text-center space-y-3">
                 <button
                   onClick={handleRedefinirPorEmail}
                   disabled={loading}
-                  className="text-xs text-slate-500 hover:text-amber-400 transition-colors"
+                  className="text-xs text-slate-500 hover:text-amber-400 transition-colors block w-full"
                 >
                   Não sabe a senha atual? Redefinir por e-mail
+                </button>
+                <button
+                  onClick={handleVoltarLogin}
+                  disabled={loading}
+                  className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors"
+                >
+                  <ArrowLeft size={14} />
+                  Voltar para a tela de login
                 </button>
               </div>
             </>

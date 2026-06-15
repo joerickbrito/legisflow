@@ -59,12 +59,30 @@ export default function GerenciarUsuarios() {
   const handleResetarSenha = async (e, u) => {
     e.stopPropagation();
     const nome = u.nome || u.full_name || u.email || u.username;
-    if (!confirm(`Deseja redefinir a senha de ${nome}?\n\nUma nova senha temporária será gerada e o usuário deverá trocá-la no próximo acesso.`)) return;
+
+    // Prompt para o admin definir a senha (ou deixar em branco para geração automática)
+    const senhaEscolhida = prompt(
+      `Redefinir senha de ${nome}\n\nDigite a nova senha temporária (mínimo 6 caracteres) ou deixe em branco para gerar automaticamente:`
+    );
+
+    // Se o usuário clicou Cancelar, abortar
+    if (senhaEscolhida === null) return;
+
+    // Se digitou algo mas menos de 6 caracteres
+    if (senhaEscolhida.trim() !== '' && senhaEscolhida.trim().length < 6) {
+      alert('A senha deve ter pelo menos 6 caracteres.');
+      return;
+    }
+
+    if (!confirm(`Confirma a redefinição de senha de ${nome}?\n\n${senhaEscolhida.trim() ? 'Senha definida: ' + senhaEscolhida.trim() : 'Uma senha aleatória será gerada.'}\n\nO usuário deverá trocá-la no próximo acesso.`)) return;
+
     setResetandoSenha(u.id);
     try {
-      const res = await base44.functions.invoke('resetarSenhaSislegis', {
-        usuario_id: u.id,
-      });
+      const payload = { usuario_id: u.id };
+      if (senhaEscolhida.trim()) {
+        payload.nova_senha = senhaEscolhida.trim();
+      }
+      const res = await base44.functions.invoke('resetarSenhaSislegis', payload);
       const senhaGerada = res.data?.senha_temporaria;
       if (senhaGerada) {
         alert(`Senha de ${nome} redefinida com sucesso.\n\nNova senha temporária: ${senhaGerada}\n\nAnote esta senha e repasse ao usuário. Ela não será exibida novamente.`);
