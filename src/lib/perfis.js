@@ -290,6 +290,10 @@ export const MENU_PERMISSION_MAP = {
   '/auditoria': 'auditoria_logs',
 
   // Processo Legislativo
+  '/proposicoes': 'projetos_lei_visualizar',
+  '/materias': 'projetos_lei_visualizar',
+  '/tramitacoes': 'projetos_lei_visualizar',
+  '/pareceres': 'projetos_lei_visualizar',
   '/projetos-lei': 'projetos_lei_visualizar',
   '/leis': 'leis_visualizar',
   '/resolucoes': 'resolucoes_visualizar',
@@ -311,6 +315,7 @@ export const MENU_PERMISSION_MAP = {
 
   // Outros
   '/audiencias': 'audiencias_visualizar',
+  '/protocolo': 'documentos_visualizar',
   '/documentos': 'documentos_visualizar',
   '/oficios': 'documentos_visualizar',
   '/transparencia': 'estrutura_visualizar',

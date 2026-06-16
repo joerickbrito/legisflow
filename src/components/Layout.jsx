@@ -79,6 +79,12 @@ const getNavGroups = (user, isInChamberContext) => {
         { path: '/decretos', icon: Stamp, label: 'Decretos' },
         { path: '/portarias', icon: BookMarked, label: 'Portarias' },
         { path: '/emendas-impositivas', icon: DollarSign, label: 'Emendas Impositivas' },
+        { path: '/proposicoes', icon: FolderOpen, label: 'Proposições' },
+        { path: '/materias', icon: ScrollText, label: 'Matérias Legislativas' },
+        { path: '/tramitacoes', icon: ArrowLeftRight, label: 'Tramitações' },
+        { path: '/pareceres', icon: MessageSquare, label: 'Pareceres' },
+        { path: '/normas', icon: Scale, label: 'Normas Jurídicas' },
+        { path: '/emendas', icon: FileDiff, label: 'Emendas' },
       ]),
     },
     {
@@ -87,6 +93,8 @@ const getNavGroups = (user, isInChamberContext) => {
         { path: '/sessoes', icon: Calendar, label: 'Sessões Plenárias' },
         { path: '/painel-eletronico', icon: Monitor, label: 'Painel Eletrônico', highlight: true },
         { path: '/quorum', icon: UserCheck, label: 'Controle de Presença' },
+        { path: '/votacao', icon: Vote, label: 'Votações' },
+        { path: '/reuniao-comissao', icon: UsersRound, label: 'Reuniões de Comissão' },
       ]),
     },
     {
@@ -95,6 +103,9 @@ const getNavGroups = (user, isInChamberContext) => {
         { path: '/atas-sessoes', icon: BookOpen, label: 'Atas das Sessões' },
         { path: '/pautas-sessoes', icon: ClipboardList, label: 'Pautas' },
         { path: '/audiencias', icon: Users, label: 'Audiências Públicas' },
+        { path: '/protocolo', icon: Inbox, label: 'Protocolo' },
+        { path: '/documentos', icon: FolderOpen, label: 'Documentos Administrativos' },
+        { path: '/oficios', icon: Mail, label: 'Ofícios' },
       ]),
     },
     {
