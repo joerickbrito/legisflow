@@ -87,6 +87,7 @@ const AuthenticatedApp = () => {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/trocar-senha" element={<TrocarSenha />} />
+      <Route path="/transparencia" element={<Transparencia />} />
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         <Route element={<Layout />}>
           <Route path="/" element={<Dashboard />} />
@@ -106,7 +107,6 @@ const AuthenticatedApp = () => {
           <Route path="/votacao" element={<Votacao />} />
           <Route path="/normas" element={<Normas />} />
           <Route path="/documentos" element={<Documentos />} />
-          <Route path="/transparencia" element={<Transparencia />} />
           <Route path="/relatorios" element={<Relatorios />} />
           <Route path="/painel-eletronico" element={<PainelEletronico />} />
           <Route path="/quorum" element={<Quorum />} />
