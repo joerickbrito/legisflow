@@ -88,9 +88,9 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Acesso negado. Perfil sem permissão de escrita.' }, { status: 403 });
     }
 
-    // Apenas SUPER_ADMIN pode excluir registros
-    if (operation === 'delete' && !isSuperAdmin) {
-      return Response.json({ error: 'Acesso negado. Apenas Master Admin pode excluir registros.' }, { status: 403 });
+    // Apenas SUPER_ADMIN e ADMIN_CAMARA podem excluir registros
+    if (operation === 'delete' && !isSuperAdmin && !isAdminCamara) {
+      return Response.json({ error: 'Acesso negado. Sem permissão para excluir registros.' }, { status: 403 });
     }
 
     switch (operation) {
@@ -158,7 +158,13 @@ Deno.serve(async (req) => {
       case 'delete': {
         const results = await base44.asServiceRole.entities[entity].filter({ id: params.id }, null, 1);
         if (!results || results.length === 0) {
-          return Response.json({ error: 'Registro não encontrado (v3).' }, { status: 404 });
+          return Response.json({ error: 'Registro não encontrado.' }, { status: 404 });
+        }
+        const existing = results[0];
+        // SUPER_ADMIN pode excluir qualquer registro
+        // ADMIN_CAMARA só pode excluir registros da própria câmara
+        if (!isSuperAdmin && existing.tenant_id && existing.tenant_id !== user.tenant_id) {
+          return Response.json({ error: 'Acesso negado. Registro de outra câmara.' }, { status: 403 });
         }
         await base44.asServiceRole.entities[entity].delete(params.id);
         return Response.json({ data: { id: params.id, deleted: true } });
