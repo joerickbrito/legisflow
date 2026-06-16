@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { base44 } from '@/api/base44Client';
+import { sislegisEntities } from '@/lib/sislegisApi';
 import { useAuth } from '@/lib/AuthContext';
 import { createAuditor } from '@/lib/auditoria';
 import { PERFIS, PERFIL_LABELS, DEFAULT_PERMISSIONS } from '@/lib/perfis';
@@ -80,7 +80,7 @@ export function TenantProvider({ children }) {
   const loadCamara = async (tenantId) => {
     setLoadingCamara(true);
     try {
-      const list = await base44.entities.Camara.list('-created_date', 200);
+      const list = await sislegisEntities.Camara.list('-created_date', 200);
       const found = list.find(c => c.id === tenantId);
       if (found) setCamara(found);
     } catch (e) {
@@ -100,7 +100,7 @@ export function TenantProvider({ children }) {
 
   // Entrar no contexto de uma câmara (apenas SUPER_ADMIN)
   const enterCamara = async (camaraData) => {
-    const c = camaraData.id ? camaraData : await base44.entities.Camara.list('-created_date', 200).then(list => list.find(x => x.id === camaraData));
+    const c = camaraData.id ? camaraData : await sislegisEntities.Camara.list('-created_date', 200).then(list => list.find(x => x.id === camaraData));
     if (!c) return;
     setActiveCamara(c);
     return c;
