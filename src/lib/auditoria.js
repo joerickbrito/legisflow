@@ -1,4 +1,4 @@
-import { base44 } from '@/api/base44Client';
+import { sislegisEntities } from '@/lib/sislegisApi';
 
 /**
  * Tenta obter o IP do cliente via serviço público.
@@ -45,7 +45,7 @@ export async function registrarAuditoria({
     const data_hora = new Date().toISOString();
     const user_agent = navigator?.userAgent?.slice(0, 200) || '';
 
-    await base44.entities.LogAuditoria.create({
+    await sislegisEntities.LogAuditoria.create({
       acao,
       modulo,
       registro_id: registro_id || '',
