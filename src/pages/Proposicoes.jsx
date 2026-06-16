@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { sislegisEntities } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
 import { useAuth } from '@/lib/AuthContext';
 import { registrarAuditoria } from '@/lib/auditoria';
@@ -51,9 +51,9 @@ export default function Proposicoes() {
   async function load() {
     const filter = withTenant({});
     if (!filter) return;
-    try { const p = await base44.entities.Proposicao.filter(filter, '-created_date', 100); setProposicoes(p); } catch (e) { console.error('Erro ao carregar proposições:', e); }
-    try { const parl = await base44.entities.Parlamentar.filter({ ...filter, ativo: true }); setParlamentares(parl); } catch (e) { console.error('Erro ao carregar parlamentares:', e); }
-    try { const tipos = await base44.entities.TipoMateria.filter({ ...filter, ativo: true }, 'ordem', 50); setTiposMateria(tipos.length > 0 ? tipos.map(t => t.nome) : TIPOS_DEFAULT); } catch (e) { console.error('Erro ao carregar tipos:', e); }
+    try { const p = await sislegisEntities.Proposicao.filter(filter, '-created_date', 100); setProposicoes(p); } catch (e) { console.error('Erro ao carregar proposições:', e); }
+    try { const parl = await sislegisEntities.Parlamentar.filter({ ...filter, ativo: true }); setParlamentares(parl); } catch (e) { console.error('Erro ao carregar parlamentares:', e); }
+    try { const tipos = await sislegisEntities.TipoMateria.filter({ ...filter, ativo: true }, 'ordem', 50); setTiposMateria(tipos.length > 0 ? tipos.map(t => t.nome) : TIPOS_DEFAULT); } catch (e) { console.error('Erro ao carregar tipos:', e); }
   }
 
   async function salvar() {
@@ -63,9 +63,9 @@ export default function Proposicoes() {
       const autor = parlamentares.find(p => p.id === form.autor_id);
       const payload = { ...form, autor_nome: autor?.nome || form.autor_nome, tenant_id: tenantId || '', status: 'Rascunho' };
       if (editando) {
-        await base44.entities.Proposicao.update(editando.id, payload);
+        await sislegisEntities.Proposicao.update(editando.id, payload);
       } else {
-        await base44.entities.Proposicao.create(payload);
+        await sislegisEntities.Proposicao.create(payload);
       }
       try { await registrarAuditoria({ acao: editando ? 'EDITAR' : 'CRIAR', modulo: 'Proposicao', descricao: `Proposição: ${form.ementa.substring(0, 60)}`, tenant_id: tenantId, user }); } catch (e) { /* auditoria não deve bloquear */ }
       setShowForm(false);
@@ -80,9 +80,9 @@ export default function Proposicoes() {
 
   async function protocolar(p) {
     const numero = `${String(proposicoes.filter(x => x.status !== 'Rascunho').length + 1).padStart(4, '0')}/${new Date().getFullYear()}`;
-    await base44.entities.Proposicao.update(p.id, { status: 'Protocolada', numero_protocolo: numero, data_protocolo: format(new Date(), 'yyyy-MM-dd') });
+    await sislegisEntities.Proposicao.update(p.id, { status: 'Protocolada', numero_protocolo: numero, data_protocolo: format(new Date(), 'yyyy-MM-dd') });
     // Criar registro de protocolo
-    await base44.entities.Protocolo.create({
+    await sislegisEntities.Protocolo.create({
       tenant_id: tenantId || '',
       numero,
       ano: new Date().getFullYear(),
@@ -102,12 +102,12 @@ export default function Proposicoes() {
 
   async function processarRecepcao() {
     if (receberForm.acao === 'receber') {
-      await base44.entities.Proposicao.update(selecionada.id, { status: 'Recebida', obs_recepcao: receberForm.motivo });
+      await sislegisEntities.Proposicao.update(selecionada.id, { status: 'Recebida', obs_recepcao: receberForm.motivo });
     } else if (receberForm.acao === 'rejeitar') {
-      await base44.entities.Proposicao.update(selecionada.id, { status: 'Rejeitada', obs_recepcao: receberForm.motivo });
+      await sislegisEntities.Proposicao.update(selecionada.id, { status: 'Rejeitada', obs_recepcao: receberForm.motivo });
     } else if (receberForm.acao === 'transformar') {
       // Transformar em matéria legislativa
-      const novaMateria = await base44.entities.Materia.create({
+      const novaMateria = await sislegisEntities.Materia.create({
         tenant_id: tenantId || '',
         tipo: selecionada.tipo,
         ementa: selecionada.ementa,
@@ -122,9 +122,9 @@ export default function Proposicoes() {
         protocolo_id: selecionada.protocolo_id || '',
         ano: new Date().getFullYear(),
       });
-      await base44.entities.Proposicao.update(selecionada.id, { status: 'Transformada em Matéria Legislativa', materia_id: novaMateria.id });
+      await sislegisEntities.Proposicao.update(selecionada.id, { status: 'Transformada em Matéria Legislativa', materia_id: novaMateria.id });
       // Registrar primeira tramitação
-      await base44.entities.Tramitacao.create({
+      await sislegisEntities.Tramitacao.create({
         tenant_id: tenantId || '',
         materia_id: novaMateria.id,
         materia_ementa: novaMateria.ementa,

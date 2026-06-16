@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { sislegisEntities } from '@/lib/sislegisApi';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ArrowRight, AlertCircle } from 'lucide-react';
@@ -10,7 +10,7 @@ export default function TramitacaoTimeline({ materiaId }) {
 
   useEffect(() => {
     if (!materiaId) return;
-    base44.entities.Tramitacao.filter({ materia_id: materiaId }, 'created_date', 50).then(data => {
+    sislegisEntities.Tramitacao.filter({ materia_id: materiaId }, 'created_date', 50).then(data => {
       setTramitacoes(data);
       setLoading(false);
     });

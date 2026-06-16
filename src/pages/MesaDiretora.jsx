@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { sislegisEntities } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
 import { Gavel, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -29,10 +29,10 @@ export default function MesaDiretora() {
   async function load() {
     const filter = withTenant();
     if (!filter) return;
-    try { const m = await base44.entities.MesaDiretora.filter(filter, '-created_date'); setMesas(m); } catch (e) { console.error('Erro ao carregar mesas:', e); }
-    try { const p = await base44.entities.Parlamentar.filter({ ...filter, ativo: true }); setParlamentares(p); } catch (e) { console.error('Erro ao carregar parlamentares:', e); }
-    try { const l = await base44.entities.Legislatura.filter(filter); setLegislaturas(l); } catch (e) { console.error('Erro ao carregar legislaturas:', e); }
-    try { const sl = await base44.entities.SessaoLegislativa.filter(filter, '-ano'); setSessoesLeg(sl); } catch (e) { console.error('Erro ao carregar sessões:', e); }
+    try { const m = await sislegisEntities.MesaDiretora.filter(filter, '-created_date'); setMesas(m); } catch (e) { console.error('Erro ao carregar mesas:', e); }
+    try { const p = await sislegisEntities.Parlamentar.filter({ ...filter, ativo: true }); setParlamentares(p); } catch (e) { console.error('Erro ao carregar parlamentares:', e); }
+    try { const l = await sislegisEntities.Legislatura.filter(filter); setLegislaturas(l); } catch (e) { console.error('Erro ao carregar legislaturas:', e); }
+    try { const sl = await sislegisEntities.SessaoLegislativa.filter(filter, '-ano'); setSessoesLeg(sl); } catch (e) { console.error('Erro ao carregar sessões:', e); }
   }
 
   function setParlamentarCargo(cargo, id) {
@@ -53,8 +53,8 @@ export default function MesaDiretora() {
     try {
       const leg = legislaturas.find(l => l.id === form.legislatura_id);
       const data = { ...form, tenant_id: tenantId, legislatura_numero: leg?.numero };
-      if (editando) await base44.entities.MesaDiretora.update(editando.id, data);
-      else await base44.entities.MesaDiretora.create(data);
+      if (editando) await sislegisEntities.MesaDiretora.update(editando.id, data);
+      else await sislegisEntities.MesaDiretora.create(data);
       setShowForm(false);
       setErrorMsg('');
       load();

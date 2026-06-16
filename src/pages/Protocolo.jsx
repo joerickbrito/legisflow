@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { sislegisEntities } from '@/lib/sislegisApi';
 import { Plus, Inbox, Search } from 'lucide-react';
 import { useTenant } from '@/lib/TenantContext';
 import { Button } from '@/components/ui/button';
@@ -23,7 +23,7 @@ export default function Protocolo() {
   useEffect(() => { if (canQuery) loadData(); }, [tenantId, canQuery]);
 
   async function loadData() {
-    const p = await base44.entities.Protocolo.filter(withTenant({}), '-created_date', 100);
+    const p = await sislegisEntities.Protocolo.filter(withTenant({}), '-created_date', 100);
     setProtocolos(p);
   }
 
@@ -40,8 +40,8 @@ export default function Protocolo() {
   }
 
   async function salvar() {
-    if (editando) await base44.entities.Protocolo.update(editando.id, form);
-    else await base44.entities.Protocolo.create({ ...form, tenant_id: tenantId || '', numero: String(protocolos.length + 1).padStart(4, '0'), ano: new Date().getFullYear() });
+    if (editando) await sislegisEntities.Protocolo.update(editando.id, form);
+    else await sislegisEntities.Protocolo.create({ ...form, tenant_id: tenantId || '', numero: String(protocolos.length + 1).padStart(4, '0'), ano: new Date().getFullYear() });
     setShowForm(false);
     loadData();
   }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { sislegisEntities } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
 import PageHeader from '@/components/PageHeader';
 import EmptyState from '@/components/EmptyState';
@@ -34,7 +34,7 @@ export default function NormaSimples({ tipo, icon: Icon, title, subtitle, addLab
 
   useEffect(() => {
     if (!canQuery) return;
-    base44.entities.NormaJuridica.filter(withTenant({ tipo })).then(setItems);
+    sislegisEntities.NormaJuridica.filter(withTenant({ tipo })).then(setItems);
   }, [canQuery, tenantId]);
 
   const filtered = items.filter(i =>
@@ -49,9 +49,9 @@ export default function NormaSimples({ tipo, icon: Icon, title, subtitle, addLab
     setErrorMsg('');
     try {
       const data = { ...form, tipo, tenant_id: tenantId || '' };
-      if (editing) await base44.entities.NormaJuridica.update(editing, data);
-      else await base44.entities.NormaJuridica.create(data);
-      const updated = await base44.entities.NormaJuridica.filter(withTenant({ tipo }));
+      if (editing) await sislegisEntities.NormaJuridica.update(editing, data);
+      else await sislegisEntities.NormaJuridica.create(data);
+      const updated = await sislegisEntities.NormaJuridica.filter(withTenant({ tipo }));
       setItems(updated);
       setOpen(false);
       setErrorMsg('');
@@ -65,7 +65,7 @@ export default function NormaSimples({ tipo, icon: Icon, title, subtitle, addLab
   const remove = async (id) => {
     if (!confirm('Tem certeza que deseja excluir este registro?')) return;
     try {
-      await base44.entities.NormaJuridica.delete(id);
+      await sislegisEntities.NormaJuridica.delete(id);
       setItems(items.filter(i => i.id !== id));
     } catch (e) {
       setErrorMsg(e?.message || 'Erro ao excluir registro.');

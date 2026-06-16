@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { sislegisEntities } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
 import { Plus, Users, Search, Mail, Phone, Upload, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -39,9 +40,9 @@ export default function Parlamentares() {
   async function loadData() {
     const filter = withTenant({});
     const [p, part, legs] = await Promise.all([
-      base44.entities.Parlamentar.filter(filter, 'nome', 100),
-      base44.entities.Partido.filter(filter, 'sigla', 50).catch(() => []),
-      base44.entities.Legislatura.filter(filter, '-numero', 20).catch(() => []),
+      sislegisEntities.Parlamentar.filter(filter, 'nome', 100),
+      sislegisEntities.Partido.filter(filter, 'sigla', 50).catch(() => []),
+      sislegisEntities.Legislatura.filter(filter, '-numero', 20).catch(() => []),
     ]);
     setParlamentares(p);
     setPartidos(part);
@@ -70,8 +71,8 @@ export default function Parlamentares() {
     setErrorMsg('');
     try {
       const data = { ...form, ativo: form.situacao === 'Ativo' };
-      if (editando) await base44.entities.Parlamentar.update(editando.id, data);
-      else await base44.entities.Parlamentar.create(data);
+      if (editando) await sislegisEntities.Parlamentar.update(editando.id, data);
+      else await sislegisEntities.Parlamentar.create(data);
       setShowForm(false);
       setErrorMsg('');
       loadData();

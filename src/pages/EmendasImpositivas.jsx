@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { sislegisEntities } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
 import PageHeader from '@/components/PageHeader';
 import EmptyState from '@/components/EmptyState';
@@ -25,8 +25,8 @@ export default function EmendasImpositivas() {
 
   useEffect(() => {
     if (!canQuery) return;
-    base44.entities.EmendaImpositiva.filter(withTenant({})).then(setItems);
-    base44.entities.Parlamentar.filter(withTenant({ ativo: true })).then(setParlamentares);
+    sislegisEntities.EmendaImpositiva.filter(withTenant({})).then(setItems);
+    sislegisEntities.Parlamentar.filter(withTenant({ ativo: true })).then(setParlamentares);
   }, [canQuery, tenant]);
 
   const filtered = items.filter(i =>
@@ -54,9 +54,9 @@ export default function EmendasImpositivas() {
     setErrorMsg('');
     try {
       const data = { ...form, tenant_id: tenant?.id, valor: form.valor ? Number(form.valor) : null };
-      if (editing) await base44.entities.EmendaImpositiva.update(editing, data);
-      else await base44.entities.EmendaImpositiva.create(data);
-      const updated = await base44.entities.EmendaImpositiva.filter(withTenant({}));
+      if (editing) await sislegisEntities.EmendaImpositiva.update(editing, data);
+      else await sislegisEntities.EmendaImpositiva.create(data);
+      const updated = await sislegisEntities.EmendaImpositiva.filter(withTenant({}));
       setItems(updated);
       setOpen(false);
       setErrorMsg('');
@@ -70,7 +70,7 @@ export default function EmendasImpositivas() {
   const remove = async (id) => {
     if (!confirm('Tem certeza que deseja excluir esta emenda?')) return;
     try {
-      await base44.entities.EmendaImpositiva.delete(id);
+      await sislegisEntities.EmendaImpositiva.delete(id);
       setItems(items.filter(i => i.id !== id));
     } catch (e) {
       setErrorMsg(e?.message || 'Erro ao excluir emenda.');

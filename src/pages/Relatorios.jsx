@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { sislegisEntities } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
 import { BarChart3, TrendingUp, Users, FileText, Vote } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
@@ -18,10 +18,10 @@ export default function Relatorios() {
       const filter = withTenant();
       if (!filter) { setLoading(false); return; }
       const result = { materias: [], parlamentares: [], votacoes: [], sessoes: [] };
-      try { result.materias = await base44.entities.Materia.filter(filter, '-created_date', 500); } catch (e) { console.error('Erro matérias:', e); }
-      try { result.parlamentares = await base44.entities.Parlamentar.filter({ ...filter, ativo: true }); } catch (e) { console.error('Erro parlamentares:', e); }
-      try { result.votacoes = await base44.entities.Votacao.filter(filter, '-created_date', 200); } catch (e) { console.error('Erro votações:', e); }
-      try { result.sessoes = await base44.entities.Sessao.filter(filter, '-data', 100); } catch (e) { console.error('Erro sessões:', e); }
+      try { result.materias = await sislegisEntities.Materia.filter(filter, '-created_date', 500); } catch (e) { console.error('Erro matérias:', e); }
+      try { result.parlamentares = await sislegisEntities.Parlamentar.filter({ ...filter, ativo: true }); } catch (e) { console.error('Erro parlamentares:', e); }
+      try { result.votacoes = await sislegisEntities.Votacao.filter(filter, '-created_date', 200); } catch (e) { console.error('Erro votações:', e); }
+      try { result.sessoes = await sislegisEntities.Sessao.filter(filter, '-data', 100); } catch (e) { console.error('Erro sessões:', e); }
       setData(result);
       setLoading(false);
     }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { sislegisEntities } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
 import { FolderOpen, Plus, Search } from 'lucide-react';
 import FileUpload from '@/components/FileUpload';
@@ -28,15 +28,15 @@ export default function Documentos() {
   async function load() {
     const filter = withTenant();
     if (!filter) return;
-    const d = await base44.entities.DocumentoAdministrativo.filter(filter, '-created_date', 100);
+    const d = await sislegisEntities.DocumentoAdministrativo.filter(filter, '-created_date', 100);
     setDocumentos(d);
   }
 
   async function salvar() {
     if (!form.assunto) return;
     const data = { ...form, tenant_id: tenantId };
-    if (editando) await base44.entities.DocumentoAdministrativo.update(editando.id, data);
-    else await base44.entities.DocumentoAdministrativo.create(data);
+    if (editando) await sislegisEntities.DocumentoAdministrativo.update(editando.id, data);
+    else await sislegisEntities.DocumentoAdministrativo.create(data);
     setShowForm(false);
     load();
   }

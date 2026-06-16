@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { sislegisEntities } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
 import { Plus, Building2, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -29,8 +29,8 @@ export default function Comissoes() {
   async function loadData() {
     const filter = withTenant({});
     if (!filter) return;
-    try { const c = await base44.entities.Comissao.filter(filter, '-created_date', 50); setComissoes(c); } catch (e) { console.error('Erro ao carregar comissões:', e); }
-    try { const p = await base44.entities.Parlamentar.filter({ ...filter, ativo: true }); setParlamentares(p); } catch (e) { console.error('Erro ao carregar parlamentares:', e); }
+    try { const c = await sislegisEntities.Comissao.filter(filter, '-created_date', 50); setComissoes(c); } catch (e) { console.error('Erro ao carregar comissões:', e); }
+    try { const p = await sislegisEntities.Parlamentar.filter({ ...filter, ativo: true }); setParlamentares(p); } catch (e) { console.error('Erro ao carregar parlamentares:', e); }
   }
 
   function openNew() {
@@ -49,8 +49,8 @@ export default function Comissoes() {
     setSaving(true);
     setErrorMsg('');
     try {
-      if (editando) await base44.entities.Comissao.update(editando.id, form);
-      else await base44.entities.Comissao.create(form);
+      if (editando) await sislegisEntities.Comissao.update(editando.id, form);
+      else await sislegisEntities.Comissao.create(form);
       setShowForm(false);
       setErrorMsg('');
       loadData();

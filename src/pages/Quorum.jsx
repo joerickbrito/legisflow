@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { sislegisEntities } from "@/lib/sislegisApi";
 import { useTenant } from "@/lib/TenantContext";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -21,18 +21,18 @@ export default function Quorum() {
     if (!canQuery) return;
     const filter = withTenant();
     if (!filter) return;
-    base44.entities.Quorum.filter(filter, "-created_date", 50).then(setRegistros);
-    base44.entities.Sessao.filter(filter, "-created_date", 20).then(setSessoes);
-    base44.entities.Parlamentar.filter(filter).then(setParlamentares);
+    sislegisEntities.Quorum.filter(filter, "-created_date", 50).then(setRegistros);
+    sislegisEntities.Sessao.filter(filter, "-created_date", 20).then(setSessoes);
+    sislegisEntities.Parlamentar.filter(filter).then(setParlamentares);
   }, [canQuery]);
 
   const handleSave = async () => {
     const presentes = form.registro_presencas.filter(p => p.status === "Presente").length;
     const ausentes = form.total_parlamentares - presentes;
     const quorum_atingido = presentes >= form.quorum_minimo;
-    await base44.entities.Quorum.create({ ...form, tenant_id: tenantId, presentes, ausentes, quorum_atingido });
+    await sislegisEntities.Quorum.create({ ...form, tenant_id: tenantId, presentes, ausentes, quorum_atingido });
     const filter = withTenant();
-    const updated = filter ? await base44.entities.Quorum.filter(filter, "-created_date", 50) : [];
+    const updated = filter ? await sislegisEntities.Quorum.filter(filter, "-created_date", 50) : [];
     setRegistros(updated);
     setOpen(false);
   };

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { sislegisEntities } from '@/lib/sislegisApi';
 import { Scale, Plus, Users } from 'lucide-react';
 import { useTenant } from '@/lib/TenantContext';
 import { Button } from '@/components/ui/button';
@@ -28,9 +28,9 @@ export default function Partidos() {
   async function load() {
     const filter = withTenant({});
     const [p, b, parl] = await Promise.all([
-      base44.entities.Partido.filter(filter),
-      base44.entities.Bancada.filter(filter),
-      base44.entities.Parlamentar.filter({ ...filter, ativo: true }),
+      sislegisEntities.Partido.filter(filter),
+      sislegisEntities.Bancada.filter(filter),
+      sislegisEntities.Parlamentar.filter({ ...filter, ativo: true }),
     ]);
     setPartidos(p);
     setBancadas(b);
@@ -41,8 +41,8 @@ export default function Partidos() {
     setSaving(true);
     setErrorMsg('');
     try {
-      if (editando) await base44.entities.Partido.update(editando.id, form);
-      else await base44.entities.Partido.create({ ...form, tenant_id: tenantId || '' });
+      if (editando) await sislegisEntities.Partido.update(editando.id, form);
+      else await sislegisEntities.Partido.create({ ...form, tenant_id: tenantId || '' });
       setShowForm(false);
       setErrorMsg('');
       load();
@@ -57,7 +57,7 @@ export default function Partidos() {
     setSaving(true);
     setErrorMsg('');
     try {
-      await base44.entities.Bancada.create({ ...bancadaForm, tenant_id: tenantId || '' });
+      await sislegisEntities.Bancada.create({ ...bancadaForm, tenant_id: tenantId || '' });
       setShowBancada(false);
       setErrorMsg('');
       load();

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { sislegisEntities } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
 import PageHeader from '@/components/PageHeader';
 import EmptyState from '@/components/EmptyState';
@@ -25,8 +25,8 @@ export default function AtasSessoes() {
 
   useEffect(() => {
     if (!canQuery) return;
-    base44.entities.AtaSessao.filter(withTenant({})).then(setItems);
-    base44.entities.Sessao.filter(withTenant({})).then(setSessoes);
+    sislegisEntities.AtaSessao.filter(withTenant({})).then(setItems);
+    sislegisEntities.Sessao.filter(withTenant({})).then(setSessoes);
   }, [canQuery, tenant]);
 
   const filtered = items.filter(i =>
@@ -46,9 +46,9 @@ export default function AtasSessoes() {
     setErrorMsg('');
     try {
       const data = { ...form, tenant_id: tenant?.id };
-      if (editing) await base44.entities.AtaSessao.update(editing, data);
-      else await base44.entities.AtaSessao.create(data);
-      const updated = await base44.entities.AtaSessao.filter(withTenant({}));
+      if (editing) await sislegisEntities.AtaSessao.update(editing, data);
+      else await sislegisEntities.AtaSessao.create(data);
+      const updated = await sislegisEntities.AtaSessao.filter(withTenant({}));
       setItems(updated);
       setOpen(false);
       setErrorMsg('');
@@ -62,7 +62,7 @@ export default function AtasSessoes() {
   const remove = async (id) => {
     if (!confirm('Tem certeza que deseja excluir esta ata?')) return;
     try {
-      await base44.entities.AtaSessao.delete(id);
+      await sislegisEntities.AtaSessao.delete(id);
       setItems(items.filter(i => i.id !== id));
     } catch (e) {
       setErrorMsg(e?.message || 'Erro ao excluir ata.');

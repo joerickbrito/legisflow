@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { sislegisEntities } from '@/lib/sislegisApi';
 import { Plus, Search, FileText, ChevronDown, GitMerge, AlertCircle, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,9 +41,9 @@ export default function Materias() {
   async function loadData() {
     const filter = withTenant({});
     if (!filter) { setLoading(false); return; }
-    try { const m = await base44.entities.Materia.filter(filter, '-created_date', 100); setMaterias(m); } catch (e) { console.error('Erro ao carregar matérias:', e); }
-    try { const p = await base44.entities.Parlamentar.filter({ ...filter, ativo: true }); setParlamentares(p); } catch (e) { console.error('Erro ao carregar parlamentares:', e); }
-    try { const tipos = await base44.entities.TipoMateria.filter({ ...filter, ativo: true }, 'ordem', 50); if (tipos.length > 0) setTiposMateria(tipos.map(t => t.nome)); } catch (e) { console.error('Erro ao carregar tipos:', e); }
+    try { const m = await sislegisEntities.Materia.filter(filter, '-created_date', 100); setMaterias(m); } catch (e) { console.error('Erro ao carregar matérias:', e); }
+    try { const p = await sislegisEntities.Parlamentar.filter({ ...filter, ativo: true }); setParlamentares(p); } catch (e) { console.error('Erro ao carregar parlamentares:', e); }
+    try { const tipos = await sislegisEntities.TipoMateria.filter({ ...filter, ativo: true }, 'ordem', 50); if (tipos.length > 0) setTiposMateria(tipos.map(t => t.nome)); } catch (e) { console.error('Erro ao carregar tipos:', e); }
     setLoading(false);
   }
 
@@ -66,9 +66,9 @@ export default function Materias() {
       const autor = parlamentares.find(p => p.id === form.autor_id);
       const data = { ...form, autor_nome: autor?.nome || '', tenant_id: tenantId || '' };
       if (editando) {
-        await base44.entities.Materia.update(editando.id, data);
+        await sislegisEntities.Materia.update(editando.id, data);
       } else {
-        await base44.entities.Materia.create({ ...data, ano: new Date().getFullYear() });
+        await sislegisEntities.Materia.create({ ...data, ano: new Date().getFullYear() });
       }
       setShowForm(false);
       setErrorMsg('');

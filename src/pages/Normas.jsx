@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { sislegisEntities } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
 import { Plus, ScrollText, Search, ExternalLink } from 'lucide-react';
 import FileUpload from '@/components/FileUpload';
@@ -26,7 +26,7 @@ export default function Normas() {
   useEffect(() => { if (canQuery) loadData(); }, [tenantId, canQuery]);
 
   async function loadData() {
-    const n = await base44.entities.NormaJuridica.filter(withTenant({}), '-ano', 200);
+    const n = await sislegisEntities.NormaJuridica.filter(withTenant({}), '-ano', 200);
     setNormas(n);
   }
 
@@ -43,8 +43,8 @@ export default function Normas() {
   }
 
   async function salvar() {
-    if (editando) await base44.entities.NormaJuridica.update(editando.id, form);
-    else await base44.entities.NormaJuridica.create(form);
+    if (editando) await sislegisEntities.NormaJuridica.update(editando.id, form);
+    else await sislegisEntities.NormaJuridica.create(form);
     setShowForm(false);
     loadData();
   }

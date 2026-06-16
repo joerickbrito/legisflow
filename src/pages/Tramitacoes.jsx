@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { sislegisEntities } from '@/lib/sislegisApi';
 import { GitMerge, Plus, Search } from 'lucide-react';
 import { useTenant } from '@/lib/TenantContext';
 import { Button } from '@/components/ui/button';
@@ -31,8 +31,8 @@ export default function Tramitacoes() {
   async function load() {
     const filter = withTenant({});
     const [t, m] = await Promise.all([
-      base44.entities.Tramitacao.filter(filter, '-created_date', 100),
-      base44.entities.Materia.filter({ ...filter, status: 'Em tramitação' }),
+      sislegisEntities.Tramitacao.filter(filter, '-created_date', 100),
+      sislegisEntities.Materia.filter({ ...filter, status: 'Em tramitação' }),
     ]);
     setTramitacoes(t);
     setMaterias(m);
@@ -40,7 +40,7 @@ export default function Tramitacoes() {
 
   async function salvar() {
     const mat = materias.find(m => m.id === form.materia_id);
-    await base44.entities.Tramitacao.create({
+    await sislegisEntities.Tramitacao.create({
       ...form,
       tenant_id: tenantId || '',
       materia_ementa: mat?.ementa || form.materia_ementa,
@@ -48,7 +48,7 @@ export default function Tramitacoes() {
     });
     // Atualizar localização atual na matéria
     if (form.materia_id) {
-      await base44.entities.Materia.update(form.materia_id, { local_atual: form.unidade_tramitacao_destino });
+      await sislegisEntities.Materia.update(form.materia_id, { local_atual: form.unidade_tramitacao_destino });
     }
     setShowForm(false);
     load();

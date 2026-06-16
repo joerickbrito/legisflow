@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { sislegisEntities } from '@/lib/sislegisApi';
 import { Users, Plus, MapPin, Clock } from 'lucide-react';
 import { useTenant } from '@/lib/TenantContext';
 import { Button } from '@/components/ui/button';
@@ -23,7 +23,7 @@ export default function Audiencias() {
   useEffect(() => { if (canQuery) load(); }, [tenantId, canQuery]);
 
   async function load() {
-    const a = await base44.entities.AudienciaPublica.filter(withTenant({}), '-data', 50);
+    const a = await sislegisEntities.AudienciaPublica.filter(withTenant({}), '-data', 50);
     setAudiencias(a);
   }
 
@@ -31,8 +31,8 @@ export default function Audiencias() {
     setSaving(true);
     setErrorMsg('');
     try {
-      if (editando) await base44.entities.AudienciaPublica.update(editando.id, form);
-      else await base44.entities.AudienciaPublica.create({ ...form, tenant_id: tenantId || '' });
+      if (editando) await sislegisEntities.AudienciaPublica.update(editando.id, form);
+      else await sislegisEntities.AudienciaPublica.create({ ...form, tenant_id: tenantId || '' });
       setShowForm(false);
       setErrorMsg('');
       load();

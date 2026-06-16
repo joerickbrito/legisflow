@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { sislegisEntities } from "@/lib/sislegisApi";
 import { useTenant } from "@/lib/TenantContext";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -30,7 +30,7 @@ export default function Oficios() {
     if (!canQuery) return;
     const filter = withTenant();
     if (!filter) return;
-    base44.entities.Oficio.filter(filter, "-created_date", 100).then(setOficios);
+    sislegisEntities.Oficio.filter(filter, "-created_date", 100).then(setOficios);
   }, [canQuery]);
 
   const openNew = () => { setEditing(null); setForm({ numero: "", ano: new Date().getFullYear(), tipo: "Externo", direcao: "Enviado", assunto: "", remetente: "", destinatario: "", data: "", texto: "", status: "Rascunho", observacoes: "" }); setOpen(true); };
@@ -41,10 +41,10 @@ export default function Oficios() {
     setErrorMsg('');
     try {
       const data = { ...form, tenant_id: tenantId };
-      if (editing) await base44.entities.Oficio.update(editing.id, data);
-      else await base44.entities.Oficio.create(data);
+      if (editing) await sislegisEntities.Oficio.update(editing.id, data);
+      else await sislegisEntities.Oficio.create(data);
       const filter = withTenant();
-      if (filter) setOficios(await base44.entities.Oficio.filter(filter, "-created_date", 100));
+      if (filter) setOficios(await sislegisEntities.Oficio.filter(filter, "-created_date", 100));
       setOpen(false);
       setErrorMsg('');
     } catch (e) {

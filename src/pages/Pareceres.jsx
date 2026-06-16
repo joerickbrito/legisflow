@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { sislegisEntities } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
 import { MessageSquare, Plus, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -28,10 +28,10 @@ export default function Pareceres() {
   async function load() {
     const filter = withTenant({});
     const [p, m, c, parl] = await Promise.all([
-      base44.entities.Parecer.filter(filter, '-created_date', 50),
-      base44.entities.Materia.filter({ ...filter, status: 'Em tramitação' }),
-      base44.entities.Comissao.filter({ ...filter, ativa: true }),
-      base44.entities.Parlamentar.filter({ ...filter, ativo: true }),
+      sislegisEntities.Parecer.filter(filter, '-created_date', 50),
+      sislegisEntities.Materia.filter({ ...filter, status: 'Em tramitação' }),
+      sislegisEntities.Comissao.filter({ ...filter, ativa: true }),
+      sislegisEntities.Parlamentar.filter({ ...filter, ativo: true }),
     ]);
     setPareceres(p);
     setMaterias(m);
@@ -43,7 +43,7 @@ export default function Pareceres() {
     const mat = materias.find(m => m.id === form.materia_id);
     const com = comissoes.find(c => c.id === form.comissao_id);
     const rel = parlamentares.find(p => p.id === form.relator_id);
-    await base44.entities.Parecer.create({
+    await sislegisEntities.Parecer.create({
       ...form,
       tenant_id: tenantId || '',
       materia_ementa: mat?.ementa || '',

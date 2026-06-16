@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { sislegisEntities } from '@/lib/sislegisApi';
 import { Vote, CheckCircle2, XCircle, MinusCircle, Users, BarChart3, Clock, Play, StopCircle, Plus } from 'lucide-react';
 import { useTenant } from '@/lib/TenantContext';
 import { Button } from '@/components/ui/button';
@@ -28,9 +28,9 @@ export default function Votacao() {
   async function loadData() {
     const filter = withTenant({});
     if (!filter) { setLoading(false); return; }
-    try { const v = await base44.entities.Votacao.filter(filter, '-created_date', 20); setVotacoes(v); const ativa = v.find(x => x.status === 'Em Votação'); setVotacaoAtiva(ativa || null); } catch (e) { console.error('Erro ao carregar votações:', e); }
-    try { const p = await base44.entities.Parlamentar.filter({ ...filter, ativo: true }); setParlamentares(p); } catch (e) { console.error('Erro ao carregar parlamentares:', e); }
-    try { const m = await base44.entities.Materia.filter({ ...filter, status: 'Em tramitação' }); setMaterias(m); } catch (e) { console.error('Erro ao carregar matérias:', e); }
+    try { const v = await sislegisEntities.Votacao.filter(filter, '-created_date', 20); setVotacoes(v); const ativa = v.find(x => x.status === 'Em Votação'); setVotacaoAtiva(ativa || null); } catch (e) { console.error('Erro ao carregar votações:', e); }
+    try { const p = await sislegisEntities.Parlamentar.filter({ ...filter, ativo: true }); setParlamentares(p); } catch (e) { console.error('Erro ao carregar parlamentares:', e); }
+    try { const m = await sislegisEntities.Materia.filter({ ...filter, status: 'Em tramitação' }); setMaterias(m); } catch (e) { console.error('Erro ao carregar matérias:', e); }
     setLoading(false);
   }
 
@@ -39,7 +39,7 @@ export default function Votacao() {
     setErrorMsg('');
     try {
       const mat = materias.find(m => m.id === novaVotacao.materia_id);
-      const nova = await base44.entities.Votacao.create({
+      const nova = await sislegisEntities.Votacao.create({
         tenant_id: tenantId || '',
         materia_id: novaVotacao.materia_id,
         materia_ementa: mat?.ementa || 'Matéria',
@@ -74,7 +74,7 @@ export default function Votacao() {
       voto,
       hora: format(new Date(), 'HH:mm:ss'),
     }];
-    const updated = await base44.entities.Votacao.update(votacaoAtiva.id, {
+    const updated = await sislegisEntities.Votacao.update(votacaoAtiva.id, {
       votos: novosVotos,
       votos_sim: novosVotos.filter(v => v.voto === 'Sim').length,
       votos_nao: novosVotos.filter(v => v.voto === 'Não').length,
@@ -89,15 +89,15 @@ export default function Votacao() {
     const sim = votacaoAtiva.votos_sim || 0;
     const nao = votacaoAtiva.votos_nao || 0;
     const resultado = sim > nao ? 'Aprovada' : nao > sim ? 'Rejeitada' : 'Empate';
-    await base44.entities.Votacao.update(votacaoAtiva.id, { status: 'Encerrada', resultado, data_hora_fim: new Date().toISOString() });
+    await sislegisEntities.Votacao.update(votacaoAtiva.id, { status: 'Encerrada', resultado, data_hora_fim: new Date().toISOString() });
     // Atualiza status da matéria
     if (votacaoAtiva.materia_id && resultado !== 'Empate') {
       const novoStatus = resultado === 'Aprovada' ? 'Aprovada' : 'Rejeitada';
-      try { await base44.entities.Materia.update(votacaoAtiva.materia_id, { status: novoStatus }); } catch (e) { /* ok */ }
+      try { await sislegisEntities.Materia.update(votacaoAtiva.materia_id, { status: novoStatus }); } catch (e) { /* ok */ }
       // Também atualiza NormaJuridica (Leis, Resoluções, Decretos, Portarias)
       try {
         const novaSituacao = novoStatus === 'Aprovada' ? 'Vigente' : 'Não Vigente';
-        await base44.entities.NormaJuridica.update(votacaoAtiva.materia_id, { situacao: novaSituacao });
+        await sislegisEntities.NormaJuridica.update(votacaoAtiva.materia_id, { situacao: novaSituacao });
       } catch (e) { /* pode não ser uma NormaJuridica */ }
     }
     setVotacaoAtiva(null);

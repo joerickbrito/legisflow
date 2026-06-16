@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useTenant } from "@/lib/TenantContext";
 import { useAuth } from "@/lib/AuthContext";
+import { sislegisEntities } from "@/lib/sislegisApi";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -52,10 +53,10 @@ export default function PainelEletronico() {
   async function loadData() {
     const filter = withTenant({});
     const [sess, mat, normasList, parl] = await Promise.all([
-      base44.entities.Sessao.filter({ ...filter, status: 'Em Andamento' }, '-data', 20),
-      base44.entities.Materia.filter({ ...filter, status: 'Em tramitação' }, '-created_date', 100),
-      base44.entities.NormaJuridica.filter({ ...filter, situacao: 'Vigente' }, '-created_date', 50).catch(() => []),
-      base44.entities.Parlamentar.filter({ ...filter, ativo: true }, 'nome', 100),
+      sislegisEntities.Sessao.filter({ ...filter, status: 'Em Andamento' }, '-data', 20),
+      sislegisEntities.Materia.filter({ ...filter, status: 'Em tramitação' }, '-created_date', 100),
+      sislegisEntities.NormaJuridica.filter({ ...filter, situacao: 'Vigente' }, '-created_date', 50).catch(() => []),
+      sislegisEntities.Parlamentar.filter({ ...filter, ativo: true }, 'nome', 100),
     ]);
     setSessoes(sess);
     setMaterias(mat);
@@ -67,9 +68,9 @@ export default function PainelEletronico() {
 
   async function loadVotacaoAtiva() {
     const filter = withTenant({});
-    const ativas = await base44.entities.Votacao.filter({ ...filter, status: 'Em Votação' }, '-created_date', 1);
+    const ativas = await sislegisEntities.Votacao.filter({ ...filter, status: 'Em Votação' }, '-created_date', 1);
     if (ativas.length) { setVotacaoAtiva(ativas[0]); return; }
-    const desempate = await base44.entities.Votacao.filter({ ...filter, status: 'Aguardando Desempate' }, '-created_date', 1);
+    const desempate = await sislegisEntities.Votacao.filter({ ...filter, status: 'Aguardando Desempate' }, '-created_date', 1);
     setVotacaoAtiva(desempate[0] || null);
   }
 
@@ -105,7 +106,7 @@ export default function PainelEletronico() {
         ].filter(Boolean).join(' · ')
       : '';
 
-    await base44.entities.Votacao.create({
+    await sislegisEntities.Votacao.create({
       tenant_id: tenantId || '',
       sessao_id: config.sessao_id,
       sessao_numero: sessao?.numero || '',
@@ -155,7 +156,7 @@ export default function PainelEletronico() {
       resultado = 'Empate';
     }
 
-    await base44.entities.Votacao.update(votacaoAtiva.id, {
+    await sislegisEntities.Votacao.update(votacaoAtiva.id, {
       status: 'Encerrada',
       resultado,
       votos_sim: sim,
@@ -168,7 +169,7 @@ export default function PainelEletronico() {
       const novoStatus = resultado.startsWith('Aprovada') ? 'Aprovada' : 'Rejeitada';
       const campoData = novoStatus === 'Aprovada' ? { data_publicacao: new Date().toISOString().slice(0, 10) } : {};
       try {
-        await base44.entities.Materia.update(votacaoAtiva.materia_id, {
+        await sislegisEntities.Materia.update(votacaoAtiva.materia_id, {
           status: novoStatus,
           ...(novoStatus === 'Aprovada' ? { data_aprovacao: new Date().toISOString().slice(0, 10) } : { data_rejeicao: new Date().toISOString().slice(0, 10) }),
         });
@@ -176,7 +177,7 @@ export default function PainelEletronico() {
       // Também atualiza NormaJuridica (Leis, Resoluções, Decretos, Portarias)
       try {
         const novaSituacao = novoStatus === 'Aprovada' ? 'Vigente' : 'Não Vigente';
-        await base44.entities.NormaJuridica.update(votacaoAtiva.materia_id, {
+        await sislegisEntities.NormaJuridica.update(votacaoAtiva.materia_id, {
           situacao: novaSituacao,
           ...(novoStatus === 'Aprovada' ? campoData : {}),
         });

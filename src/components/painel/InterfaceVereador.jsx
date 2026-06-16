@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { sislegisEntities } from "@/lib/sislegisApi";
 import { CheckCircle2, XCircle, MinusCircle, Vote, Clock } from "lucide-react";
 
 export default function InterfaceVereador({ votacaoAtiva, user, onRefresh, isPresidente }) {
@@ -53,7 +54,7 @@ export default function InterfaceVereador({ votacaoAtiva, user, onRefresh, isPre
     const sim = novosVotos.filter(v => !v.is_presidente && v.voto === 'Sim').length;
     const nao = novosVotos.filter(v => !v.is_presidente && v.voto === 'Não').length;
     const abstencoes = novosVotos.filter(v => v.voto === 'Abstenção').length;
-    await base44.entities.Votacao.update(votacao.id, {
+    await sislegisEntities.Votacao.update(votacao.id, {
       votos: novosVotos,
       votos_sim: sim,
       votos_nao: nao,

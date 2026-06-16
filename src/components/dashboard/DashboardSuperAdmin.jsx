@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { sislegisEntities } from '@/lib/sislegisApi';
 import { Building2, Users, FileText, ScrollText, Calendar, ArrowRight, TrendingUp, Shield } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,12 +13,12 @@ export default function DashboardSuperAdmin() {
 
   useEffect(() => {
     Promise.all([
-      base44.entities.Camara.list('-created_date', 200),
-      base44.entities.UsuarioSislegis.filter({}),
-      base44.entities.Materia.list('-created_date', 50),
-      base44.entities.NormaJuridica.list('-created_date', 20),
-      base44.entities.Sessao.list('-data', 20),
-      base44.entities.LogAuditoria.list('-created_date', 10),
+      sislegisEntities.Camara.list('-created_date', 200),
+      sislegisEntities.UsuarioSislegis.filter({}),
+      sislegisEntities.Materia.list('-created_date', 50),
+      sislegisEntities.NormaJuridica.list('-created_date', 20),
+      sislegisEntities.Sessao.list('-data', 20),
+      sislegisEntities.LogAuditoria.list('-created_date', 10),
     ]).then(([camaras, usuarios, materias, normas, sessoes, logs]) => {
       setStats({ camaras, usuarios, materias, normas, sessoes, logs });
       setLoading(false);

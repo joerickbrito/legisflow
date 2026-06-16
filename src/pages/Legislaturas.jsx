@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { sislegisEntities } from '@/lib/sislegisApi';
 import { BookOpen, Plus } from 'lucide-react';
 import { useTenant } from '@/lib/TenantContext';
 import { Button } from '@/components/ui/button';
@@ -28,11 +28,11 @@ export default function Legislaturas() {
     const filter = withTenant({});
     if (!filter) return;
     try {
-      const l = await base44.entities.Legislatura.filter(filter, '-data_inicio');
+      const l = await sislegisEntities.Legislatura.filter(filter, '-data_inicio');
       setLegislaturas(l);
     } catch (e) { console.error('Erro ao carregar legislaturas:', e); }
     try {
-      const s = await base44.entities.SessaoLegislativa.filter(filter, '-ano');
+      const s = await sislegisEntities.SessaoLegislativa.filter(filter, '-ano');
       setSessoesLeg(s);
     } catch (e) { console.error('Erro ao carregar sessões legislativas:', e); }
   }
@@ -53,8 +53,8 @@ export default function Legislaturas() {
         ano_inicio: form.ano_inicio ? Number(form.ano_inicio) : undefined,
         ano_fim: form.ano_fim ? Number(form.ano_fim) : undefined,
       };
-      if (editando) await base44.entities.Legislatura.update(editando.id, data);
-      else await base44.entities.Legislatura.create(data);
+      if (editando) await sislegisEntities.Legislatura.update(editando.id, data);
+      else await sislegisEntities.Legislatura.create(data);
       setShowForm(false);
       setErrorMsg('');
       load();
@@ -70,7 +70,7 @@ export default function Legislaturas() {
     setErrorMsg('');
     try {
       const leg = legislaturas.find(l => l.id === sessaoForm.legislatura_id);
-      await base44.entities.SessaoLegislativa.create({
+      await sislegisEntities.SessaoLegislativa.create({
         ...sessaoForm,
         tenant_id: tenantId || '',
         ano: Number(sessaoForm.ano),

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
+import { sislegisEntities } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
 import { FileText, Calendar, Users, ScrollText, Inbox, AlertCircle, ArrowRight, Clock, Vote, TrendingUp, FolderOpen, Gavel, Hourglass } from 'lucide-react';
 import { Card } from '@/components/ui/card';
@@ -23,14 +24,14 @@ export default function DashboardAdminCamara() {
       if (!canQuery) return;
       const filter = withTenant({});
       const [materias, sessoes, parlamentares, normas, protocolos, votacoes, aguardandoVot, solicitacoesPendentes] = await Promise.all([
-        base44.entities.Materia.filter(filter, '-created_date', 50),
-        base44.entities.Sessao.filter(filter, '-data', 20),
-        base44.entities.Parlamentar.filter(filter),
-        base44.entities.NormaJuridica.filter(filter),
-        base44.entities.Protocolo.filter(filter, '-created_date', 8),
-        base44.entities.Votacao.filter({ ...filter, status: 'Em Votação' }),
-        base44.entities.Materia.filter({ ...filter, status: 'Aguardando Votação' }, '-created_date', 10),
-        base44.entities.SolicitacoesRecuperacaoSenha.filter({ ...filter, status: 'pendente' }, '-created_date', 20).catch(() => []),
+        sislegisEntities.Materia.filter(filter, '-created_date', 50),
+        sislegisEntities.Sessao.filter(filter, '-data', 20),
+        sislegisEntities.Parlamentar.filter(filter),
+        sislegisEntities.NormaJuridica.filter(filter),
+        sislegisEntities.Protocolo.filter(filter, '-created_date', 8),
+        sislegisEntities.Votacao.filter({ ...filter, status: 'Em Votação' }),
+        sislegisEntities.Materia.filter({ ...filter, status: 'Aguardando Votação' }, '-created_date', 10),
+        sislegisEntities.SolicitacoesRecuperacaoSenha.filter({ ...filter, status: 'pendente' }, '-created_date', 20).catch(() => []),
       ]);
       const hoje = format(new Date(), 'yyyy-MM-dd');
       setData({
@@ -69,7 +70,7 @@ export default function DashboardAdminCamara() {
     setAtendendoSolicitacao(sol.id);
     try {
       const res = await base44.functions.invoke('resetarSenhaSislegis', { usuario_id: sol.usuario_id });
-      await base44.entities.SolicitacoesRecuperacaoSenha.update(sol.id, { status: 'atendida' });
+      await sislegisEntities.SolicitacoesRecuperacaoSenha.update(sol.id, { status: 'atendida' });
       const senha = res.data?.senha_temporaria;
       alert(senha ? `Nova senha: ${senha}` : 'Senha redefinida.');
       setSolicitacoes(prev => prev.filter(s => s.id !== sol.id));
@@ -84,7 +85,7 @@ export default function DashboardAdminCamara() {
     if (!confirm(`Marcar solicitação como atendida sem redefinir?`)) return;
     setAtendendoSolicitacao(sol.id);
     try {
-      await base44.entities.SolicitacoesRecuperacaoSenha.update(sol.id, { status: 'atendida' });
+      await sislegisEntities.SolicitacoesRecuperacaoSenha.update(sol.id, { status: 'atendida' });
       setSolicitacoes(prev => prev.filter(s => s.id !== sol.id));
     } catch (e) {
       alert('Erro: ' + (e?.message || ''));

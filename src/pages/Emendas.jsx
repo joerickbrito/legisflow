@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { sislegisEntities } from "@/lib/sislegisApi";
 import { useTenant } from "@/lib/TenantContext";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -29,9 +29,9 @@ export default function Emendas() {
   useEffect(() => {
     if (!canQuery) return;
     const filter = withTenant();
-    base44.entities.Emenda.filter(filter, "-created_date", 50).then(setEmendas);
-    base44.entities.Materia.filter(filter).then(setMaterias);
-    base44.entities.Parlamentar.filter(filter).then(setParlamentares);
+    sislegisEntities.Emenda.filter(filter, "-created_date", 50).then(setEmendas);
+    sislegisEntities.Materia.filter(filter).then(setMaterias);
+    sislegisEntities.Parlamentar.filter(filter).then(setParlamentares);
   }, [canQuery]);
 
   const openNew = () => { setEditing(null); setForm({ materia_id: "", numero: "", tipo: "Modificativa", ementa: "", texto: "", justificativa: "", autor_id: "", autor_nome: "", data_apresentacao: "", status: "Em análise" }); setOpen(true); };
@@ -44,10 +44,10 @@ export default function Emendas() {
       const materia = materias.find(m => m.id === form.materia_id);
       const autor = parlamentares.find(p => p.id === form.autor_id);
       const data = { ...form, tenant_id: tenantId, materia_ementa: materia?.ementa || "", autor_nome: autor?.nome_parlamentar || autor?.nome || form.autor_nome };
-      if (editing) await base44.entities.Emenda.update(editing.id, data);
-      else await base44.entities.Emenda.create(data);
+      if (editing) await sislegisEntities.Emenda.update(editing.id, data);
+      else await sislegisEntities.Emenda.create(data);
       const filter = withTenant();
-      if (filter) setEmendas(await base44.entities.Emenda.filter(filter, "-created_date", 50));
+      if (filter) setEmendas(await sislegisEntities.Emenda.filter(filter, "-created_date", 50));
       setOpen(false);
       setErrorMsg('');
     } catch (e) {

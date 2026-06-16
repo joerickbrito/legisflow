@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { sislegisEntities } from "@/lib/sislegisApi";
 import { useTenant } from "@/lib/TenantContext";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -25,8 +25,8 @@ export default function ReuniaoComissao() {
     if (!canQuery) return;
     const filter = withTenant();
     if (!filter) return;
-    base44.entities.ReuniaoComissao.filter(filter, "-created_date", 50).then(setReunioes);
-    base44.entities.Comissao.filter(filter).then(setComissoes);
+    sislegisEntities.ReuniaoComissao.filter(filter, "-created_date", 50).then(setReunioes);
+    sislegisEntities.Comissao.filter(filter).then(setComissoes);
   }, [canQuery]);
 
   const openNew = () => { setEditing(null); setForm({ comissao_id: "", comissao_nome: "", numero: "", data: "", hora_inicio: "", hora_fim: "", local: "", status: "Agendada", ata: "", observacoes: "" }); setOpen(true); };
@@ -35,10 +35,10 @@ export default function ReuniaoComissao() {
   const handleSave = async () => {
     const comissao = comissoes.find(c => c.id === form.comissao_id);
     const data = { ...form, tenant_id: tenantId, comissao_nome: comissao?.nome || form.comissao_nome };
-    if (editing) await base44.entities.ReuniaoComissao.update(editing.id, data);
-    else await base44.entities.ReuniaoComissao.create(data);
+    if (editing) await sislegisEntities.ReuniaoComissao.update(editing.id, data);
+    else await sislegisEntities.ReuniaoComissao.create(data);
     const filter = withTenant();
-    if (filter) setReunioes(await base44.entities.ReuniaoComissao.filter(filter, "-created_date", 50));
+    if (filter) setReunioes(await sislegisEntities.ReuniaoComissao.filter(filter, "-created_date", 50));
     setOpen(false);
   };
 

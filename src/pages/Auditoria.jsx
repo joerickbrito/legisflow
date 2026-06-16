@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { sislegisEntities } from "@/lib/sislegisApi";
 import { useTenant } from "@/lib/TenantContext";
 import PageHeader from "@/components/PageHeader";
 import { Input } from "@/components/ui/input";
@@ -45,7 +45,7 @@ export default function Auditoria() {
   useEffect(() => {
     if (!isAdminCamara) return;
     const filter = isSuperAdmin ? {} : { tenant_id: tenantId };
-    base44.entities.LogAuditoria.filter(filter, "-created_date", 500).then(all => {
+    sislegisEntities.LogAuditoria.filter(filter, "-created_date", 500).then(all => {
       setLogs(all);
       setLoading(false);
     });

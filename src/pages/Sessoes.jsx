@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { sislegisEntities } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
 import { Calendar, Clock, Users, Plus, Pencil, CheckCircle2 } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
@@ -49,11 +49,11 @@ export default function Sessoes() {
   async function loadData() {
     const filter = withTenant({});
     if (!filter) return;
-    try { const s = await base44.entities.Sessao.filter(filter, '-data', 50); setSessoes(s); } catch (e) { console.error('Erro ao carregar sessões:', e); }
-    try { const p = await base44.entities.Parlamentar.filter({ ...filter, ativo: true }); setParlamentares(p); } catch (e) { console.error('Erro ao carregar parlamentares:', e); }
-    try { const m = await base44.entities.Materia.filter({ ...filter, status: 'Em tramitação' }); setMaterias(m); } catch (e) { console.error('Erro ao carregar matérias:', e); }
-    try { const sl = await base44.entities.SessaoLegislativa.filter(filter); setSessoesLeg(sl); } catch (e) { console.error('Erro ao carregar sessões leg:', e); }
-    try { const leg = await base44.entities.Legislatura.filter(filter); setLegislaturas(leg); } catch (e) { console.error('Erro ao carregar legislaturas:', e); }
+    try { const s = await sislegisEntities.Sessao.filter(filter, '-data', 50); setSessoes(s); } catch (e) { console.error('Erro ao carregar sessões:', e); }
+    try { const p = await sislegisEntities.Parlamentar.filter({ ...filter, ativo: true }); setParlamentares(p); } catch (e) { console.error('Erro ao carregar parlamentares:', e); }
+    try { const m = await sislegisEntities.Materia.filter({ ...filter, status: 'Em tramitação' }); setMaterias(m); } catch (e) { console.error('Erro ao carregar matérias:', e); }
+    try { const sl = await sislegisEntities.SessaoLegislativa.filter(filter); setSessoesLeg(sl); } catch (e) { console.error('Erro ao carregar sessões leg:', e); }
+    try { const leg = await sislegisEntities.Legislatura.filter(filter); setLegislaturas(leg); } catch (e) { console.error('Erro ao carregar legislaturas:', e); }
   }
 
   function buildPresencas(existing) {
@@ -100,9 +100,9 @@ export default function Sessoes() {
       const num = editando?.numero || String(sessoes.filter(s => !editando || s.id !== editando.id).length + 1).padStart(3, '0');
       const data = { ...form, tenant_id: tenantId || '', numero: editando?.numero || num };
       if (editando) {
-        await base44.entities.Sessao.update(editando.id, data);
+        await sislegisEntities.Sessao.update(editando.id, data);
       } else {
-        await base44.entities.Sessao.create(data);
+        await sislegisEntities.Sessao.create(data);
       }
       setShowForm(false);
       setErrorMsg('');
