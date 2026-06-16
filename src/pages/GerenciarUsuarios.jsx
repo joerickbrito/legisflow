@@ -135,14 +135,18 @@ export default function GerenciarUsuarios() {
 
   const loadUsuarios = async () => {
     try {
-      const sislegisUsers = await listarUsuariosSislegis({}, 'nome', 500);
-      // Câmara: apenas usuários do tenant_id desta câmara.
-      // Master: todos os usuários (todas as câmaras + master)
-      setUsuarios(isInChamberContext
-        ? (sislegisUsers || []).filter(u => u.tenant_id === tenantId)
-        : (sislegisUsers || []));
-    } catch (err) {
-      console.warn('Erro ao carregar usuários:', err);
+      let users;
+      if (isSuperAdmin) {
+        // SUPER_ADMIN vê todos os usuários (ou filtra por câmara ativa)
+        users = await listarUsuariosSislegis({}, 'nome', 500);
+      } else {
+        // ADMIN_CAMARA vê apenas usuários da própria câmara
+        users = await listarUsuariosSislegis({ tenant_id: tenantId }, 'nome', 500);
+      }
+      setUsuarios(users || []);
+    } catch (e) {
+      console.error('Erro ao carregar usuários:', e);
+      setUsuarios([]);
     }
   };
 
