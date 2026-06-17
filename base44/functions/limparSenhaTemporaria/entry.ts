@@ -1,7 +1,21 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
-// Obtém o usuário autenticado via BaaS ou via session_token do SisLegis
-async function getAuthenticatedUser(base44) {
+// Retorna o usuário autenticado
+// NOVA ORDEM DE PRIORIDADE:
+// 1. PRIMEIRO: sislegis_token (body) → UsuarioSislegis (100% das chamadas reais do frontend)
+// 2. SEGUNDO (fallback): BaaS auth.me() → Master Admin legado via ConfiguracaoSistema
+async function getAuthenticatedUser(base44, sislegis_token) {
+  // 1. PRIMEIRO: SisLegis session token (caminho usado por 100% das chamadas reais)
+  if (sislegis_token) {
+    try {
+      const usuarios = await base44.asServiceRole.entities.UsuarioSislegis.filter({
+        session_token: sislegis_token
+      });
+      if (usuarios && usuarios.length > 0) return usuarios[0];
+    } catch { /* fallthrough para BaaS */ }
+  }
+
+  // 2. SEGUNDO (fallback): BaaS native auth — apenas Master Admin legado
   try {
     const baasUser = await base44.auth.me();
     if (baasUser) {
@@ -11,26 +25,26 @@ async function getAuthenticatedUser(base44) {
       if (sislegisUsers && sislegisUsers.length > 0) {
         return sislegisUsers[0];
       }
+      // Verificar se é o Master Admin registrado via ConfiguracaoSistema
+      const configs = await base44.asServiceRole.entities.ConfiguracaoSistema.filter({ chave: 'master_admin' });
+      if (configs && configs.length > 0 && configs[0].master_admin_id === baasUser.id) {
+        return { ...baasUser, role: 'SUPER_ADMIN', tenant_id: null };
+      }
       return { ...baasUser, role: baasUser.role || 'user', tenant_id: baasUser.tenant_id };
     }
-  } catch { /* BaaS auth falhou, tenta SisLegis */ }
+  } catch { /* BaaS auth falhou */ }
 
-  const token = base44._requestHeaders?.get?.('x-sislegis-token') || '';
-  if (!token) return null;
-
-  const usuarios = await base44.asServiceRole.entities.UsuarioSislegis.filter({ session_token: token });
-  if (!usuarios || usuarios.length === 0) return null;
-  return usuarios[0];
+  return null;
 }
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const caller = await getAuthenticatedUser(base44);
-    if (!caller) return Response.json({ error: 'Não autorizado. Faça login.' }, { status: 401 });
-
     const body = await req.json();
-    const { email, usuario_id } = body || {};
+    const { email, usuario_id, sislegis_token } = body || {};
+
+    const caller = await getAuthenticatedUser(base44, sislegis_token);
+    if (!caller) return Response.json({ error: 'Não autorizado. Faça login.' }, { status: 401 });
 
     if (!email && !usuario_id) {
       return Response.json({ error: 'Email ou ID do usuário é obrigatório' }, { status: 400 });
