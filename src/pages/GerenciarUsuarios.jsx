@@ -225,6 +225,16 @@ export default function GerenciarUsuarios() {
       alert('Selecione a Câmara vinculada para o perfil Admin da Câmara.');
       return;
     }
+    // Bloquear vínculo de parlamentar já vinculado a outro usuário
+    if (form.parlamentar_id && PERFIS_PARTIDO_OBRIGATORIO.includes(form.role)) {
+      const existingLink = usuarios.find(
+        u => u.parlamentar_id === form.parlamentar_id && u.id !== editing?.id
+      );
+      if (existingLink) {
+        alert(`Este parlamentar já possui um usuário vinculado: ${existingLink.username}`);
+        return;
+      }
+    }
     setSaving(true);
     try {
       if (editing) {

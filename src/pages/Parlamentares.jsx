@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { sislegisEntities } from '@/lib/sislegisApi';
+import { sislegisEntities, criarUsuario } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
-import { Plus, Users, Search, Mail, Phone, Upload, Camera } from 'lucide-react';
+import { Plus, Users, Search, Mail, Phone, Upload, Camera, UserPlus, Link, Unlink, ExternalLink, Key, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -14,6 +14,7 @@ import PageHeader from '@/components/PageHeader';
 const SITUACOES = ['Ativo', 'Licenciado', 'Afastado'];
 const TIPOS = ['Titular', 'Suplente'];
 const CARGOS = ['Vereador', 'Presidente', 'Vice-Presidente', '1º Secretário', '2º Secretário'];
+const PARLAMENTAR_ROLES = ['VEREADOR', 'PRESIDENTE'];
 
 export default function Parlamentares() {
   const { tenantId, withTenant, canQuery, isAdminCamara } = useTenant();
@@ -25,7 +26,18 @@ export default function Parlamentares() {
   const [editando, setEditando] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
+  // Estados do vínculo com usuário
+  const [usuarios, setUsuarios] = useState([]);
+  const [showUserForm, setShowUserForm] = useState(false);
+  const [newUserUsername, setNewUserUsername] = useState('');
+  const [newUserPassword, setNewUserPassword] = useState('');
+  const [newUserRole, setNewUserRole] = useState('VEREADOR');
+  const [creatingUser, setCreatingUser] = useState(false);
+  const [userFormError, setUserFormError] = useState('');
+  const [linkExistingId, setLinkExistingId] = useState('');
+
   const emptyForm = {
     nome: '', nome_parlamentar: '', cpf: '', email: '', telefone: '',
     foto_url: '', partido_id: '', partido_sigla: '', cargo: 'Vereador',
@@ -39,18 +51,47 @@ export default function Parlamentares() {
 
   async function loadData() {
     const filter = withTenant({});
-    const [p, part, legs] = await Promise.all([
+    const [p, part, legs, usrs] = await Promise.all([
       sislegisEntities.Parlamentar.filter(filter, 'nome', 100),
       sislegisEntities.Partido.filter(filter, 'sigla', 50).catch(() => []),
       sislegisEntities.Legislatura.filter(filter, '-numero', 20).catch(() => []),
+      sislegisEntities.UsuarioSislegis.filter(filter, 'nome', 500).catch(() => []),
     ]);
     setParlamentares(p);
     setPartidos(part);
     setLegislaturas(legs);
+    setUsuarios(usrs || []);
   }
 
-  function openNew() { setEditando(null); setForm({ ...emptyForm, tenant_id: tenantId || '' }); setShowForm(true); }
-  function openEdit(p) { setEditando(p); setForm({ ...emptyForm, ...p }); setShowForm(true); }
+  // Mapa: parlamentar_id → usuário vinculado
+  const vinculadosMap = {};
+  usuarios.forEach(u => {
+    if (u.parlamentar_id) vinculadosMap[u.parlamentar_id] = u;
+  });
+
+  // Usuários da mesma câmara sem parlamentar_id (disponíveis para vínculo)
+  const usuariosDisponiveis = usuarios.filter(
+    u => !u.parlamentar_id && PARLAMENTAR_ROLES.includes(u.role)
+  );
+
+  function openNew() {
+    setEditando(null);
+    setForm({ ...emptyForm, tenant_id: tenantId || '' });
+    setShowUserForm(false);
+    setNewUserUsername(''); setNewUserPassword(''); setNewUserRole('VEREADOR');
+    setUserFormError(''); setLinkExistingId('');
+    setShowForm(true);
+  }
+
+  function openEdit(p) {
+    setEditando(p);
+    setForm({ ...emptyForm, ...p });
+    setShowUserForm(false);
+    setNewUserUsername(''); setNewUserPassword('');
+    setNewUserRole(p.cargo === 'Presidente' ? 'PRESIDENTE' : 'VEREADOR');
+    setUserFormError(''); setLinkExistingId('');
+    setShowForm(true);
+  }
 
   async function handleFotoUpload(e) {
     const file = e.target.files?.[0];
@@ -83,6 +124,110 @@ export default function Parlamentares() {
     }
   }
 
+  // Criar usuário para o parlamentar atual
+  async function handleCreateUser() {
+    if (!newUserUsername.trim() || !newUserPassword.trim()) {
+      setUserFormError('Preencha username e senha.');
+      return;
+    }
+    if (newUserPassword.length < 6) {
+      setUserFormError('A senha deve ter no mínimo 6 caracteres.');
+      return;
+    }
+    setCreatingUser(true);
+    setUserFormError('');
+    try {
+      const parlamentar = editando || form;
+      const nome = parlamentar.nome_parlamentar || parlamentar.nome;
+      await criarUsuario({
+        username: newUserUsername.trim().toLowerCase(),
+        nome,
+        role: newUserRole,
+        tenant_id: tenantId,
+        senha: newUserPassword,
+        status: 'Pendente de Ativação',
+        senha_temporaria: true,
+        parlamentar_id: editando?.id || null,
+        foto_url: parlamentar.foto_url || '',
+        partido_id: parlamentar.partido_id || '',
+        partido_sigla: parlamentar.partido_sigla || '',
+        cargo: parlamentar.cargo || '',
+      });
+      setShowUserForm(false);
+      setNewUserUsername(''); setNewUserPassword('');
+      loadData();
+    } catch (e) {
+      setUserFormError(e?.message || 'Erro ao criar usuário.');
+    } finally {
+      setCreatingUser(false);
+    }
+  }
+
+  // Vincular usuário existente
+  async function handleLinkExisting() {
+    if (!linkExistingId) return;
+    setSaving(true);
+    setErrorMsg('');
+    try {
+      const usuario = usuarios.find(u => u.id === linkExistingId);
+      await sislegisEntities.UsuarioSislegis.update(linkExistingId, {
+        parlamentar_id: editando?.id,
+        foto_url: form.foto_url || usuario?.foto_url,
+        partido_id: form.partido_id || usuario?.partido_id,
+        partido_sigla: form.partido_sigla || usuario?.partido_sigla,
+      });
+      setLinkExistingId('');
+      loadData();
+    } catch (e) {
+      setErrorMsg(e?.message || 'Erro ao vincular usuário.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // Desvincular usuário
+  async function handleUnlink(usuarioId) {
+    if (!confirm('Desvincular este usuário do parlamentar? O login será mantido, apenas o vínculo será removido.')) return;
+    setSaving(true);
+    setErrorMsg('');
+    try {
+      await sislegisEntities.UsuarioSislegis.update(usuarioId, { parlamentar_id: null });
+      loadData();
+    } catch (e) {
+      setErrorMsg(e?.message || 'Erro ao desvincular usuário.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // Excluir parlamentar
+  async function handleDelete(p, e) {
+    if (e) e.stopPropagation();
+    const vinculado = vinculadosMap[p.id];
+    let msg = `Excluir permanentemente o parlamentar "${p.nome_parlamentar || p.nome}"?`;
+    if (vinculado) {
+      msg += `\n\nO usuário "${vinculado.username}" está vinculado. Deseja também desvincular (manter o login) ou excluir o usuário junto?\n\nOK = Confirmar exclusão do parlamentar`;
+    }
+    if (!confirm(msg)) return;
+
+    setDeleting(p.id);
+    try {
+      if (vinculado) {
+        // Perguntar se quer desvincular
+        const desvincular = confirm(`Deseja desvincular o usuário "${vinculado.username}"?\n\nOK = Desvincular (usuário mantém o login)\nCancelar = Usuário permanece vinculado a um parlamentar inexistente`);
+        if (desvincular) {
+          await sislegisEntities.UsuarioSislegis.update(vinculado.id, { parlamentar_id: null });
+        }
+      }
+      await sislegisEntities.Parlamentar.delete(p.id);
+      loadData();
+    } catch (e) {
+      alert('Erro ao excluir: ' + (e?.message || 'Erro desconhecido.'));
+    } finally {
+      setDeleting(null);
+    }
+  }
+
   const filtrados = parlamentares.filter(p =>
     (p.nome?.toLowerCase().includes(busca.toLowerCase()) ||
     p.nome_parlamentar?.toLowerCase().includes(busca.toLowerCase()) ||
@@ -93,6 +238,8 @@ export default function Parlamentares() {
   const sorted = [...filtrados].sort((a, b) => (cargoOrder[a.cargo] ?? 5) - (cargoOrder[b.cargo] ?? 5));
 
   const situacaoColor = { 'Ativo': 'bg-green-100 text-green-700', 'Licenciado': 'bg-yellow-100 text-yellow-700', 'Afastado': 'bg-red-100 text-red-700' };
+  const roleBadgeColor = { 'VEREADOR': 'bg-green-100 text-green-700', 'PRESIDENTE': 'bg-amber-100 text-amber-700' };
+  const statusBadge = { 'Pendente de Ativação': 'outline', 'Ativo': 'default', 'Inativo': 'secondary', 'Bloqueado': 'destructive' };
 
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
@@ -116,8 +263,10 @@ export default function Parlamentares() {
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {sorted.map((p) => (
-            <div key={p.id} onClick={() => openEdit(p)} className="bg-card border border-border rounded-2xl overflow-hidden hover:shadow-md transition-shadow cursor-pointer group">
+          {sorted.map((p) => {
+            const vinculado = vinculadosMap[p.id];
+            return (
+            <div key={p.id} onClick={() => openEdit(p)} className="bg-card border border-border rounded-2xl overflow-hidden hover:shadow-md transition-shadow cursor-pointer group relative">
               {/* Foto */}
               <div className="relative h-32 bg-gradient-to-b from-accent to-muted flex items-center justify-center">
                 {p.foto_url ? (
@@ -126,6 +275,17 @@ export default function Parlamentares() {
                   <div className="w-20 h-20 rounded-2xl bg-primary/10 border-2 border-white shadow-md absolute bottom-[-24px] flex items-center justify-center">
                     <span className="text-3xl font-heading font-bold text-primary">{(p.nome_parlamentar || p.nome)?.charAt(0)}</span>
                   </div>
+                )}
+                {/* Botão excluir */}
+                {isAdminCamara && (
+                  <button
+                    onClick={(e) => handleDelete(p, e)}
+                    disabled={deleting === p.id}
+                    className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/80 hover:bg-red-100 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Excluir parlamentar"
+                  >
+                    {deleting === p.id ? <Loader2 size={12} className="animate-spin text-red-500" /> : <Trash2 size={12} className="text-red-500" />}
+                  </button>
                 )}
               </div>
               <div className="pt-8 pb-4 px-4 text-center">
@@ -143,6 +303,11 @@ export default function Parlamentares() {
                   {(p.situacao && p.situacao !== 'Ativo') && (
                     <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${situacaoColor[p.situacao] || 'bg-gray-100 text-gray-600'}`}>{p.situacao}</span>
                   )}
+                  {vinculado && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-semibold flex items-center gap-1">
+                      <UserPlus size={9} /> Acesso
+                    </span>
+                  )}
                 </div>
                 {(p.email || p.telefone) && (
                   <div className="mt-3 space-y-1 border-t border-border pt-2">
@@ -152,7 +317,7 @@ export default function Parlamentares() {
                 )}
               </div>
             </div>
-          ))}
+          )})}
         </div>
       )}
 
@@ -267,6 +432,158 @@ export default function Parlamentares() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+            )}
+
+            {/* ===== SEÇÃO: ACESSO AO SISTEMA (apenas na edição) ===== */}
+            {editando && (
+              <div className="border-t border-border pt-4 mt-2">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
+                  <Key size={14} className="text-primary" />
+                  Acesso ao Sistema
+                </h3>
+
+                {(() => {
+                  const vinculado = vinculadosMap[editando.id];
+
+                  // CENÁRIO 1: Já tem usuário vinculado
+                  if (vinculado) {
+                    return (
+                      <div className="bg-muted/40 rounded-lg p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium">{vinculado.username}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${roleBadgeColor[vinculado.role] || 'bg-gray-100 text-gray-600'}`}>
+                                {vinculado.role === 'PRESIDENTE' ? 'Presidente' : 'Vereador'}
+                              </span>
+                              <Badge variant={statusBadge[vinculado.status] || 'secondary'} className="text-[10px]">{vinculado.status || 'Ativo'}</Badge>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-8 text-xs gap-1"
+                              onClick={() => handleUnlink(vinculado.id)}
+                              disabled={saving}
+                            >
+                              <Unlink size={12} /> Desvincular
+                            </Button>
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Usuário vinculado. Gerencie senha e permissões em <strong>Usuários da Câmara</strong>.
+                        </p>
+                      </div>
+                    );
+                  }
+
+                  // CENÁRIO 2: Sem vínculo — opções para criar ou vincular
+                  return (
+                    <div className="space-y-3">
+                      {/* Opção A: Criar novo acesso */}
+                      {!showUserForm ? (
+                        <div className="space-y-3">
+                          <Button
+                            variant="outline"
+                            className="w-full gap-2"
+                            onClick={() => { setShowUserForm(true); setLinkExistingId(''); }}
+                          >
+                            <UserPlus size={14} /> Criar acesso para este parlamentar
+                          </Button>
+
+                          {/* Opção B: Vincular existente */}
+                          {usuariosDisponiveis.length > 0 && (
+                            <div className="bg-muted/30 rounded-lg p-3 space-y-2">
+                              <p className="text-xs text-muted-foreground">Ou vincular um usuário já existente:</p>
+                              <div className="flex gap-2">
+                                <Select value={linkExistingId} onValueChange={setLinkExistingId}>
+                                  <SelectTrigger className="flex-1 h-8 text-xs">
+                                    <SelectValue placeholder="Selecione o usuário..." />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {usuariosDisponiveis.map(u => (
+                                      <SelectItem key={u.id} value={u.id}>
+                                        {u.username} — {u.nome || u.full_name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <Button
+                                  size="sm"
+                                  className="h-8 text-xs gap-1"
+                                  disabled={!linkExistingId || saving}
+                                  onClick={handleLinkExisting}
+                                >
+                                  <Link size={12} /> Vincular
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        /* Mini-formulário de criação de usuário */
+                        <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 space-y-3">
+                          <p className="text-sm font-medium">Novo acesso para: <strong>{editando.nome_parlamentar || editando.nome}</strong></p>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="text-xs text-muted-foreground block mb-1">Username *</label>
+                              <Input
+                                value={newUserUsername}
+                                onChange={e => setNewUserUsername(e.target.value)}
+                                placeholder="vereador.nome"
+                                className="h-8 text-sm"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs text-muted-foreground block mb-1">Senha temporária *</label>
+                              <Input
+                                type="password"
+                                value={newUserPassword}
+                                onChange={e => setNewUserPassword(e.target.value)}
+                                placeholder="Mín. 6 caracteres"
+                                className="h-8 text-sm"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground block mb-1">Perfil</label>
+                            <Select value={newUserRole} onValueChange={setNewUserRole}>
+                              <SelectTrigger className="h-8 text-sm">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="VEREADOR">Vereador</SelectItem>
+                                <SelectItem value="PRESIDENTE">Presidente</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          {userFormError && <p className="text-xs text-destructive">{userFormError}</p>}
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-8 text-xs"
+                              onClick={() => { setShowUserForm(false); setUserFormError(''); }}
+                            >
+                              Cancelar
+                            </Button>
+                            <Button
+                              size="sm"
+                              className="h-8 text-xs gap-1"
+                              onClick={handleCreateUser}
+                              disabled={creatingUser}
+                            >
+                              {creatingUser ? <Loader2 size={12} className="animate-spin" /> : <UserPlus size={12} />}
+                              {creatingUser ? 'Criando...' : 'Criar Usuário'}
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </div>
