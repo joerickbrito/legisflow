@@ -71,6 +71,9 @@
     "cpf": {
       "type": "string"
     },
+    "parlamentar_id": {
+      "type": "string"
+    },
     "telefone": {
       "type": "string"
     }

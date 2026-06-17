@@ -23,7 +23,12 @@ export default function InterfaceVereador({ votacaoAtiva, user, onRefresh, isPre
 
   const getMeuVoto = (v) => {
     if (!v || !user) return null;
-    const entry = (v.votos || []).find(x => x.parlamentar_id === user.id || x.parlamentar_nome === user.full_name);
+    const entry = (v.votos || []).find(x =>
+      (user.parlamentar_id && x.parlamentar_id === user.parlamentar_id) ||
+      x.parlamentar_id === user.id ||
+      x.parlamentar_nome === user.nome ||
+      x.parlamentar_nome === (user.full_name || '')
+    );
     return entry?.voto || null;
   };
 
@@ -46,7 +51,12 @@ export default function InterfaceVereador({ votacaoAtiva, user, onRefresh, isPre
     if (!votacao || meuVoto || votando) return;
     setVotando(true);
     const novosVotos = (votacao.votos || []).map(v => {
-      if (v.parlamentar_id === user?.id || v.parlamentar_nome === user?.full_name) {
+      const ehMeu =
+        (user?.parlamentar_id && v.parlamentar_id === user.parlamentar_id) ||
+        v.parlamentar_id === user?.id ||
+        v.parlamentar_nome === user?.nome ||
+        v.parlamentar_nome === (user?.full_name || '');
+      if (ehMeu) {
         return { ...v, voto: opcao, hora: new Date().toISOString() };
       }
       return v;

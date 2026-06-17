@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
-    const { username, nome, email, role, tenant_id, camara_id, camara_nome, senha, permissoes, foto_url, cargo, partido_id, partido_sigla, cpf, telefone, status, senha_temporaria, sislegis_token } = body;
+    const { username, nome, email, role, tenant_id, camara_id, camara_nome, senha, permissoes, foto_url, cargo, partido_id, partido_sigla, cpf, parlamentar_id, telefone, status, senha_temporaria, sislegis_token } = body;
 
     let caller = await getAuthenticatedUser(base44);
 
@@ -144,6 +144,7 @@ Deno.serve(async (req) => {
       partido_id: partido_id || null,
       partido_sigla: partido_sigla || null,
       cpf: cpf || null,
+      parlamentar_id: parlamentar_id || null,
       telefone: telefone || null,
     });
 

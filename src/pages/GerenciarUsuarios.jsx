@@ -57,6 +57,7 @@ export default function GerenciarUsuarios() {
   const [saving, setSaving] = useState(false);
   const [resetandoSenha, setResetandoSenha] = useState(null);
   const [camarasAtivas, setCamarasAtivas] = useState([]);
+  const [parlamentares, setParlamentares] = useState([]);
 
   const handleResetarSenha = async (e, u) => {
     e.stopPropagation();
@@ -117,6 +118,7 @@ export default function GerenciarUsuarios() {
     login: "", role: "VEREADOR", tenant_id: tenantId || "",
     status: "Ativo", senha_temporaria: true,
     camara_id: "", camara_nome: "",
+    parlamentar_id: "",
     permissoes: { ...DEFAULT_PERMISSIONS.VEREADOR },
   };
   const [form, setForm] = useState(emptyForm);
@@ -130,7 +132,11 @@ export default function GerenciarUsuarios() {
       sislegisEntities.Camara.filter({ status: 'Ativa' }, 'nome', 200).then(setCamarasAtivas).catch(() => {});
     }
     const pFilter = withTenant({});
-    if (pFilter) sislegisEntities.Partido.filter(pFilter).then(setPartidos).catch(() => {});
+    if (pFilter) {
+      sislegisEntities.Partido.filter(pFilter).then(setPartidos).catch(() => {});
+      sislegisEntities.Parlamentar.filter({ ...pFilter, ativo: true }, 'nome', 100)
+        .then(setParlamentares).catch(() => {});
+    }
   }, [isAdminCamara, isSuperAdmin, tenantId]);
 
   const loadUsuarios = async () => {
@@ -180,6 +186,7 @@ export default function GerenciarUsuarios() {
       senha_temporaria: !!u.senha_temporaria,
       camara_id: u.camara_id || '',
       camara_nome: u.camara_nome || '',
+      parlamentar_id: u.parlamentar_id || '',
       permissoes: u.permissoes || DEFAULT_PERMISSIONS[u.role] || { ...DEFAULT_PERMISSIONS.VEREADOR },
     });
     setOpen(true);
@@ -202,6 +209,7 @@ export default function GerenciarUsuarios() {
       permissoes: { ...defaults },
       camara_id: newRole === 'ADMIN_CAMARA' ? f.camara_id : '',
       camara_nome: newRole === 'ADMIN_CAMARA' ? f.camara_nome : '',
+      parlamentar_id: PERFIS_PARTIDO_OBRIGATORIO.includes(newRole) ? f.parlamentar_id : '',
     }));
   };
 
@@ -236,6 +244,7 @@ export default function GerenciarUsuarios() {
           camara_id: form.camara_id || null,
           camara_nome: form.camara_nome || null,
           permissoes: form.permissoes,
+          parlamentar_id: form.parlamentar_id || null,
         });
       } else {
         // Criar novo usuário no SisLegis (sem convite por e-mail)
@@ -257,6 +266,7 @@ export default function GerenciarUsuarios() {
           partido_sigla: form.partido_sigla,
           cpf: form.cpf,
           telefone: form.telefone,
+          parlamentar_id: form.parlamentar_id || null,
         });
       }
       await loadUsuarios();
@@ -504,6 +514,30 @@ export default function GerenciarUsuarios() {
                   {form.senha_temporaria ? 'Exigir troca de senha no primeiro acesso' : 'Senha permanente (não exigir troca)'}
                 </span>
               </div>
+            )}
+
+            {/* Vínculo Parlamentar — obrigatório para Vereador/Presidente */}
+            {isParlamentar && (
+              <FormField label="Parlamentar Vinculado" required>
+                <Select
+                  value={form.parlamentar_id || ''}
+                  onValueChange={v => setForm(f => ({ ...f, parlamentar_id: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o parlamentar cadastrado..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {parlamentares.map(p => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.nome_parlamentar || p.nome} — {p.partido_sigla}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Vincule este usuário ao seu registro de parlamentar para funcionar no painel de votação.
+                </p>
+              </FormField>
             )}
 
             {/* Partido — obrigatório para Vereador/Presidente */}
