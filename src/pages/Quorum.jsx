@@ -31,6 +31,23 @@ export default function Quorum() {
     const ausentes = form.total_parlamentares - presentes;
     const quorum_atingido = presentes >= form.quorum_minimo;
     await sislegisEntities.Quorum.create({ ...form, tenant_id: tenantId, presentes, ausentes, quorum_atingido });
+
+    // Sincronizar presenças com a Sessão correspondente
+    if (form.sessao_id) {
+      const presencasSessao = form.registro_presencas.map(p => ({
+        parlamentar_id: p.parlamentar_id,
+        parlamentar_nome: p.parlamentar_nome,
+        partido_sigla: p.partido_sigla || '',
+        foto_url: p.foto_url || '',
+        presente: p.status === 'Presente',
+      }));
+      try {
+        await sislegisEntities.Sessao.update(form.sessao_id, { presencas: presencasSessao });
+      } catch (e) {
+        console.warn('Aviso: não foi possível sincronizar presenças com a sessão.', e);
+      }
+    }
+
     const filter = withTenant();
     const updated = filter ? await sislegisEntities.Quorum.filter(filter, "-created_date", 50) : [];
     setRegistros(updated);
@@ -39,7 +56,13 @@ export default function Quorum() {
 
   const initPresencas = (sessaoId) => {
     const sessao = sessoes.find(s => s.id === sessaoId);
-    const presencas = parlamentares.map(p => ({ parlamentar_id: p.id, parlamentar_nome: p.nome_parlamentar || p.nome, status: "Presente" }));
+    const presencas = parlamentares.map(p => ({
+      parlamentar_id: p.id,
+      parlamentar_nome: p.nome_parlamentar || p.nome,
+      partido_sigla: p.partido_sigla || '',
+      foto_url: p.foto_url || '',
+      status: "Presente"
+    }));
     setForm(f => ({ ...f, sessao_id: sessaoId, total_parlamentares: parlamentares.length, quorum_minimo: Math.ceil(parlamentares.length / 2) + 1, registro_presencas: presencas, data: sessao?.data || "" }));
   };
 
