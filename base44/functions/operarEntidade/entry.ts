@@ -21,8 +21,22 @@ const ALLOWED_ENTITIES = [
 // Operações que exigem perfil ADMIN_CAMARA ou superior
 const RESTRICTED_OPERATIONS = ['create', 'update', 'delete'];
 
-// Retorna o usuário autenticado a partir do session_token
-async function getAuthenticatedUser(base44) {
+// Retorna o usuário autenticado
+// NOVA ORDEM DE PRIORIDADE:
+// 1. PRIMEIRO: sislegis_token (body) → UsuarioSislegis (100% das chamadas reais do frontend)
+// 2. SEGUNDO (fallback): BaaS auth.me() → Master Admin legado via ConfiguracaoSistema
+async function getAuthenticatedUser(base44, sislegis_token) {
+  // 1. PRIMEIRO: SisLegis session token (caminho usado por 100% das chamadas reais)
+  if (sislegis_token) {
+    try {
+      const usuarios = await base44.asServiceRole.entities.UsuarioSislegis.filter({
+        session_token: sislegis_token
+      });
+      if (usuarios && usuarios.length > 0) return usuarios[0];
+    } catch { /* fallthrough para BaaS */ }
+  }
+
+  // 2. SEGUNDO (fallback): BaaS native auth — apenas Master Admin legado
   try {
     const baasUser = await base44.auth.me();
     if (baasUser) {
@@ -39,15 +53,8 @@ async function getAuthenticatedUser(base44) {
       }
       return { ...baasUser, role: baasUser.role || 'user', tenant_id: baasUser.tenant_id };
     }
-  } catch { /* BaaS auth falhou, tenta SisLegis */ }
+  } catch { /* BaaS auth falhou */ }
 
-  const token = base44._requestHeaders?.get?.('x-sislegis-token') || '';
-  if (token) {
-    const usuarios = await base44.asServiceRole.entities.UsuarioSislegis.filter({
-      session_token: token
-    });
-    if (usuarios && usuarios.length > 0) return usuarios[0];
-  }
   return null;
 }
 
@@ -57,13 +64,7 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { entity, operation, params, sislegis_token } = body;
 
-    let user = await getAuthenticatedUser(base44);
-
-    // Fallback: autenticar via sislegis_token no body
-    if (!user && sislegis_token) {
-      const usuarios = await base44.asServiceRole.entities.UsuarioSislegis.filter({ session_token: sislegis_token });
-      if (usuarios && usuarios.length > 0) user = usuarios[0];
-    }
+    const user = await getAuthenticatedUser(base44, sislegis_token);
 
     if (!user) {
       return Response.json({ error: 'Não autorizado. Faça login.' }, { status: 401 });
