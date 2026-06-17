@@ -79,7 +79,8 @@ Deno.serve(async (req) => {
     // - O próprio usuário pode limpar sua flag
     // - SUPER_ADMIN pode limpar de qualquer um
     // - ADMIN_CAMARA pode limpar de usuários da própria câmara
-    const isSelf = targetUser.email === caller.email || targetUser.id === caller.id;
+    const isSelf = targetUser.id === caller.id ||
+     (!!targetUser.email && !!caller.email && targetUser.email === caller.email);
     const isSameTenant = targetUser.tenant_id && targetUser.tenant_id === caller.tenant_id;
 
     if (!isSelf && !isSuperAdmin && !(isAdminCamara && isSameTenant)) {
