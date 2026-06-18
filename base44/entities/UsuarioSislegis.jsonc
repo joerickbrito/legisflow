@@ -85,6 +85,7 @@
     "role"
   ],
   "rls": {
+<<<<<<< HEAD
     "create": {
       "$or": [
         {
@@ -136,20 +137,15 @@
         }
       ]
     },
+=======
+    "create": null,
+    "read": null,
+    "update": null,
+>>>>>>> parent of 4e52244 (Apply RLS security recommendations)
     "delete": {
-      "$or": [
-        {
-          "data.tenant_id": "{{user.data.tenant_id}}",
-          "user_condition": {
-            "role": "ADMIN_CAMARA"
-          }
-        },
-        {
-          "user_condition": {
-            "role": "SUPER_ADMIN"
-          }
-        }
-      ]
+      "user_condition": {
+        "role": "admin"
+      }
     }
   }
 }
