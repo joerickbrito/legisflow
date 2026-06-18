@@ -23,12 +23,16 @@ export default function InterfaceVereador({ votacaoAtiva, user, onRefresh, isPre
 
   const getMeuVoto = (v) => {
     if (!v || !user) return null;
-    const entry = (v.votos || []).find(x =>
-      (user.parlamentar_id && x.parlamentar_id === user.parlamentar_id) ||
-      x.parlamentar_id === user.id ||
-      x.parlamentar_nome === user.nome ||
-      x.parlamentar_nome === (user.full_name || '')
-    );
+    // PRIORIDADE: parlamentar_id vinculado (campo correto)
+    // fallback: nome (apenas se parlamentar_id não estiver disponível)
+    const entry = (v.votos || []).find(x => {
+      if (user.parlamentar_id) {
+        return x.parlamentar_id === user.parlamentar_id;
+      }
+      // fallback por nome quando não há vínculo cadastrado
+      return x.parlamentar_nome === user.nome ||
+             x.parlamentar_nome === (user.full_name || '');
+    });
     return entry?.voto || null;
   };
 
