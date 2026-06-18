@@ -55,16 +55,31 @@ export default function InterfaceVereador({ votacaoAtiva, user, onRefresh, isPre
     if (!votacao || meuVoto || votando) return;
     setVotando(true);
     const novosVotos = (votacao.votos || []).map(v => {
-      const ehMeu =
-        (user?.parlamentar_id && v.parlamentar_id === user.parlamentar_id) ||
-        v.parlamentar_id === user?.id ||
-        v.parlamentar_nome === user?.nome ||
-        v.parlamentar_nome === (user?.full_name || '');
+      let ehMeu = false;
+      if (user?.parlamentar_id) {
+        // Identificação correta: pelo vínculo parlamentar_id
+        ehMeu = v.parlamentar_id === user.parlamentar_id;
+      } else {
+        // Fallback por nome quando não há vínculo cadastrado
+        ehMeu = v.parlamentar_nome === user?.nome ||
+                v.parlamentar_nome === (user?.full_name || '');
+      }
       if (ehMeu) {
         return { ...v, voto: opcao, hora: new Date().toISOString() };
       }
       return v;
     });
+
+    // Verificação de segurança: se nenhum slot foi encontrado, abortar
+    const slotEncontrado = novosVotos.some((v, i) => {
+      const original = (votacao.votos || [])[i];
+      return v.voto !== original?.voto;
+    });
+    if (!slotEncontrado) {
+      console.error('ERRO: Slot de voto não encontrado para o usuário:', user?.nome, 'parlamentar_id:', user?.parlamentar_id);
+      setVotando(false);
+      return;
+    }
     const sim = novosVotos.filter(v => !v.is_presidente && v.voto === 'Sim').length;
     const nao = novosVotos.filter(v => !v.is_presidente && v.voto === 'Não').length;
     const abstencoes = novosVotos.filter(v => v.voto === 'Abstenção').length;
