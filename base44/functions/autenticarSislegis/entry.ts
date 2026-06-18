@@ -234,6 +234,7 @@ Deno.serve(async (req) => {
         partido_sigla: usuario.partido_sigla || null,
         cpf: usuario.cpf || null,
         telefone: usuario.telefone || null,
+        parlamentar_id: usuario.parlamentar_id || null,
       }
     });
   } catch (error) {
