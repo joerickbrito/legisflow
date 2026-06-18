@@ -3,7 +3,8 @@ import { base44 } from "@/api/base44Client";
 import { sislegisEntities } from "@/lib/sislegisApi";
 import { CheckCircle2, XCircle, MinusCircle, Vote, Clock } from "lucide-react";
 
-export default function InterfaceVereador({ votacaoAtiva, user, onRefresh, isPresidente }) {
+// CORREÇÃO: Adicionado 'tenantId' na desestruturação dos parâmetros abaixo
+export default function InterfaceVereador({ votacaoAtiva, user, onRefresh, isPresidente, tenantId }) {
   const [votacao, setVotacao] = useState(votacaoAtiva);
   const [meuVoto, setMeuVoto] = useState(null);
   const [votando, setVotando] = useState(false);
@@ -83,12 +84,16 @@ export default function InterfaceVereador({ votacaoAtiva, user, onRefresh, isPre
     const sim = novosVotos.filter(v => !v.is_presidente && v.voto === 'Sim').length;
     const nao = novosVotos.filter(v => !v.is_presidente && v.voto === 'Não').length;
     const abstencoes = novosVotos.filter(v => v.voto === 'Abstenção').length;
+    
+    // CORREÇÃO: Incluído o 'tenant_id' para passar pelas regras de validação de segurança (RLS) do backend
     await sislegisEntities.Votacao.update(votacao.id, {
+      tenant_id: tenantId || '',
       votos: novosVotos,
       votos_sim: sim,
       votos_nao: nao,
       abstencoes,
     });
+    
     setMeuVoto(opcao);
     setVotando(false);
     onRefresh?.();
@@ -99,7 +104,7 @@ export default function InterfaceVereador({ votacaoAtiva, user, onRefresh, isPre
   const aguardandoDesempate = votacao?.status === 'Aguardando Desempate';
   const podeVotar = !isPresidente || empate || aguardandoDesempate;
 
-  // Sem votação ativa
+  // Sem votação activa
   if (semVotacao) {
     return (
       <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center text-center p-8">
