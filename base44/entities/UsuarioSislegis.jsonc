@@ -85,63 +85,9 @@
     "role"
   ],
   "rls": {
-<<<<<<< HEAD
-    "create": {
-      "$or": [
-        {
-          "data.tenant_id": "{{user.data.tenant_id}}",
-          "user_condition": {
-            "role": "ADMIN_CAMARA"
-          }
-        },
-        {
-          "user_condition": {
-            "role": "SUPER_ADMIN"
-          }
-        }
-      ]
-    },
-    "read": {
-      "$or": [
-        {
-          "id": "{{user.id}}"
-        },
-        {
-          "data.tenant_id": "{{user.data.tenant_id}}",
-          "user_condition": {
-            "role": "ADMIN_CAMARA"
-          }
-        },
-        {
-          "user_condition": {
-            "role": "SUPER_ADMIN"
-          }
-        }
-      ]
-    },
-    "update": {
-      "$or": [
-        {
-          "id": "{{user.id}}"
-        },
-        {
-          "data.tenant_id": "{{user.data.tenant_id}}",
-          "user_condition": {
-            "role": "ADMIN_CAMARA"
-          }
-        },
-        {
-          "user_condition": {
-            "role": "SUPER_ADMIN"
-          }
-        }
-      ]
-    },
-=======
     "create": null,
     "read": null,
     "update": null,
->>>>>>> parent of 4e52244 (Apply RLS security recommendations)
     "delete": {
       "user_condition": {
         "role": "admin"
