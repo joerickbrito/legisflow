@@ -87,16 +87,30 @@ export default function PainelEletronico() {
       ? parlamentares.filter(p => presentes.find(pr => pr.parlamentar_id === p.id))
       : parlamentares;
 
-    // Monta votos (presidente não vota normalmente)
-    const votos = parlamentaresPresentes.map(p => ({
-      parlamentar_id: p.id,
-      parlamentar_nome: p.nome_parlamentar || p.nome,
-      partido_sigla: p.partido_sigla || '',
-      foto_url: p.foto_url || '',
-      voto: null,
-      hora: null,
-      is_presidente: p.role === 'PRESIDENTE' || userRole === 'PRESIDENTE' && p.id === user?.id,
-    }));
+    // Busca usuários da câmara para identificar quem é Presidente
+    // (o campo role do Parlamentar não existe — o role fica no UsuarioSislegis)
+    let usuariosCamara = [];
+    try {
+      const filter = withTenant({});
+      usuariosCamara = await sislegisEntities.UsuarioSislegis.filter(filter, 'nome', 200);
+    } catch (e) {
+      console.warn('Não foi possível carregar usuários para identificar Presidente:', e);
+    }
+
+    // Monta votos — marca is_presidente baseado no role do UsuarioSislegis vinculado
+    const votos = parlamentaresPresentes.map(p => {
+      const usuarioVinculado = usuariosCamara.find(u => u.parlamentar_id === p.id);
+      const isPresidenteSlot = usuarioVinculado?.role === 'PRESIDENTE';
+      return {
+        parlamentar_id: p.id,
+        parlamentar_nome: p.nome_parlamentar || p.nome,
+        partido_sigla: p.partido_sigla || '',
+        foto_url: p.foto_url || '',
+        voto: null,
+        hora: null,
+        is_presidente: isPresidenteSlot,
+      };
+    });
 
     const sessaoDescricao = sessao
       ? [
