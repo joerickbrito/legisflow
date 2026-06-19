@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { sislegisEntities, criarUsuario } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
-import { Plus, Users, Search, Mail, Phone, Upload, Camera, UserPlus, Link, Unlink, ExternalLink, Key, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Users, Search, Upload, Camera, UserPlus, Link, Unlink, ExternalLink, Key, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -262,59 +262,44 @@ export default function Parlamentares() {
           {isAdminCamara && <Button onClick={openNew} variant="outline" className="mt-4 gap-2"><Plus size={16} /> Cadastrar parlamentar</Button>}
         </div>
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
           {sorted.map((p) => {
             const vinculado = vinculadosMap[p.id];
             return (
-            <div key={p.id} onClick={() => openEdit(p)} className="group relative bg-card border border-border rounded-2xl overflow-hidden cursor-pointer card-elevated hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-              {/* Faixa de destaque para liderança */}
-              {(p.cargo === 'Presidente' || p.cargo === 'Vice-Presidente') && (
-                <div className={`absolute top-0 inset-x-0 h-1 z-20 ${p.cargo === 'Presidente' ? 'bg-amber-400' : 'bg-orange-400'}`} />
-              )}
-
-              {/* Foto */}
-              <div className="relative aspect-[4/5] bg-gradient-to-br from-accent/60 to-muted overflow-hidden">
+            <div
+              key={p.id}
+              onClick={() => openEdit(p)}
+              className={`group relative flex items-center gap-3 bg-card border border-border rounded-xl p-3 cursor-pointer card-elevated hover:shadow-md hover:border-primary/30 transition-all ${
+                p.cargo === 'Presidente' ? 'border-l-4 border-l-amber-400' :
+                p.cargo === 'Vice-Presidente' ? 'border-l-4 border-l-orange-400' : ''
+              }`}
+            >
+              {/* Avatar */}
+              <div className="relative flex-shrink-0">
                 {p.foto_url ? (
-                  <img src={p.foto_url} alt={p.nome_parlamentar || p.nome} className="w-full h-full object-cover object-top" />
+                  <img src={p.foto_url} alt={p.nome_parlamentar || p.nome} className="w-14 h-14 rounded-xl object-cover object-top border border-border" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <span className="text-6xl font-heading font-bold text-primary/25">{(p.nome_parlamentar || p.nome)?.charAt(0)}</span>
+                  <div className="w-14 h-14 rounded-xl bg-accent flex items-center justify-center">
+                    <span className="text-xl font-heading font-bold text-primary/50">{(p.nome_parlamentar || p.nome)?.charAt(0)}</span>
                   </div>
                 )}
-
-                {/* Selo de acesso ao sistema */}
                 {vinculado && (
-                  <span className="absolute top-2 left-2 z-10 inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-full bg-violet-600/90 text-white backdrop-blur-sm shadow-sm">
-                    <UserPlus size={10} /> Acesso
+                  <span title="Possui acesso ao sistema" className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-violet-600 text-white flex items-center justify-center ring-2 ring-card">
+                    <UserPlus size={10} />
                   </span>
-                )}
-
-                {/* Botão excluir */}
-                {isAdminCamara && (
-                  <button
-                    onClick={(e) => handleDelete(p, e)}
-                    disabled={deleting === p.id}
-                    className="absolute top-2 right-2 z-10 w-7 h-7 rounded-full bg-white/85 hover:bg-red-500 text-red-500 hover:text-white backdrop-blur-sm shadow-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
-                    title="Excluir parlamentar"
-                  >
-                    {deleting === p.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
-                  </button>
                 )}
               </div>
 
               {/* Informações */}
-              <div className="p-3.5 space-y-2">
-                <div>
-                  <h3 className="font-heading font-bold text-foreground text-[15px] leading-tight truncate">
-                    {p.nome_parlamentar || p.nome}
-                  </h3>
-                  <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                    {p.partido_sigla || 'Sem partido'}{p.cargo ? ` · ${p.cargo}` : ''}
-                  </p>
-                </div>
-
+              <div className="flex-1 min-w-0">
+                <h3 className="font-heading font-bold text-foreground text-sm leading-tight truncate">
+                  {p.nome_parlamentar || p.nome}
+                </h3>
+                <p className="text-xs text-muted-foreground truncate">
+                  {p.partido_sigla || 'Sem partido'}{p.cargo ? ` · ${p.cargo}` : ''}
+                </p>
                 {((p.cargo && p.cargo !== 'Vereador') || p.tipo === 'Suplente' || (p.situacao && p.situacao !== 'Ativo')) && (
-                  <div className="flex items-center gap-1.5 flex-wrap">
+                  <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
                     {p.cargo && p.cargo !== 'Vereador' && (
                       <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
                         p.cargo === 'Presidente' ? 'bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-100' :
@@ -330,14 +315,19 @@ export default function Parlamentares() {
                     )}
                   </div>
                 )}
-
-                {(p.email || p.telefone) && (
-                  <div className="space-y-1 border-t border-border pt-2">
-                    {p.email && <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><Mail size={11} className="flex-shrink-0" /> <span className="truncate">{p.email}</span></div>}
-                    {p.telefone && <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><Phone size={11} className="flex-shrink-0" /> {p.telefone}</div>}
-                  </div>
-                )}
               </div>
+
+              {/* Botão excluir */}
+              {isAdminCamara && (
+                <button
+                  onClick={(e) => handleDelete(p, e)}
+                  disabled={deleting === p.id}
+                  className="flex-shrink-0 w-8 h-8 rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-500 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
+                  title="Excluir parlamentar"
+                >
+                  {deleting === p.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                </button>
+              )}
             </div>
           )})}
         </div>
