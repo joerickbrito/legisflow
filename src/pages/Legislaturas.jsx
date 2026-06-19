@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { sislegisEntities } from '@/lib/sislegisApi';
-import { BookOpen, Plus } from 'lucide-react';
+import { BookOpen, Plus, Trash2, Pencil, AlertTriangle, Loader2 } from 'lucide-react';
 import { useTenant } from '@/lib/TenantContext';
+import { verificarVinculos } from '@/lib/dependencias';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -18,9 +19,16 @@ export default function Legislaturas() {
   const [editando, setEditando] = useState(null);
   const [form, setForm] = useState({ numero: '', ano_inicio: '', ano_fim: '', data_inicio: '', data_fim: '', data_eleicao: '', descricao: '', status: 'Ativa' });
   const [showSessaoForm, setShowSessaoForm] = useState(false);
+  const [editandoSessao, setEditandoSessao] = useState(null);
   const [sessaoForm, setSessaoForm] = useState({ numero: '', ano: new Date().getFullYear(), data_inicio: '', data_fim: '', legislatura_id: '' });
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  // Exclusão com verificação de vínculo
+  const [del, setDel] = useState(null); // { tipo: 'Legislatura'|'SessaoLegislativa', registro, titulo }
+  const [delVinculos, setDelVinculos] = useState([]);
+  const [delChecando, setDelChecando] = useState(false); // verificando vínculos
+  const [delExcluindo, setDelExcluindo] = useState(false); // exclusão em andamento
+  const [delErro, setDelErro] = useState('');
 
   useEffect(() => { if (canQuery) load(); }, [tenantId, canQuery]);
 
@@ -70,20 +78,68 @@ export default function Legislaturas() {
     setErrorMsg('');
     try {
       const leg = legislaturas.find(l => l.id === sessaoForm.legislatura_id);
-      await sislegisEntities.SessaoLegislativa.create({
+      const data = {
         ...sessaoForm,
         tenant_id: tenantId || '',
         ano: Number(sessaoForm.ano),
         numero: Number(sessaoForm.numero),
         legislatura_numero: leg?.numero,
-      });
+      };
+      if (editandoSessao) await sislegisEntities.SessaoLegislativa.update(editandoSessao.id, data);
+      else await sislegisEntities.SessaoLegislativa.create(data);
       setShowSessaoForm(false);
+      setEditandoSessao(null);
       setErrorMsg('');
       load();
     } catch (e) {
       setErrorMsg(e?.message || 'Erro ao salvar sessão legislativa.');
     } finally {
       setSaving(false);
+    }
+  }
+
+  function abrirEdicaoSessao(s) {
+    setEditandoSessao(s);
+    setSessaoForm({
+      numero: s.numero ?? '',
+      ano: s.ano ?? new Date().getFullYear(),
+      data_inicio: s.data_inicio || '',
+      data_fim: s.data_fim || '',
+      legislatura_id: s.legislatura_id || '',
+    });
+    setErrorMsg('');
+    setShowSessaoForm(true);
+  }
+
+  // Abre o fluxo de exclusão: verifica vínculos antes de permitir excluir
+  async function pedirExclusao(tipo, registro, titulo) {
+    setDel({ tipo, registro, titulo });
+    setDelVinculos([]);
+    setDelErro('');
+    setDelChecando(true);
+    try {
+      const vinc = await verificarVinculos(tipo, registro.id, withTenant);
+      setDelVinculos(vinc);
+    } catch (e) {
+      setDelErro('Não foi possível verificar os vínculos. Tente novamente.');
+    } finally {
+      setDelChecando(false);
+    }
+  }
+
+  async function confirmarExclusao() {
+    if (!del) return;
+    setDelExcluindo(true);
+    setDelErro('');
+    try {
+      if (del.tipo === 'Legislatura') await sislegisEntities.Legislatura.delete(del.registro.id);
+      else await sislegisEntities.SessaoLegislativa.delete(del.registro.id);
+      setDel(null);
+      load();
+    } catch (e) {
+      setDelErro(e?.message || 'Erro ao excluir.');
+    } finally {
+      setDelExcluindo(false);
     }
   }
 
@@ -123,19 +179,31 @@ export default function Legislaturas() {
                       {l.descricao && <div className="text-xs text-muted-foreground italic">{l.descricao}</div>}
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
                     <StatusBadge status={l.status} />
                     <Button variant="outline" size="sm" onClick={() => { setEditando(l); setForm({ numero: l.numero, ano_inicio: l.ano_inicio || '', ano_fim: l.ano_fim || '', data_inicio: l.data_inicio || '', data_fim: l.data_fim || '', data_eleicao: l.data_eleicao || '', descricao: l.descricao || '', status: l.status }); setShowForm(true); }}>
                       Editar
+                    </Button>
+                    <Button variant="outline" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10 px-2"
+                      onClick={() => pedirExclusao('Legislatura', l, `${l.numero}ª Legislatura`)} title="Excluir legislatura">
+                      <Trash2 size={15} />
                     </Button>
                   </div>
                 </div>
                 {sessoes.length > 0 && (
                   <div className="px-5 py-3 flex flex-wrap gap-2">
                     {sessoes.map(s => (
-                      <span key={s.id} className="text-xs bg-muted text-muted-foreground px-3 py-1 rounded-full font-medium">
-                        {s.numero}ª Sessão — {s.ano}
-                      </span>
+                      <div key={s.id} className="group inline-flex items-center gap-1 bg-muted rounded-full pl-3 pr-1.5 py-1">
+                        <span className="text-xs text-muted-foreground font-medium">{s.numero}ª Sessão — {s.ano}</span>
+                        <button onClick={() => abrirEdicaoSessao(s)} title="Editar sessão"
+                          className="p-1 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors">
+                          <Pencil size={11} />
+                        </button>
+                        <button onClick={() => pedirExclusao('SessaoLegislativa', s, `${s.numero}ª Sessão Legislativa de ${s.ano}`)} title="Excluir sessão"
+                          className="p-1 rounded-full text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors">
+                          <Trash2 size={11} />
+                        </button>
+                      </div>
                     ))}
                   </div>
                 )}
@@ -176,9 +244,9 @@ export default function Legislaturas() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showSessaoForm} onOpenChange={setShowSessaoForm}>
+      <Dialog open={showSessaoForm} onOpenChange={(v) => { setShowSessaoForm(v); if (!v) { setEditandoSessao(null); setErrorMsg(''); } }}>
         <DialogContent className="sm:max-w-sm">
-          <DialogHeader><DialogTitle className="font-heading">Nova Sessão Legislativa</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="font-heading">{editandoSessao ? 'Editar' : 'Nova'} Sessão Legislativa</DialogTitle></DialogHeader>
           <div className="space-y-3 py-2">
             <div>
               <label className="text-sm font-medium mb-1.5 block">Legislatura</label>
@@ -200,6 +268,63 @@ export default function Legislaturas() {
           <DialogFooter>
             <Button variant="outline" onClick={() => { setShowSessaoForm(false); setErrorMsg(''); }}>Cancelar</Button>
             <Button onClick={salvarSessao} disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Exclusão com verificação de vínculo */}
+      <Dialog open={!!del} onOpenChange={(v) => { if (!v) { setDel(null); setDelVinculos([]); setDelErro(''); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-heading flex items-center gap-2">
+              {delVinculos.length > 0
+                ? <><AlertTriangle size={18} className="text-amber-500" /> Exclusão bloqueada</>
+                : 'Excluir registro'}
+            </DialogTitle>
+          </DialogHeader>
+
+          {delChecando ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
+              <Loader2 size={16} className="animate-spin" /> Verificando vínculos...
+            </div>
+          ) : delVinculos.length > 0 ? (
+            <div className="py-2 space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Não é possível excluir <strong className="text-foreground">{del?.titulo}</strong> porque há registros vinculados a ele:
+              </p>
+              <ul className="space-y-1.5">
+                {delVinculos.map(v => (
+                  <li key={v.entity} className="flex items-center justify-between text-sm bg-muted/50 rounded-lg px-3 py-2">
+                    <span className="text-foreground font-medium">{v.count} {v.label}</span>
+                    <span className="text-xs text-muted-foreground">em {v.onde}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-xs text-muted-foreground">
+                Exclua ou desvincule esses registros primeiro (nas telas indicadas) e tente de novo. Ao excluir cada um, a própria tela mostrará os vínculos do próximo nível, se houver — assim você segue o caminho até liberar a exclusão.
+              </p>
+            </div>
+          ) : (
+            <div className="py-2">
+              <p className="text-sm text-muted-foreground">
+                Tem certeza que deseja excluir <strong className="text-foreground">{del?.titulo}</strong>? Esta ação não pode ser desfeita.
+              </p>
+            </div>
+          )}
+
+          {delErro && <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">{delErro}</p>}
+
+          <DialogFooter>
+            {delVinculos.length > 0 ? (
+              <Button variant="outline" onClick={() => setDel(null)}>Entendi</Button>
+            ) : (
+              <>
+                <Button variant="outline" onClick={() => setDel(null)} disabled={delExcluindo || delChecando}>Cancelar</Button>
+                <Button variant="destructive" onClick={confirmarExclusao} disabled={delExcluindo || delChecando}>
+                  {delExcluindo ? <><Loader2 size={14} className="animate-spin mr-1.5" /> Excluindo...</> : 'Excluir'}
+                </Button>
+              </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
