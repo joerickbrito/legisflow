@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { UserCheck, Plus, CheckCircle, XCircle } from "lucide-react";
+import { UserCheck, Plus, CheckCircle, XCircle, Trash2 } from "lucide-react";
+import { useExclusaoSegura } from "@/components/ExclusaoSegura";
 
 export default function Quorum() {
   const { withTenant, canQuery, tenantId } = useTenant();
@@ -74,6 +75,14 @@ export default function Quorum() {
     });
   };
 
+  const { pedirExclusao, dialogExclusao } = useExclusaoSegura({
+    withTenant,
+    onExcluido: async () => {
+      const filter = withTenant();
+      if (filter) setRegistros(await sislegisEntities.Quorum.filter(filter, "-created_date", 50));
+    },
+  });
+
   return (
     <div className="p-6 space-y-6">
       <PageHeader
@@ -95,9 +104,14 @@ export default function Quorum() {
                     <p className="font-medium">Sessão {sessao?.numero || r.sessao_id} — {r.data}</p>
                     <p className="text-sm text-muted-foreground">{r.presentes}/{r.total_parlamentares} presentes | Mínimo: {r.quorum_minimo}</p>
                   </div>
-                  <Badge variant={r.quorum_atingido ? "default" : "destructive"}>
-                    {r.quorum_atingido ? "Quórum Atingido" : "Sem Quórum"}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={r.quorum_atingido ? "default" : "destructive"}>
+                      {r.quorum_atingido ? "Quórum Atingido" : "Sem Quórum"}
+                    </Badge>
+                    <button onClick={() => pedirExclusao('Quorum', r, `Quórum da Sessão ${sessao?.numero || r.sessao_id || ''}${r.data ? ' — ' + r.data : ''}`)} className="p-1.5 rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-500 transition-colors" title="Excluir registro">
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -142,6 +156,8 @@ export default function Quorum() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {dialogExclusao}
     </div>
   );
 }

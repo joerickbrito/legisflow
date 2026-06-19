@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { sislegisEntities } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
-import { Calendar, Clock, Users, Plus, Pencil, CheckCircle2 } from 'lucide-react';
+import { Calendar, Clock, Users, Plus, Pencil, CheckCircle2, Trash2 } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
+import { useExclusaoSegura } from '@/components/ExclusaoSegura';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -45,6 +46,8 @@ export default function Sessoes() {
   const podeGerenciar = isOperadorGeral || isPresidente;
 
   useEffect(() => { if (canQuery) loadData(); }, [tenantId, canQuery]);
+
+  const { pedirExclusao, dialogExclusao } = useExclusaoSegura({ withTenant, onExcluido: () => loadData() });
 
   async function loadData() {
     const filter = withTenant({});
@@ -167,9 +170,16 @@ export default function Sessoes() {
                 <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center">
                   <Calendar size={18} className="text-primary" />
                 </div>
-                <span className={`text-xs px-2.5 py-1 rounded-full font-semibold border ${STATUS_COLOR[s.status] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
-                  {s.status}
-                </span>
+                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                  <span className={`text-xs px-2.5 py-1 rounded-full font-semibold border ${STATUS_COLOR[s.status] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
+                    {s.status}
+                  </span>
+                  {podeGerenciar && (
+                    <button onClick={() => pedirExclusao('Sessao', s, `${s.numero ? s.numero + 'ª ' : ''}Sessão ${s.tipo || ''}`)} className="p-1.5 rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-500 transition-colors" title="Excluir sessão">
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="font-heading font-semibold text-foreground">{s.numero ? `${s.numero}ª` : ''} Sessão {s.tipo}</div>
               {(s.sessao_legislativa_numero || s.legislatura_numero) && (
@@ -386,6 +396,8 @@ export default function Sessoes() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {dialogExclusao}
     </div>
   );
 }

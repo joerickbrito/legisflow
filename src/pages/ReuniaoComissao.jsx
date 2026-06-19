@@ -9,7 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UsersRound, Plus } from "lucide-react";
+import { UsersRound, Plus, Trash2 } from "lucide-react";
+import { useExclusaoSegura } from "@/components/ExclusaoSegura";
 
 const STATUS = ["Agendada", "Realizada", "Cancelada"];
 
@@ -42,6 +43,14 @@ export default function ReuniaoComissao() {
     setOpen(false);
   };
 
+  const { pedirExclusao, dialogExclusao } = useExclusaoSegura({
+    withTenant,
+    onExcluido: async () => {
+      const filter = withTenant();
+      if (filter) setReunioes(await sislegisEntities.ReuniaoComissao.filter(filter, "-created_date", 50));
+    },
+  });
+
   const statusColor = { "Agendada": "secondary", "Realizada": "default", "Cancelada": "destructive" };
 
   return (
@@ -63,7 +72,12 @@ export default function ReuniaoComissao() {
                   <p className="font-medium text-sm">{r.comissao_nome} — Reunião nº {r.numero}</p>
                   <p className="text-xs text-muted-foreground mt-1">{r.data} {r.hora_inicio && `às ${r.hora_inicio}`} | {r.local}</p>
                 </div>
-                <Badge variant={statusColor[r.status] || "secondary"}>{r.status}</Badge>
+                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                  <Badge variant={statusColor[r.status] || "secondary"}>{r.status}</Badge>
+                  <button onClick={() => pedirExclusao('ReuniaoComissao', r, `Reunião nº ${r.numero || ''}${r.comissao_nome ? ' — ' + r.comissao_nome : ''}`)} className="p-1.5 rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-500 transition-colors" title="Excluir reunião">
+                    <Trash2 size={14} />
+                  </button>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -104,6 +118,8 @@ export default function ReuniaoComissao() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {dialogExclusao}
     </div>
   );
 }
