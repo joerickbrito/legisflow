@@ -155,48 +155,79 @@ export default function Layout() {
 
       <aside className={cn(
         "fixed md:relative z-50 flex flex-col h-full transition-all duration-300 ease-in-out",
-        "bg-sidebar text-sidebar-foreground shadow-2xl border-r border-sidebar-border",
+        "sidebar-surface text-sidebar-foreground shadow-2xl border-r border-sidebar-border",
         collapsed ? "w-16" : "w-64",
         mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
       )}>
         {/* Logo */}
-        <div className={cn("flex items-center px-4 py-4 border-b border-sidebar-border flex-shrink-0", collapsed ? "justify-center" : "justify-between")}>
-          {!collapsed && (
-            <div className="min-w-0">
-              <div className="text-sidebar-primary font-heading font-bold text-base leading-tight truncate">
-                {camara?.sigla || camara?.nome || 'SisLegis'}
+        <div className={cn(
+          "flex items-center px-3 py-4 border-b border-sidebar-border/70 flex-shrink-0",
+          collapsed ? "justify-center" : "justify-between gap-2"
+        )}>
+          {!collapsed ? (
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-9 h-9 rounded-xl bg-sidebar-primary/15 ring-1 ring-inset ring-sidebar-primary/30 flex items-center justify-center flex-shrink-0">
+                <Scale size={18} className="text-sidebar-primary" />
               </div>
-              <div className="text-sidebar-foreground/50 text-[10px] font-body mt-0.5 truncate">
-                {isSuperAdmin ? 'Super Admin' : (camara?.nome || 'Sistema Legislativo')}
+              <div className="min-w-0">
+                <div className="text-sidebar-foreground font-heading font-bold text-sm leading-tight truncate">
+                  {camara?.sigla || camara?.nome || 'SisLegis'}
+                </div>
+                <div className="text-sidebar-foreground/45 text-[10px] font-body mt-0.5 truncate uppercase tracking-wider">
+                  {isSuperAdmin ? 'Super Admin' : 'Sistema Legislativo'}
+                </div>
               </div>
             </div>
+          ) : (
+            <div className="w-9 h-9 rounded-xl bg-sidebar-primary/15 ring-1 ring-inset ring-sidebar-primary/30 flex items-center justify-center">
+              <Scale size={18} className="text-sidebar-primary" />
+            </div>
           )}
-          <button
-            onClick={() => setCollapsed(!collapsed)}
-            className="hidden md:flex p-1.5 rounded-lg hover:bg-sidebar-accent transition-colors text-sidebar-foreground/50 hover:text-sidebar-foreground flex-shrink-0"
-          >
-            {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-          </button>
+          {!collapsed && (
+            <button
+              onClick={() => setCollapsed(!collapsed)}
+              className="hidden md:flex p-1.5 rounded-lg hover:bg-sidebar-accent transition-colors text-sidebar-foreground/50 hover:text-sidebar-foreground flex-shrink-0"
+            >
+              <ChevronLeft size={14} />
+            </button>
+          )}
         </div>
+        {collapsed && (
+          <button
+            onClick={() => setCollapsed(false)}
+            className="hidden md:flex mx-auto mt-1 p-1.5 rounded-lg hover:bg-sidebar-accent transition-colors text-sidebar-foreground/50 hover:text-sidebar-foreground"
+            title="Expandir"
+          >
+            <ChevronRight size={14} />
+          </button>
+        )}
 
         {/* User info */}
         {!collapsed && user && (
-          <div className="px-4 py-2.5 border-b border-sidebar-border/50 bg-sidebar-accent/30">
-            <p className="text-xs font-medium text-sidebar-foreground truncate">{user.nome || user.email || user.username}</p>
-            <p className="text-[10px] text-sidebar-foreground/50 truncate">{ROLE_LABELS[userRole] || userRole}</p>
+          <div className="mx-3 my-3 px-3 py-2.5 rounded-xl bg-sidebar-accent/40 ring-1 ring-inset ring-sidebar-border flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-full bg-sidebar-primary/20 ring-1 ring-inset ring-sidebar-primary/30 flex items-center justify-center flex-shrink-0 text-sidebar-primary font-heading font-bold text-xs uppercase">
+              {(user.nome || user.email || user.username || '?').trim().split(/\s+/).slice(0, 2).map(s => s[0]).join('').toUpperCase() || '?'}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold text-sidebar-foreground truncate leading-tight">{user.nome || user.email || user.username}</p>
+              <p className="text-[10px] text-sidebar-foreground/50 truncate mt-0.5">{ROLE_LABELS[userRole] || userRole}</p>
+            </div>
           </div>
         )}
 
         {/* Nav */}
-        <nav className="flex-1 overflow-y-auto py-2 space-y-0.5 px-1.5">
+        <nav className="flex-1 overflow-y-auto py-2 space-y-0.5 px-2">
           {navGroups.map((group, gi) => (
-            <div key={gi} className="mb-1">
+            <div key={gi} className="mb-2">
               {!collapsed && (
                 <button
                   onClick={() => toggleGroup(gi)}
-                  className="flex items-center justify-between w-full px-2 py-1.5 text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/40 hover:text-sidebar-foreground/60 transition-colors"
+                  className="flex items-center justify-between w-full px-2 py-1.5 mt-1 text-[10px] font-bold uppercase tracking-[0.16em] text-sidebar-foreground/40 hover:text-sidebar-foreground/70 transition-colors"
                 >
-                  {group.label}
+                  <span className="flex items-center gap-2">
+                    <span className="h-px w-3 bg-sidebar-foreground/20" />
+                    {group.label}
+                  </span>
                   {expandedGroups[gi] ? <ChevronDown size={10} /> : <ChevRight size={10} />}
                 </button>
               )}
@@ -208,16 +239,23 @@ export default function Layout() {
                     to={item.path}
                     onClick={() => setMobileOpen(false)}
                     className={cn(
-                      "flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all duration-150 group text-sm",
+                      "relative flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all duration-150 group text-sm",
                       active
-                        ? "bg-sidebar-primary text-white shadow-md"
-                        : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
-                      item.highlight && !active && "ring-1 ring-sidebar-primary/50"
+                        ? "bg-sidebar-primary/15 text-white font-semibold shadow-sm border-l-2 border-sidebar-primary pl-[8px]"
+                        : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground border-l-2 border-transparent pl-[8px]",
+                      item.highlight && !active && "ring-1 ring-inset ring-sidebar-primary/40"
                     )}
                     title={collapsed ? item.label : undefined}
                   >
-                    <item.icon size={16} className={cn("flex-shrink-0", item.highlight && !active && "text-sidebar-primary")} />
-                    {!collapsed && <span className="truncate font-medium">{item.label}</span>}
+                    <item.icon
+                      size={16}
+                      className={cn(
+                        "flex-shrink-0",
+                        active ? "text-sidebar-primary" : "text-sidebar-foreground/60 group-hover:text-sidebar-foreground",
+                        item.highlight && !active && "text-sidebar-primary"
+                      )}
+                    />
+                    {!collapsed && <span className="truncate">{item.label}</span>}
                     {!collapsed && item.highlight && !active && (
                       <span className="ml-auto text-[9px] bg-sidebar-primary/25 text-sidebar-primary px-1.5 py-0.5 rounded-full font-bold tracking-wide">LIVE</span>
                     )}
@@ -228,16 +266,16 @@ export default function Layout() {
           ))}
         </nav>
 
-        <div className="px-1.5 py-2 border-t border-sidebar-border flex-shrink-0">
+        <div className="px-2 py-2 border-t border-sidebar-border/70 flex-shrink-0">
           <button
             onClick={() => logout(true)}
             className={cn(
               "flex items-center gap-2.5 px-2.5 py-2 rounded-lg w-full transition-colors text-sm",
-              "text-sidebar-foreground/40 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+              "text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-foreground"
             )}
           >
             <LogOut size={15} className="flex-shrink-0" />
-            {!collapsed && <span>Sair</span>}
+            {!collapsed && <span className="font-medium">Sair</span>}
           </button>
         </div>
       </aside>

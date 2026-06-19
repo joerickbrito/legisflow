@@ -1,146 +1,367 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { base44 } from '@/api/base44Client';
 import { sislegisEntities } from '@/lib/sislegisApi';
-import { Building2, Users, FileText, ScrollText, Calendar, ArrowRight, TrendingUp, Shield } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
+import { useTenant } from '@/lib/TenantContext';
+import { FileText, Calendar, Users, ScrollText, Inbox, AlertCircle, ArrowRight, Clock, Vote, TrendingUp, FolderOpen, Gavel, Hourglass } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import StatusBadge from '@/components/StatusBadge';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { format, isAfter, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
-export default function DashboardSuperAdmin() {
-  const [stats, setStats] = useState({ camaras: [], usuarios: [], materias: [], normas: [], sessoes: [], logs: [] });
+export default function DashboardAdminCamara() {
+  const { tenantId, camara, withTenant, canQuery } = useTenant();
+  const [data, setData] = useState({ materias: [], sessoes: [], parlamentares: [], normas: [], protocolos: [], votacaoAtiva: null, aguardandoVotacao: [] });
   const [loading, setLoading] = useState(true);
+  const [solicitacoes, setSolicitacoes] = useState([]);
+  const [atendendoSolicitacao, setAtendendoSolicitacao] = useState(null);
 
   useEffect(() => {
-    Promise.all([
-      sislegisEntities.Camara.list('-created_date', 200),
-      sislegisEntities.UsuarioSislegis.filter({}),
-      sislegisEntities.Materia.list('-created_date', 50),
-      sislegisEntities.NormaJuridica.list('-created_date', 20),
-      sislegisEntities.Sessao.list('-data', 20),
-      sislegisEntities.LogAuditoria.list('-created_date', 10),
-    ]).then(([camaras, usuarios, materias, normas, sessoes, logs]) => {
-      setStats({ camaras, usuarios, materias, normas, sessoes, logs });
+    async function load() {
+      if (!canQuery) return;
+      const filter = withTenant({});
+      const [materias, sessoes, parlamentares, normas, protocolos, votacoes, aguardandoVot, solicitacoesPendentes] = await Promise.all([
+        sislegisEntities.Materia.filter(filter, '-created_date', 50),
+        sislegisEntities.Sessao.filter(filter, '-data', 20),
+        sislegisEntities.Parlamentar.filter(filter),
+        sislegisEntities.NormaJuridica.filter(filter),
+        sislegisEntities.Protocolo.filter(filter, '-created_date', 8),
+        sislegisEntities.Votacao.filter({ ...filter, status: 'Em Votação' }),
+        sislegisEntities.Materia.filter({ ...filter, status: 'Aguardando Votação' }, '-created_date', 10),
+        sislegisEntities.SolicitacoesRecuperacaoSenha.filter({ ...filter, status: 'pendente' }, '-created_date', 20).catch(() => []),
+      ]);
+      const hoje = format(new Date(), 'yyyy-MM-dd');
+      setData({
+        materias,
+        sessoes,
+        sessaoHoje: sessoes.find(s => s.data === hoje && s.status !== 'Cancelada') || null,
+        parlamentares: parlamentares.filter(p => p.ativo !== false),
+        normas,
+        protocolos,
+        votacaoAtiva: votacoes[0] || null,
+        urgentes: materias.filter(m => m.regime_tramitacao && m.regime_tramitacao !== 'Normal'),
+        aguardandoVotacao: aguardandoVot,
+      });
+      setSolicitacoes(solicitacoesPendentes || []);
       setLoading(false);
-    });
-  }, []);
+    }
+    load();
+  }, [tenantId, canQuery]);
 
-  const metricCards = [
-    { label: 'Câmaras Cadastradas', value: stats.camaras.length, sub: `${stats.camaras.filter(c => c.status === 'Ativa').length} ativas`, icon: Building2, color: 'bg-blue-50 text-blue-600', link: '/gerenciar-camaras' },
-    { label: 'Usuários Totais', value: stats.usuarios.length, sub: `${stats.usuarios.filter(u => u.status === 'Ativo').length} ativos`, icon: Users, color: 'bg-purple-50 text-purple-600', link: '/gerenciar-usuarios' },
-    { label: 'Matérias (global)', value: stats.materias.length, sub: `${stats.materias.filter(m => m.status === 'Em tramitação').length} em tramitação`, icon: FileText, color: 'bg-orange-50 text-orange-600', link: '/materias' },
-    { label: 'Normas (global)', value: stats.normas.length, sub: `${stats.normas.filter(n => n.situacao === 'Vigente').length} vigentes`, icon: ScrollText, color: 'bg-green-50 text-green-600', link: '/normas' },
-    { label: 'Sessões (global)', value: stats.sessoes.length, sub: `${stats.sessoes.filter(s => s.status === 'Agendada').length} agendadas`, icon: Calendar, color: 'bg-indigo-50 text-indigo-600', link: '/sessoes' },
-    { label: 'Logs de Auditoria', value: stats.logs.length, sub: 'últimos 10', icon: Shield, color: 'bg-slate-100 text-slate-600', link: '/auditoria' },
+  // Chart data: matérias por status
+  const chartData = [
+    { name: 'Em Tramitação', value: data.materias?.filter(m => m.status === 'Em tramitação').length || 0, color: '#3b82f6' },
+    { name: 'Aguard. Votação', value: data.materias?.filter(m => m.status === 'Aguardando Votação').length || 0, color: '#f59e0b' },
+    { name: 'Aprovadas', value: data.materias?.filter(m => m.status === 'Aprovada').length || 0, color: '#22c55e' },
+    { name: 'Rejeitadas', value: data.materias?.filter(m => m.status === 'Rejeitada').length || 0, color: '#ef4444' },
+  ].filter(d => d.value > 0);
+
+  // Próximas sessões
+  const hoje = format(new Date(), 'yyyy-MM-dd');
+  const proximasSessoes = data.sessoes?.filter(s => s.data >= hoje && s.status !== 'Cancelada' && s.status !== 'Encerrada').slice(0, 3) || [];
+
+  // Handlers para solicitações de recuperação
+  const handleAtenderSol = async (sol) => {
+    if (!sol.usuario_id) return;
+    if (!confirm(`Redefinir senha de "${sol.usuario_nome || sol.username}"?`)) return;
+    setAtendendoSolicitacao(sol.id);
+    try {
+      const res = await base44.functions.invoke('resetarSenhaSislegis', { usuario_id: sol.usuario_id });
+      await sislegisEntities.SolicitacoesRecuperacaoSenha.update(sol.id, { status: 'atendida' });
+      const senha = res.data?.senha_temporaria;
+      alert(senha ? `Nova senha: ${senha}` : 'Senha redefinida.');
+      setSolicitacoes(prev => prev.filter(s => s.id !== sol.id));
+    } catch (e) {
+      alert('Erro: ' + (e?.response?.data?.error || e?.message || ''));
+    } finally {
+      setAtendendoSolicitacao(null);
+    }
+  };
+
+  const handleIgnorarSol = async (sol) => {
+    if (!confirm(`Marcar solicitação como atendida sem redefinir?`)) return;
+    setAtendendoSolicitacao(sol.id);
+    try {
+      await sislegisEntities.SolicitacoesRecuperacaoSenha.update(sol.id, { status: 'atendida' });
+      setSolicitacoes(prev => prev.filter(s => s.id !== sol.id));
+    } catch (e) {
+      alert('Erro: ' + (e?.message || ''));
+    } finally {
+      setAtendendoSolicitacao(null);
+    }
+  };
+
+  const cards = [
+    { label: 'Matérias em Tramitação', value: data.materias?.filter(m => m.status === 'Em tramitação').length || 0, icon: FileText, color: 'text-blue-600 bg-blue-50', link: '/materias' },
+    { label: 'Parlamentares Ativos', value: data.parlamentares?.length || 0, icon: Users, color: 'text-purple-600 bg-purple-50', link: '/parlamentares' },
+    { label: 'Normas Vigentes', value: data.normas?.filter(n => n.situacao === 'Vigente' || !n.situacao).length || 0, icon: ScrollText, color: 'text-green-600 bg-green-50', link: '/normas' },
+    { label: 'Protocolos Pendentes', value: data.protocolos?.filter(p => p.status === 'Recebido').length || 0, icon: Inbox, color: 'text-orange-600 bg-orange-50', link: '/protocolo' },
+    { label: 'Sessões Agendadas', value: data.sessoes?.filter(s => s.status === 'Agendada').length || 0, icon: Calendar, color: 'text-indigo-600 bg-indigo-50', link: '/sessoes' },
+    { label: 'Urgências', value: data.urgentes?.length || 0, icon: AlertCircle, color: 'text-red-600 bg-red-50', link: '/materias' },
   ];
 
-  const planCount = (plano) => stats.camaras.filter(c => c.plano === plano).length;
-
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8">
+    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
       <div>
-        <div className="flex items-center gap-2 mb-1">
-          <Shield size={18} className="text-primary" />
-          <span className="text-xs font-bold uppercase tracking-widest text-primary">Super Admin — Painel Global</span>
-        </div>
-        <h1 className="text-3xl font-heading font-bold text-foreground">Visão Geral da Plataforma</h1>
-        <p className="text-muted-foreground text-sm mt-1 capitalize">
+        <span className="eyebrow">Câmara Municipal</span>
+        <h1 className="text-3xl font-heading font-bold text-foreground tracking-tight mt-1">
+          {camara?.nome || 'Dashboard'}
+        </h1>
+        <p className="text-muted-foreground mt-1 font-body text-sm capitalize">
           {format(new Date(), "EEEE, d 'de' MMMM 'de' yyyy", { locale: ptBR })}
         </p>
       </div>
 
-      {/* Métricas globais */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        {metricCards.map(c => (
-          <Link key={c.label} to={c.link} className="bg-card border border-border rounded-xl p-4 hover:shadow-md transition-all">
-            <div className={`w-9 h-9 rounded-lg flex items-center justify-center mb-3 ${c.color}`}>
-              <c.icon size={18} />
+      {/* Votação ativa */}
+      {data.votacaoAtiva && (
+        <Link to="/votacao">
+          <div className="bg-primary text-primary-foreground rounded-2xl p-5 flex items-center justify-between shadow-lg shadow-primary/25">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Vote size={24} />
+              </div>
+              <div>
+                <div className="text-xs font-bold opacity-70 uppercase tracking-widest flex items-center gap-2">
+                  <span className="w-2 h-2 bg-white rounded-full animate-pulse inline-block" /> Votação em Andamento
+                </div>
+                <div className="font-semibold text-lg leading-tight mt-1 line-clamp-1">{data.votacaoAtiva.materia_ementa}</div>
+              </div>
             </div>
-            <div className="text-2xl font-bold text-foreground font-heading">{loading ? '—' : c.value}</div>
-            <div className="text-xs text-muted-foreground mt-0.5 leading-tight">{c.label}</div>
-            <div className="text-[11px] text-muted-foreground/70 mt-1">{loading ? '' : c.sub}</div>
+            <div className="hidden sm:flex items-center gap-2 bg-white/20 px-4 py-2 rounded-xl font-semibold text-sm flex-shrink-0">
+              Acessar <ArrowRight size={15} />
+            </div>
+          </div>
+        </Link>
+      )}
+
+      {/* Alertas urgentes */}
+      {data.urgentes?.length > 0 && (
+        <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 flex items-center gap-3">
+          <AlertCircle size={18} className="text-orange-600 flex-shrink-0" />
+          <span className="text-sm text-orange-700 font-medium">
+            {data.urgentes.length} matéria(s) em regime de urgência aguardando deliberação
+          </span>
+          <Link to="/materias" className="ml-auto text-orange-600 text-sm font-semibold hover:underline flex items-center gap-1">
+            Ver <ArrowRight size={13} />
+          </Link>
+        </div>
+      )}
+
+      {/* Sessão hoje */}
+      {data.sessaoHoje && (
+        <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-4">
+          <div className="w-11 h-11 bg-accent rounded-xl flex items-center justify-center">
+            <Calendar size={20} className="text-primary" />
+          </div>
+          <div className="flex-1">
+            <div className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Sessão de Hoje</div>
+            <div className="font-semibold text-foreground mt-0.5">{data.sessaoHoje.tipo} — Sessão nº {data.sessaoHoje.numero}</div>
+            {data.sessaoHoje.hora_inicio && (
+              <div className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
+                <Clock size={12} /> {data.sessaoHoje.hora_inicio}
+              </div>
+            )}
+          </div>
+          <StatusBadge status={data.sessaoHoje.status} />
+        </div>
+      )}
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        {cards.map((card) => (
+          <Link
+            key={card.label}
+            to={card.link}
+            className="group relative bg-card border border-border rounded-xl p-4 card-elevated hover:shadow-md hover:-translate-y-0.5 hover:border-primary/30 transition-all"
+          >
+            <div className={`w-9 h-9 rounded-lg flex items-center justify-center mb-3 ring-1 ring-inset ring-black/5 ${card.color}`}>
+              <card.icon size={18} />
+            </div>
+            <div className="text-3xl font-bold text-foreground tabular-num leading-none">{loading ? '—' : card.value}</div>
+            <div className="eyebrow mt-2 leading-tight">{card.label}</div>
           </Link>
         ))}
       </div>
 
-      {/* Câmaras por plano + Status */}
-      <div className="grid lg:grid-cols-2 gap-6">
-        <Card>
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Matérias recentes */}
+        <Card className="overflow-hidden lg:col-span-2">
           <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-            <h2 className="font-heading font-semibold text-foreground">Distribuição por Plano</h2>
-          </div>
-          <CardContent className="pt-4 space-y-3">
-            {['Básico', 'Profissional', 'Enterprise'].map(plano => (
-              <div key={plano} className="flex items-center justify-between">
-                <span className="text-sm text-foreground">{plano}</span>
-                <div className="flex items-center gap-3">
-                  <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-primary rounded-full"
-                      style={{ width: stats.camaras.length ? `${(planCount(plano) / stats.camaras.length) * 100}%` : '0%' }}
-                    />
-                  </div>
-                  <span className="text-sm font-bold w-6 text-right">{planCount(plano)}</span>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        {/* Câmaras recentes */}
-        <Card>
-          <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-            <h2 className="font-heading font-semibold text-foreground">Câmaras Recentes</h2>
-            <Link to="/gerenciar-camaras" className="text-primary text-sm font-medium flex items-center gap-1 hover:gap-2 transition-all">
+            <h2 className="font-heading font-semibold text-foreground">Matérias Recentes</h2>
+            <Link to="/materias" className="text-primary text-sm font-medium flex items-center gap-1 hover:gap-2 transition-all">
               Ver todas <ArrowRight size={13} />
             </Link>
           </div>
           <div className="divide-y divide-border">
-            {stats.camaras.slice(0, 5).map(c => (
-              <div key={c.id} className="flex items-center justify-between px-5 py-3">
-                <div>
-                  <p className="text-sm font-medium">{c.nome}</p>
-                  <p className="text-xs text-muted-foreground">{c.cidade || '—'}{c.estado ? ` / ${c.estado}` : ''}</p>
+            {data.materias?.length === 0 ? (
+              <div className="p-6 text-center text-muted-foreground text-sm">Nenhuma matéria cadastrada.</div>
+            ) : data.materias?.slice(0, 6).map((m) => (
+              <Link key={m.id} to="/materias" className="flex items-center gap-3 px-5 py-3 hover:bg-muted/30 transition-colors">
+                <FileText size={15} className="text-muted-foreground flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-foreground truncate">{m.ementa}</div>
+                  <div className="text-xs text-muted-foreground">{m.tipo} · {m.autor_nome || '—'}</div>
                 </div>
-                <div className="flex gap-2">
-                  <Badge variant={c.status === 'Ativa' ? 'default' : 'secondary'} className="text-xs">{c.status}</Badge>
-                  <Badge variant="outline" className="text-xs">{c.plano}</Badge>
-                </div>
-              </div>
+                <StatusBadge status={m.status} />
+              </Link>
             ))}
-            {stats.camaras.length === 0 && !loading && (
-              <p className="text-muted-foreground text-sm text-center py-6">Nenhuma câmara cadastrada.</p>
-            )}
           </div>
         </Card>
+
+        {/* Painel lateral: gráfico + próximas sessões */}
+        <div className="space-y-4">
+          {/* Gráfico matérias por status */}
+          {chartData.length > 0 && (
+            <Card className="p-4">
+              <h3 className="font-heading font-semibold text-sm text-foreground mb-3">Matérias por Status</h3>
+              <ResponsiveContainer width="100%" height={140}>
+                <BarChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                  <XAxis dataKey="name" tick={{ fontSize: 9 }} />
+                  <YAxis tick={{ fontSize: 9 }} />
+                  <Tooltip />
+                  <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                    {chartData.map((entry, index) => (
+                      <Cell key={index} fill={entry.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </Card>
+          )}
+
+          {/* Próximas sessões */}
+          <Card className="overflow-hidden">
+            <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+              <h3 className="font-heading font-semibold text-sm text-foreground">Próximas Sessões</h3>
+              <Link to="/sessoes" className="text-primary text-xs font-medium flex items-center gap-1">Ver <ArrowRight size={11} /></Link>
+            </div>
+            <div className="divide-y divide-border">
+              {proximasSessoes.length === 0 ? (
+                <div className="p-4 text-center text-muted-foreground text-xs">Nenhuma sessão agendada.</div>
+              ) : proximasSessoes.map(s => (
+                <div key={s.id} className="px-4 py-3">
+                  <div className="text-xs font-semibold text-foreground">{s.tipo}</div>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                    <Calendar size={10} />
+                    {format(new Date(s.data + 'T12:00:00'), "dd/MM/yyyy", { locale: ptBR })}
+                    {s.hora_inicio && <span>· {s.hora_inicio}</span>}
+                  </div>
+                  {s.pauta?.length > 0 && <div className="text-[10px] text-muted-foreground mt-0.5">{s.pauta.length} matéria(s) em pauta</div>}
+                </div>
+              ))}
+            </div>
+          </Card>
+
+              {/* Protocolos recentes */}
+          <Card className="overflow-hidden">
+            <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+              <h3 className="font-heading font-semibold text-sm text-foreground">Protocolos Recentes</h3>
+              <Link to="/protocolo" className="text-primary text-xs font-medium flex items-center gap-1">Ver <ArrowRight size={11} /></Link>
+            </div>
+            <div className="divide-y divide-border">
+              {data.protocolos?.length === 0 ? (
+                <div className="p-4 text-center text-muted-foreground text-xs">Nenhum protocolo.</div>
+              ) : data.protocolos?.map((p) => (
+                <Link key={p.id} to="/protocolo" className="flex items-center gap-2 px-4 py-2.5 hover:bg-muted/30 transition-colors">
+                  <Inbox size={13} className="text-muted-foreground flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-medium text-foreground truncate">{p.assunto}</div>
+                    <div className="text-[10px] text-muted-foreground">{p.tipo_documento} · {p.interessado}</div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </Card>
+        </div>
       </div>
 
-      {/* Log de auditoria recente */}
-      <Card>
-        <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-          <h2 className="font-heading font-semibold text-foreground">Últimas Ações (Auditoria)</h2>
-          <Link to="/auditoria" className="text-primary text-sm font-medium flex items-center gap-1 hover:gap-2 transition-all">
-            Ver tudo <ArrowRight size={13} />
-          </Link>
-        </div>
-        <div className="divide-y divide-border">
-          {stats.logs.map(log => (
-            <div key={log.id} className="flex items-center gap-3 px-5 py-3">
-              <span className="text-xs font-bold bg-muted px-2 py-0.5 rounded-full text-foreground">{log.acao}</span>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-foreground truncate">{log.descricao || log.modulo}</p>
-                <p className="text-xs text-muted-foreground">{log.usuario_nome || '—'}</p>
-              </div>
-              <span className="text-xs text-muted-foreground whitespace-nowrap">
-                {log.created_date ? format(new Date(log.created_date), 'dd/MM HH:mm') : '—'}
-              </span>
+      {/* Solicitações de Recuperação de Senha */}
+      {solicitacoes.length > 0 && (
+        <Card className="overflow-hidden border-amber-300">
+          <div className="px-5 py-4 border-b border-border bg-amber-50/30 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertCircle size={16} className="text-amber-600" />
+              <h2 className="font-heading font-semibold text-foreground">Solicitações de Recuperação de Senha</h2>
+              <Badge variant="destructive" className="text-[10px]">{solicitacoes.length} pendente{solicitacoes.length !== 1 ? 's' : ''}</Badge>
             </div>
-          ))}
-          {stats.logs.length === 0 && !loading && (
-            <p className="text-muted-foreground text-sm text-center py-6">Nenhum log registrado.</p>
-          )}
-        </div>
-      </Card>
+          </div>
+          <div className="divide-y divide-border">
+            {solicitacoes.map(sol => (
+              <div key={sol.id} className="flex items-center gap-3 px-5 py-3 hover:bg-muted/30 transition-colors">
+                <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                  <Users size={14} className="text-amber-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-foreground truncate">{sol.usuario_nome || sol.username}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {sol.username}
+                    {sol.usuario_role && <span className="ml-2 opacity-60">· {sol.usuario_role === 'ADMIN_CAMARA' ? 'Admin' : sol.usuario_role === 'OPERADOR_GERAL' ? 'Operador' : sol.usuario_role === 'PRESIDENTE' ? 'Presidente' : sol.usuario_role === 'VEREADOR' ? 'Vereador' : sol.usuario_role}</span>}
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  className="h-7 px-2.5 text-xs bg-amber-500 hover:bg-amber-600 flex-shrink-0"
+                  onClick={() => handleAtenderSol(sol)}
+                  disabled={atendendoSolicitacao === sol.id}
+                >
+                  {atendendoSolicitacao === sol.id ? '...' : 'Redefinir'}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-2 text-xs flex-shrink-0"
+                  onClick={() => handleIgnorarSol(sol)}
+                  disabled={atendendoSolicitacao === sol.id || !sol.usuario_id}
+                >
+                  Ignorar
+                </Button>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Projetos aguardando votação */}
+      {(data.aguardandoVotacao?.length > 0) && (
+        <Card className="overflow-hidden">
+          <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Hourglass size={16} className="text-amber-500" />
+              <h2 className="font-heading font-semibold text-foreground">Projetos Aguardando Votação</h2>
+              <span className="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full">{data.aguardandoVotacao.length}</span>
+            </div>
+            <Link to="/materias" className="text-primary text-sm font-medium flex items-center gap-1 hover:gap-2 transition-all">
+              Ver todas <ArrowRight size={13} />
+            </Link>
+          </div>
+          <div className="divide-y divide-border">
+            {data.aguardandoVotacao.map((m) => (
+              <Link key={m.id} to="/materias" className="flex items-center gap-3 px-5 py-3 hover:bg-muted/30 transition-colors">
+                <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center flex-shrink-0">
+                  <Gavel size={14} className="text-amber-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-foreground truncate">{m.ementa}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {m.tipo}{m.numero ? ` nº ${m.numero}` : ''}{m.autor_nome ? ` · ${m.autor_nome}` : ''}
+                    {m.regime_tramitacao && m.regime_tramitacao !== 'Normal' && (
+                      <span className="ml-1.5 bg-red-100 text-red-600 text-[10px] px-1.5 py-0.5 rounded-full font-semibold">{m.regime_tramitacao}</span>
+                    )}
+                  </div>
+                </div>
+                <Link to="/painel-eletronico">
+                  <div className="flex items-center gap-1 text-xs text-primary font-semibold bg-accent px-2.5 py-1 rounded-lg hover:bg-primary hover:text-white transition-colors flex-shrink-0">
+                    <Vote size={12} /> Votar
+                  </div>
+                </Link>
+              </Link>
+            ))}
+          </div>
+        </Card>
+      )}
     </div>
   );
 }

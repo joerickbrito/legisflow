@@ -1,38 +1,51 @@
-const colorMap = {
-  'Em tramitação': 'bg-blue-100 text-blue-700',
-  'Aguardando Votação': 'bg-yellow-100 text-yellow-700',
-  'Aprovada': 'bg-green-100 text-green-700',
-  'Rejeitada': 'bg-red-100 text-red-700',
-  'Arquivada': 'bg-gray-100 text-gray-600',
-  'Retirada': 'bg-orange-100 text-orange-700',
-  'Transformada em Norma': 'bg-purple-100 text-purple-700',
-  'Agendada': 'bg-yellow-100 text-yellow-700',
-  'Aberta': 'bg-green-100 text-green-700',
-  'Em Andamento': 'bg-green-100 text-green-700',
-  'Em Expediente': 'bg-blue-100 text-blue-700',
-  'Em Ordem do Dia': 'bg-purple-100 text-purple-700',
-  'Encerrada': 'bg-gray-100 text-gray-600',
-  'Cancelada': 'bg-red-100 text-red-600',
-  'Suspensa': 'bg-yellow-100 text-yellow-700',
-  'Vigente': 'bg-green-100 text-green-700',
-  'Revogada': 'bg-red-100 text-red-700',
-  'Ativa': 'bg-green-100 text-green-700',
-  'Inativa': 'bg-gray-100 text-gray-600',
-  'Recebido': 'bg-blue-100 text-blue-700',
-  'Em Análise': 'bg-yellow-100 text-yellow-700',
-  'Respondido': 'bg-green-100 text-green-700',
-  'Rascunho': 'bg-gray-100 text-gray-600',
-  'Favorável': 'bg-green-100 text-green-700',
-  'Contrário': 'bg-red-100 text-red-700',
-  'Urgência': 'bg-orange-100 text-orange-700',
-  'Urgência Urgentíssima': 'bg-red-100 text-red-700',
-  'Normal': 'bg-gray-100 text-gray-600',
+// Semantic status palette: tone-on-tone with subtle dot for visual rhythm.
+// Tones: blue (em andamento/info), green (positivo/vigente), amber (pendente),
+// red (negativo), violet (transformado), slate (neutro/arquivado), orange (alerta brando).
+const tones = {
+  blue:   'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-100',
+  green:  'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-100',
+  amber:  'bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-100',
+  red:    'bg-red-50 text-red-700 ring-1 ring-inset ring-red-100',
+  violet: 'bg-violet-50 text-violet-700 ring-1 ring-inset ring-violet-100',
+  slate:  'bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200',
+  orange: 'bg-orange-50 text-orange-700 ring-1 ring-inset ring-orange-100',
+};
+
+const statusTone = {
+  'Em tramitação': 'blue',
+  'Aguardando Votação': 'amber',
+  'Aprovada': 'green',
+  'Rejeitada': 'red',
+  'Arquivada': 'slate',
+  'Retirada': 'orange',
+  'Transformada em Norma': 'violet',
+  'Agendada': 'amber',
+  'Aberta': 'green',
+  'Em Andamento': 'green',
+  'Em Expediente': 'blue',
+  'Em Ordem do Dia': 'violet',
+  'Encerrada': 'slate',
+  'Cancelada': 'red',
+  'Suspensa': 'amber',
+  'Vigente': 'green',
+  'Revogada': 'red',
+  'Ativa': 'green',
+  'Inativa': 'slate',
+  'Recebido': 'blue',
+  'Em Análise': 'amber',
+  'Respondido': 'green',
+  'Rascunho': 'slate',
+  'Favorável': 'green',
+  'Contrário': 'red',
+  'Urgência': 'orange',
+  'Urgência Urgentíssima': 'red',
+  'Normal': 'slate',
 };
 
 export default function StatusBadge({ status, className = '' }) {
-  const color = colorMap[status] || 'bg-muted text-muted-foreground';
+  const tone = tones[statusTone[status]] || tones.slate;
   return (
-    <span className={`text-xs px-2.5 py-1 rounded-full font-semibold whitespace-nowrap ${color} ${className}`}>
+    <span className={`pill pill-dot ${tone} ${className}`}>
       {status}
     </span>
   );
