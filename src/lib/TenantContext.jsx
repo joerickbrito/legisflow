@@ -80,8 +80,15 @@ export function TenantProvider({ children }) {
   const loadCamara = async (tenantId) => {
     setLoadingCamara(true);
     try {
-      const list = await sislegisEntities.Camara.list('-created_date', 200);
-      const found = list.find(c => c.id === tenantId);
+      // A entidade Camara não tem campo tenant_id (ela é o próprio tenant, identificada pelo id),
+      // por isso buscamos diretamente pelo id via get — listar por tenant_id retornaria vazio
+      // para o admin da câmara e a marca/brasão não carregariam.
+      let found = await sislegisEntities.Camara.get(tenantId).catch(() => null);
+      // Fallback: se o get falhar por algum motivo, tenta pela listagem (funciona p/ super admin)
+      if (!found) {
+        const list = await sislegisEntities.Camara.list('-created_date', 200).catch(() => []);
+        found = list.find(c => c.id === tenantId);
+      }
       if (found) setCamara(found);
     } catch (e) {
       console.error('Failed to load camara', e);
