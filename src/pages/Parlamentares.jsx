@@ -266,53 +266,75 @@ export default function Parlamentares() {
           {sorted.map((p) => {
             const vinculado = vinculadosMap[p.id];
             return (
-            <div key={p.id} onClick={() => openEdit(p)} className="bg-card border border-border rounded-2xl overflow-hidden hover:shadow-md transition-shadow cursor-pointer group relative">
+            <div key={p.id} onClick={() => openEdit(p)} className="group relative bg-card border border-border rounded-2xl overflow-hidden cursor-pointer card-elevated hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+              {/* Faixa de destaque para liderança */}
+              {(p.cargo === 'Presidente' || p.cargo === 'Vice-Presidente') && (
+                <div className={`absolute top-0 inset-x-0 h-1 z-20 ${p.cargo === 'Presidente' ? 'bg-amber-400' : 'bg-orange-400'}`} />
+              )}
+
               {/* Foto */}
-              <div className="relative h-32 bg-gradient-to-b from-accent to-muted flex items-center justify-center">
+              <div className="relative aspect-[4/5] bg-gradient-to-br from-accent/60 to-muted overflow-hidden">
                 {p.foto_url ? (
-                  <img src={p.foto_url} alt={p.nome} className="w-20 h-20 rounded-2xl object-cover border-2 border-white shadow-md absolute bottom-[-24px]" />
+                  <img src={p.foto_url} alt={p.nome_parlamentar || p.nome} className="w-full h-full object-cover object-top" />
                 ) : (
-                  <div className="w-20 h-20 rounded-2xl bg-primary/10 border-2 border-white shadow-md absolute bottom-[-24px] flex items-center justify-center">
-                    <span className="text-3xl font-heading font-bold text-primary">{(p.nome_parlamentar || p.nome)?.charAt(0)}</span>
+                  <div className="w-full h-full flex items-center justify-center">
+                    <span className="text-6xl font-heading font-bold text-primary/25">{(p.nome_parlamentar || p.nome)?.charAt(0)}</span>
                   </div>
                 )}
+
+                {/* Selo de acesso ao sistema */}
+                {vinculado && (
+                  <span className="absolute top-2 left-2 z-10 inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-full bg-violet-600/90 text-white backdrop-blur-sm shadow-sm">
+                    <UserPlus size={10} /> Acesso
+                  </span>
+                )}
+
                 {/* Botão excluir */}
                 {isAdminCamara && (
                   <button
                     onClick={(e) => handleDelete(p, e)}
                     disabled={deleting === p.id}
-                    className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/80 hover:bg-red-100 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute top-2 right-2 z-10 w-7 h-7 rounded-full bg-white/85 hover:bg-red-500 text-red-500 hover:text-white backdrop-blur-sm shadow-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
                     title="Excluir parlamentar"
                   >
-                    {deleting === p.id ? <Loader2 size={12} className="animate-spin text-red-500" /> : <Trash2 size={12} className="text-red-500" />}
+                    {deleting === p.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
                   </button>
                 )}
               </div>
-              <div className="pt-8 pb-4 px-4 text-center">
-                <div className="font-semibold text-foreground text-sm leading-tight">
-                  {p.nome_parlamentar || p.nome}
-                  {p.partido_sigla && <span className="text-muted-foreground font-normal"> — {p.partido_sigla}</span>}
+
+              {/* Informações */}
+              <div className="p-3.5 space-y-2">
+                <div>
+                  <h3 className="font-heading font-bold text-foreground text-[15px] leading-tight truncate">
+                    {p.nome_parlamentar || p.nome}
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                    {p.partido_sigla || 'Sem partido'}{p.cargo ? ` · ${p.cargo}` : ''}
+                  </p>
                 </div>
-                <div className="flex items-center justify-center gap-2 mt-2 flex-wrap">
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                    p.cargo === 'Presidente' ? 'bg-yellow-100 text-yellow-700' :
-                    p.cargo === 'Vice-Presidente' ? 'bg-orange-100 text-orange-700' :
-                    'bg-blue-100 text-blue-700'
-                  }`}>{p.cargo || 'Vereador'}</span>
-                  {p.tipo === 'Suplente' && <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 font-semibold">Suplente</span>}
-                  {(p.situacao && p.situacao !== 'Ativo') && (
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${situacaoColor[p.situacao] || 'bg-gray-100 text-gray-600'}`}>{p.situacao}</span>
-                  )}
-                  {vinculado && (
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-semibold flex items-center gap-1">
-                      <UserPlus size={9} /> Acesso
-                    </span>
-                  )}
-                </div>
+
+                {((p.cargo && p.cargo !== 'Vereador') || p.tipo === 'Suplente' || (p.situacao && p.situacao !== 'Ativo')) && (
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {p.cargo && p.cargo !== 'Vereador' && (
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                        p.cargo === 'Presidente' ? 'bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-100' :
+                        p.cargo === 'Vice-Presidente' ? 'bg-orange-50 text-orange-700 ring-1 ring-inset ring-orange-100' :
+                        'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-100'
+                      }`}>{p.cargo}</span>
+                    )}
+                    {p.tipo === 'Suplente' && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200">Suplente</span>
+                    )}
+                    {p.situacao && p.situacao !== 'Ativo' && (
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${situacaoColor[p.situacao] || 'bg-slate-100 text-slate-600'}`}>{p.situacao}</span>
+                    )}
+                  </div>
+                )}
+
                 {(p.email || p.telefone) && (
-                  <div className="mt-3 space-y-1 border-t border-border pt-2">
-                    {p.email && <div className="flex items-center justify-center gap-1 text-[11px] text-muted-foreground"><Mail size={10} /> <span className="truncate max-w-[140px]">{p.email}</span></div>}
-                    {p.telefone && <div className="flex items-center justify-center gap-1 text-[11px] text-muted-foreground"><Phone size={10} /> {p.telefone}</div>}
+                  <div className="space-y-1 border-t border-border pt-2">
+                    {p.email && <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><Mail size={11} className="flex-shrink-0" /> <span className="truncate">{p.email}</span></div>}
+                    {p.telefone && <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><Phone size={11} className="flex-shrink-0" /> {p.telefone}</div>}
                   </div>
                 )}
               </div>
