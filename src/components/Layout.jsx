@@ -166,22 +166,38 @@ export default function Layout() {
         )}>
           {!collapsed ? (
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-9 h-9 rounded-xl bg-sidebar-primary/15 ring-1 ring-inset ring-sidebar-primary/30 flex items-center justify-center flex-shrink-0">
-                <Scale size={18} className="text-sidebar-primary" />
-              </div>
+              {(camara?.brasao_url || camara?.logotipo_url) ? (
+                <img
+                  src={camara.brasao_url || camara.logotipo_url}
+                  alt={camara?.nome || 'Brasão'}
+                  className="w-9 h-9 rounded-xl object-contain bg-white ring-1 ring-inset ring-sidebar-primary/20 flex-shrink-0 p-0.5"
+                />
+              ) : (
+                <div className="w-9 h-9 rounded-xl bg-sidebar-primary/15 ring-1 ring-inset ring-sidebar-primary/30 flex items-center justify-center flex-shrink-0">
+                  <Scale size={18} className="text-sidebar-primary" />
+                </div>
+              )}
               <div className="min-w-0">
-                <div className="text-sidebar-foreground font-heading font-bold text-sm leading-tight truncate">
-                  {camara?.sigla || camara?.nome || 'SisLegis'}
+                <div className="text-sidebar-foreground font-heading font-bold text-sm leading-tight line-clamp-2">
+                  {isInChamberContext ? (camara?.nome || camara?.sigla || 'SisLegis') : 'SisLegis'}
                 </div>
                 <div className="text-sidebar-foreground/45 text-[10px] font-body mt-0.5 truncate uppercase tracking-wider">
-                  {isSuperAdmin ? 'Super Admin' : 'Sistema Legislativo'}
+                  {isInChamberContext ? 'Sistema Legislativo' : 'Super Admin'}
                 </div>
               </div>
             </div>
           ) : (
-            <div className="w-9 h-9 rounded-xl bg-sidebar-primary/15 ring-1 ring-inset ring-sidebar-primary/30 flex items-center justify-center">
-              <Scale size={18} className="text-sidebar-primary" />
-            </div>
+            (camara?.brasao_url || camara?.logotipo_url) ? (
+              <img
+                src={camara.brasao_url || camara.logotipo_url}
+                alt={camara?.nome || 'Brasão'}
+                className="w-9 h-9 rounded-xl object-contain bg-white ring-1 ring-inset ring-sidebar-primary/20 p-0.5"
+              />
+            ) : (
+              <div className="w-9 h-9 rounded-xl bg-sidebar-primary/15 ring-1 ring-inset ring-sidebar-primary/30 flex items-center justify-center">
+                <Scale size={18} className="text-sidebar-primary" />
+              </div>
+            )
           )}
           {!collapsed && (
             <button
@@ -301,7 +317,7 @@ export default function Layout() {
           <button onClick={() => setMobileOpen(true)} className="p-2 rounded-lg hover:bg-muted">
             <Menu size={20} />
           </button>
-          <span className="font-heading font-semibold text-foreground text-sm">{camara?.sigla || 'SisLegis'}</span>
+          <span className="font-heading font-semibold text-foreground text-sm truncate max-w-[220px]">{(isInChamberContext && (camara?.sigla || camara?.nome)) || 'SisLegis'}</span>
           <div className="w-8" />
         </header>
         <main className="flex-1 overflow-y-auto">
