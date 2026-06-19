@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Outlet, Link, useLocation, Navigate } from 'react-router-dom';
 import {
-  LayoutDashboard, FileText, Calendar, Vote, Users, Building2,
+  LayoutDashboard, FileText, Calendar, Users, Building2,
   ScrollText, Inbox, ChevronLeft, ChevronRight, Menu, LogOut,
   Scale, Gavel, MessageSquare, BarChart3, Globe, BookOpen,
   FolderOpen, ChevronDown, ChevronRight as ChevRight,
@@ -93,7 +93,6 @@ const getNavGroups = (user, isInChamberContext) => {
         { path: '/sessoes', icon: Calendar, label: 'Sessões Plenárias' },
         { path: '/painel-eletronico', icon: Monitor, label: 'Painel Eletrônico', highlight: true },
         { path: '/quorum', icon: UserCheck, label: 'Controle de Presença' },
-        { path: '/votacao', icon: Vote, label: 'Votações' },
         { path: '/reuniao-comissao', icon: UsersRound, label: 'Reuniões de Comissão' },
       ]),
     },

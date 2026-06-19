@@ -309,7 +309,6 @@ export const MENU_PERMISSION_MAP = {
   // Sessões e Votação
   '/sessoes': 'sessoes_visualizar',
   '/quorum': 'sessoes_presenca',
-  '/votacao': 'painel_votar',
   '/painel-eletronico': 'painel_votar',
   '/reuniao-comissao': 'sessoes_visualizar',
 

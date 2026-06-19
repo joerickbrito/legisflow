@@ -57,13 +57,18 @@ export default function Quorum() {
 
   const initPresencas = (sessaoId) => {
     const sessao = sessoes.find(s => s.id === sessaoId);
-    const presencas = parlamentares.map(p => ({
-      parlamentar_id: p.id,
-      parlamentar_nome: p.nome_parlamentar || p.nome,
-      partido_sigla: p.partido_sigla || '',
-      foto_url: p.foto_url || '',
-      status: "Presente"
-    }));
+    // Puxa a presença já registrada na sessão (se houver); senão, assume todos presentes.
+    const presencasSessao = sessao?.presencas || [];
+    const presencas = parlamentares.map(p => {
+      const reg = presencasSessao.find(x => x.parlamentar_id === p.id);
+      return {
+        parlamentar_id: p.id,
+        parlamentar_nome: p.nome_parlamentar || p.nome,
+        partido_sigla: p.partido_sigla || '',
+        foto_url: p.foto_url || '',
+        status: reg ? (reg.presente ? "Presente" : "Ausente") : "Presente",
+      };
+    });
     setForm(f => ({ ...f, sessao_id: sessaoId, total_parlamentares: parlamentares.length, quorum_minimo: Math.ceil(parlamentares.length / 2) + 1, registro_presencas: presencas, data: sessao?.data || "" }));
   };
 
