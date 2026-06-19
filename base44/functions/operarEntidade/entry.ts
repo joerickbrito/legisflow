@@ -82,10 +82,17 @@ Deno.serve(async (req) => {
     const isSuperAdmin = user.role === 'SUPER_ADMIN';
     const isAdminCamara = user.role === 'ADMIN_CAMARA';
     const isOperadorGeral = user.role === 'OPERADOR_GERAL';
+    const isVereador = user.role === 'VEREADOR';
+    const isPresidente = user.role === 'PRESIDENTE';
     const canWrite = isSuperAdmin || isAdminCamara || isOperadorGeral;
 
+    // Exceção: VEREADOR e PRESIDENTE podem fazer update APENAS na entidade Votacao
+    // (para registrar o próprio voto durante uma sessão)
+    const isParlamentarVotando = (isVereador || isPresidente) && operation === 'update' && entity === 'Votacao';
+
     // Operações restritas exigem perfil administrativo
-    if (RESTRICTED_OPERATIONS.includes(operation) && !canWrite) {
+    // (exceto a exceção de voto acima)
+    if (RESTRICTED_OPERATIONS.includes(operation) && !canWrite && !isParlamentarVotando) {
       return Response.json({ error: 'Acesso negado. Perfil sem permissão de escrita.' }, { status: 403 });
     }
 
