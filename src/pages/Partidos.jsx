@@ -98,19 +98,19 @@ export default function Partidos() {
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {partidos.map(p => (
                 <div key={p.id} onClick={() => { setEditando(p); setForm({ nome: p.nome, sigla: p.sigla, numero: p.numero || '', data_fundacao: p.data_fundacao || '', ativo: p.ativo !== false }); setShowForm(true); }}
-                  className="bg-card border border-border rounded-xl p-4 cursor-pointer hover:shadow-md transition-shadow">
+                  className="group bg-card border border-border rounded-xl p-4 cursor-pointer card-elevated hover:shadow-md hover:border-primary/30 transition-all">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center font-heading font-bold text-white text-sm" style={{ backgroundColor: p.cor_hex || '#1d4ed8' }}>{p.sigla}</div>
-                    <div>
-                      <div className="font-semibold text-foreground">{p.sigla}</div>
-                      <div className="text-xs text-muted-foreground">{p.nome}</div>
-                      {p.numero && <div className="text-xs text-muted-foreground">Número: {p.numero}</div>}
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center font-heading font-bold text-white text-sm shadow-sm flex-shrink-0" style={{ backgroundColor: p.cor_hex || '#1d4ed8' }}>{p.sigla}</div>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-heading font-bold text-foreground leading-tight truncate">{p.sigla}</div>
+                      <div className="text-xs text-muted-foreground truncate">{p.nome}</div>
                     </div>
                   </div>
-                  <div className="mt-2 flex items-center gap-2">
-                    <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-gray-100 text-gray-600">
-                      {parlamentares.filter(par => par.partido_sigla === p.sigla || par.partido_id === p.id).length} parlamentar(es)
+                  <div className="mt-3 pt-3 border-t border-border flex items-center justify-between">
+                    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Users size={13} /> {parlamentares.filter(par => par.partido_sigla === p.sigla || par.partido_id === p.id).length} parlamentar(es)
                     </span>
+                    {p.numero && <span className="text-xs text-muted-foreground tabular-num">Nº {p.numero}</span>}
                   </div>
                 </div>
               ))}
@@ -129,9 +129,12 @@ export default function Partidos() {
           ) : (
             <div className="grid sm:grid-cols-2 gap-3">
               {bancadas.map(b => (
-                <div key={b.id} className="bg-card border border-border rounded-xl p-4">
-                  <div className="font-semibold text-foreground">{b.nome}</div>
-                  <div className="text-xs text-muted-foreground mt-0.5">{b.tipo} · {b.membros?.length || 0} membro(s)</div>
+                <div key={b.id} className="bg-card border border-border rounded-xl p-4 card-elevated flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-accent text-primary flex items-center justify-center flex-shrink-0"><Users size={18} /></div>
+                  <div className="min-w-0">
+                    <div className="font-heading font-semibold text-foreground truncate">{b.nome}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">{b.tipo} · {b.membros?.length || 0} membro(s)</div>
+                  </div>
                 </div>
               ))}
             </div>
