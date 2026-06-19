@@ -48,10 +48,14 @@ function Cronometro({ segundos, label, cor }) {
 function CardVereador({ voto, tipo_votacao }) {
   const status = voto.voto;
   const bg =
-    status === 'Sim' ? 'bg-green-500/20 border-green-500/60' :
-    status === 'Não' ? 'bg-red-500/20 border-red-500/60' :
-    status === 'Abstenção' ? 'bg-yellow-500/20 border-yellow-500/60' :
-    'bg-white/5 border-white/10';
+    status === 'Sim' ? 'bg-green-500/15 border-green-500/50' :
+    status === 'Não' ? 'bg-red-500/15 border-red-500/50' :
+    status === 'Abstenção' ? 'bg-yellow-500/15 border-yellow-500/50' :
+    'bg-white/[0.03] border-white/10';
+  const ring =
+    status === 'Sim' ? 'ring-green-400/70' :
+    status === 'Não' ? 'ring-red-400/70' :
+    status === 'Abstenção' ? 'ring-yellow-400/70' : 'ring-white/15';
   const textCor =
     status === 'Sim' ? 'text-green-300' :
     status === 'Não' ? 'text-red-300' :
@@ -60,32 +64,32 @@ function CardVereador({ voto, tipo_votacao }) {
   const sigiloso = tipo_votacao === 'Sigilosa';
 
   return (
-    <div className={`border rounded-xl p-2.5 flex flex-col items-center gap-1.5 transition-all duration-500 ${bg}`}>
+    <div className={`border rounded-xl p-3 flex flex-col items-center gap-2 transition-all duration-500 ${bg}`}>
       {!sigiloso ? (
         <>
           {voto.foto_url ? (
-            <img src={voto.foto_url} alt={voto.parlamentar_nome} className="w-10 h-10 rounded-full object-cover border-2 border-white/20" />
+            <img src={voto.foto_url} alt={voto.parlamentar_nome} className={`w-12 h-12 rounded-full object-cover ring-2 ${ring}`} />
           ) : (
-            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/50 font-bold text-sm">
+            <div className={`w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white/60 font-bold ring-2 ${ring}`}>
               {voto.parlamentar_nome?.[0]}
             </div>
           )}
-          <div className="text-white text-[10px] font-semibold text-center leading-tight">
+          <div className="text-white text-[11px] font-semibold text-center leading-tight">
             {voto.parlamentar_nome?.split(' ').slice(0, 2).join(' ')}
           </div>
-          {voto.partido_sigla && <div className="text-[9px] text-white/40">{voto.partido_sigla}</div>}
+          {voto.partido_sigla && <div className="text-[9px] text-white/40 -mt-1">{voto.partido_sigla}</div>}
         </>
       ) : (
-        <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+        <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
           <div className="w-4 h-4 rounded-full bg-white/20" />
         </div>
       )}
       {status ? (
-        <div className={`text-[9px] font-bold uppercase tracking-wider ${textCor}`}>
-          {status === 'Sim' ? '✓ FAVORÁVEL' : status === 'Não' ? '✗ CONTRÁRIO' : '— ABSTENÇÃO'}
+        <div className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${bg} ${textCor}`}>
+          {status === 'Sim' ? '✓ Favorável' : status === 'Não' ? '✗ Contrário' : '— Abstenção'}
         </div>
       ) : (
-        <div className="text-[9px] text-white/20 uppercase">Aguardando</div>
+        <div className="text-[9px] text-white/25 uppercase tracking-wider">Aguardando</div>
       )}
     </div>
   );
@@ -134,7 +138,7 @@ export default function TelaoVotacao({ votacaoAtiva, camara, onRefresh, embedded
   ].filter(Boolean).join(' · ');
 
   return (
-    <div className="bg-gray-950 text-white flex flex-col" style={{ minHeight: embedded ? '75vh' : '100vh', height: embedded ? '75vh' : '100vh' }}>
+    <div className="bg-gradient-to-b from-slate-950 to-slate-900 text-white flex flex-col" style={{ minHeight: embedded ? '75vh' : '100vh', height: embedded ? '75vh' : '100vh' }}>
       {/* Topo */}
       <div className="flex items-center justify-between px-6 py-3 border-b border-white/10 flex-shrink-0">
         <div className="flex items-center gap-3">

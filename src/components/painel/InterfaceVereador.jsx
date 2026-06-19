@@ -104,15 +104,15 @@ export default function InterfaceVereador({ votacaoAtiva, user, onRefresh, isPre
   const aguardandoDesempate = votacao?.status === 'Aguardando Desempate';
   const podeVotar = !isPresidente || empate || aguardandoDesempate;
 
-  // Sem votação activa
+  // Sem votação ativa
   if (semVotacao) {
     return (
-      <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center text-center p-8">
+      <div className="h-dvh min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 flex flex-col items-center justify-center text-center p-8">
         <div className="w-20 h-20 rounded-3xl bg-white/5 flex items-center justify-center mb-4">
           <Vote size={36} className="text-white/30" />
         </div>
         <h2 className="text-white font-heading font-bold text-xl mb-2">Nenhuma votação em andamento</h2>
-        <p className="text-white/30 text-sm">Aguarde o operador iniciar uma votação.</p>
+        <p className="text-white/40 text-sm">Aguarde o operador iniciar uma votação.</p>
       </div>
     );
   }
@@ -120,7 +120,7 @@ export default function InterfaceVereador({ votacaoAtiva, user, onRefresh, isPre
   // Presidente aguardando (sem empate ainda)
   if (isPresidente && !empate && !aguardandoDesempate && !meuVoto) {
     return (
-      <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center text-center p-8">
+      <div className="h-dvh min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 flex flex-col items-center justify-center text-center p-6">
         <div className="w-20 h-20 rounded-3xl bg-primary/20 flex items-center justify-center mb-4">
           <Clock size={36} className="text-primary" />
         </div>
@@ -131,12 +131,12 @@ export default function InterfaceVereador({ votacaoAtiva, user, onRefresh, isPre
           <div className="text-white font-medium text-sm leading-snug mb-4">{votacao.materia_ementa}</div>
           <div className="grid grid-cols-2 gap-3">
             <div className="text-center">
-              <div className="text-green-400 text-3xl font-bold">{votacao.votos_sim}</div>
-              <div className="text-white/30 text-xs mt-0.5">Favoráveis</div>
+              <div className="text-green-400 text-3xl font-bold tabular-num">{votacao.votos_sim}</div>
+              <div className="text-white/40 text-xs mt-0.5">Favoráveis</div>
             </div>
             <div className="text-center">
-              <div className="text-red-400 text-3xl font-bold">{votacao.votos_nao}</div>
-              <div className="text-white/30 text-xs mt-0.5">Contrários</div>
+              <div className="text-red-400 text-3xl font-bold tabular-num">{votacao.votos_nao}</div>
+              <div className="text-white/40 text-xs mt-0.5">Contrários</div>
             </div>
           </div>
         </div>
@@ -147,84 +147,108 @@ export default function InterfaceVereador({ votacaoAtiva, user, onRefresh, isPre
   // Já votou — tela de confirmação
   if (meuVoto) {
     const cor = meuVoto === 'Sim' ? 'text-green-400' : meuVoto === 'Não' ? 'text-red-400' : 'text-yellow-400';
-    const corBg = meuVoto === 'Sim' ? 'bg-green-500/10 border-green-500/30' : meuVoto === 'Não' ? 'bg-red-500/10 border-red-500/30' : 'bg-yellow-500/10 border-yellow-500/30';
-    const icone = meuVoto === 'Sim' ? <CheckCircle2 size={52} /> : meuVoto === 'Não' ? <XCircle size={52} /> : <MinusCircle size={52} />;
+    const corBg = meuVoto === 'Sim' ? 'bg-green-500/10 border-green-500/40' : meuVoto === 'Não' ? 'bg-red-500/10 border-red-500/40' : 'bg-yellow-500/10 border-yellow-500/40';
+    const corGlow = meuVoto === 'Sim' ? 'shadow-green-500/20' : meuVoto === 'Não' ? 'shadow-red-500/20' : 'shadow-yellow-500/20';
+    const icone = meuVoto === 'Sim' ? <CheckCircle2 size={64} /> : meuVoto === 'Não' ? <XCircle size={64} /> : <MinusCircle size={64} />;
     const label = meuVoto === 'Sim' ? 'FAVORÁVEL' : meuVoto === 'Não' ? 'CONTRÁRIO' : 'ABSTENÇÃO';
     return (
-      <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center text-center p-8">
-        <div className={`w-32 h-32 rounded-3xl flex items-center justify-center border-2 mb-6 ${corBg} ${cor}`}>
+      <div className="h-dvh min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 flex flex-col items-center justify-center text-center p-8">
+        <div className={`w-36 h-36 rounded-[2rem] flex items-center justify-center border-2 mb-6 shadow-2xl ${corBg} ${cor} ${corGlow}`}>
           {icone}
         </div>
-        <div className={`text-4xl font-heading font-black mb-3 ${cor}`}>{label}</div>
-        <p className="text-white/40 text-sm">Voto registrado com sucesso.</p>
-        <p className="text-white/20 text-xs mt-2">Não é possível alterar seu voto após confirmar.</p>
+        <div className="text-white/40 text-xs uppercase tracking-[0.2em] mb-2">Seu voto</div>
+        <div className={`text-5xl font-heading font-black mb-4 ${cor}`}>{label}</div>
+        <p className="text-white/50 text-sm">Voto registrado com sucesso.</p>
+        <p className="text-white/25 text-xs mt-2">Não é possível alterar o voto após confirmar.</p>
       </div>
     );
   }
 
-  // Interface de votação
+  // Identificação do votante
+  const nomeVotante = user?.nome || user?.full_name || 'Parlamentar';
+  const inicialVotante = nomeVotante.charAt(0);
+
+  // Interface de votação (otimizada para celular/tablet)
   return (
-    <div className="min-h-screen bg-gray-950 flex flex-col p-6">
-      <div className="flex items-center gap-3 mb-5">
-        <span className="w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse block" />
-        <span className="text-green-400 text-sm font-semibold uppercase tracking-wider">Votação em andamento</span>
-      </div>
-
-      {/* Alerta de empate para presidente */}
-      {isPresidente && (empate || aguardandoDesempate) && (
-        <div className="bg-yellow-500/20 border border-yellow-500/40 rounded-xl p-4 mb-5 text-center">
-          <div className="text-yellow-400 font-bold text-base">⚖️ EMPATE DETECTADO</div>
-          <div className="text-yellow-400/70 text-sm mt-1">Seu voto de desempate é necessário</div>
+    <div className="h-dvh min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 flex flex-col">
+      {/* Cabeçalho fixo — status + identificação do votante */}
+      <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-white/10 bg-slate-950/60 backdrop-blur">
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse block" />
+          <span className="text-green-400 text-xs font-bold uppercase tracking-wider">Em votação</span>
         </div>
-      )}
-
-      {/* Matéria */}
-      <div className="bg-white/5 border border-white/10 rounded-2xl p-5 mb-5">
-        <div className="text-white/40 text-xs uppercase tracking-wider mb-2">
-          {votacao.tipo_votacao} · {votacao.materia_tipo}
-        </div>
-        <div className="text-white font-medium leading-snug text-sm">{votacao.materia_ementa}</div>
-      </div>
-
-      {/* Placar ao vivo */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-3 text-center">
-          <div className="text-green-400 text-2xl font-bold">{votacao.votos_sim}</div>
-          <div className="text-green-400/60 text-xs mt-0.5">Favoráveis</div>
-        </div>
-        <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-center">
-          <div className="text-red-400 text-2xl font-bold">{votacao.votos_nao}</div>
-          <div className="text-red-400/60 text-xs mt-0.5">Contrários</div>
-        </div>
-        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-3 text-center">
-          <div className="text-yellow-400 text-2xl font-bold">{votacao.abstencoes || 0}</div>
-          <div className="text-yellow-400/60 text-xs mt-0.5">Abstenções</div>
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-white/70 text-xs font-medium truncate max-w-[150px]">{nomeVotante}</span>
+          {user?.foto_url ? (
+            <img src={user.foto_url} alt={nomeVotante} className="w-7 h-7 rounded-full object-cover border border-white/20" />
+          ) : (
+            <div className="w-7 h-7 rounded-full bg-primary/30 text-white text-xs font-bold flex items-center justify-center">{inicialVotante}</div>
+          )}
         </div>
       </div>
 
-      {/* Botões */}
-      <div className="flex flex-col gap-4 mt-auto">
-        <button
-          onClick={() => votar('Sim')}
-          disabled={votando || !podeVotar}
-          className="w-full py-6 rounded-2xl bg-green-500 hover:bg-green-400 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed text-white font-heading font-black text-2xl flex items-center justify-center gap-3 transition-all shadow-lg shadow-green-500/25"
-        >
-          <CheckCircle2 size={30} /> FAVORÁVEL
-        </button>
-        <button
-          onClick={() => votar('Não')}
-          disabled={votando || !podeVotar}
-          className="w-full py-6 rounded-2xl bg-red-500 hover:bg-red-400 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed text-white font-heading font-black text-2xl flex items-center justify-center gap-3 transition-all shadow-lg shadow-red-500/25"
-        >
-          <XCircle size={30} /> CONTRÁRIO
-        </button>
-        <button
-          onClick={() => votar('Abstenção')}
-          disabled={votando || !podeVotar}
-          className="w-full py-4 rounded-2xl bg-white/10 hover:bg-white/20 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed text-white/60 font-semibold text-lg flex items-center justify-center gap-2 transition-all"
-        >
-          <MinusCircle size={22} /> ABSTENÇÃO
-        </button>
+      {/* Conteúdo rolável */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-lg w-full mx-auto px-4 py-4 space-y-4">
+          {/* Alerta de empate para presidente */}
+          {isPresidente && (empate || aguardandoDesempate) && (
+            <div className="bg-yellow-500/15 border border-yellow-500/40 rounded-2xl p-4 text-center">
+              <div className="text-yellow-400 font-bold text-base">⚖️ Empate detectado</div>
+              <div className="text-yellow-400/70 text-sm mt-1">Seu voto de desempate é necessário</div>
+            </div>
+          )}
+
+          {/* Matéria */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+            <div className="text-white/40 text-[11px] uppercase tracking-wider mb-2">
+              {votacao.tipo_votacao} · {votacao.materia_tipo}
+            </div>
+            <div className="text-white font-medium leading-snug">{votacao.materia_ementa}</div>
+          </div>
+
+          {/* Placar ao vivo */}
+          <div className="grid grid-cols-3 gap-2.5">
+            <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-3 text-center">
+              <div className="text-green-400 text-2xl font-bold tabular-num">{votacao.votos_sim}</div>
+              <div className="text-green-400/60 text-[11px] mt-0.5">Favoráveis</div>
+            </div>
+            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-center">
+              <div className="text-red-400 text-2xl font-bold tabular-num">{votacao.votos_nao}</div>
+              <div className="text-red-400/60 text-[11px] mt-0.5">Contrários</div>
+            </div>
+            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-3 text-center">
+              <div className="text-yellow-400 text-2xl font-bold tabular-num">{votacao.abstencoes || 0}</div>
+              <div className="text-yellow-400/60 text-[11px] mt-0.5">Abstenções</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Botões fixos no rodapé (área de toque grande + safe-area do celular) */}
+      <div className="flex-shrink-0 border-t border-white/10 bg-slate-950/80 backdrop-blur">
+        <div className="max-w-lg w-full mx-auto px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] space-y-3">
+          <button
+            onClick={() => votar('Sim')}
+            disabled={votando || !podeVotar}
+            className="w-full py-5 rounded-2xl bg-green-500 hover:bg-green-400 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed text-white font-heading font-black text-2xl flex items-center justify-center gap-3 transition-all shadow-lg shadow-green-500/25 select-none"
+          >
+            <CheckCircle2 size={30} /> FAVORÁVEL
+          </button>
+          <button
+            onClick={() => votar('Não')}
+            disabled={votando || !podeVotar}
+            className="w-full py-5 rounded-2xl bg-red-500 hover:bg-red-400 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed text-white font-heading font-black text-2xl flex items-center justify-center gap-3 transition-all shadow-lg shadow-red-500/25 select-none"
+          >
+            <XCircle size={30} /> CONTRÁRIO
+          </button>
+          <button
+            onClick={() => votar('Abstenção')}
+            disabled={votando || !podeVotar}
+            className="w-full py-4 rounded-2xl bg-white/10 hover:bg-white/20 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed text-white/70 font-bold text-lg flex items-center justify-center gap-2 transition-all select-none"
+          >
+            <MinusCircle size={22} /> ABSTENÇÃO
+          </button>
+        </div>
       </div>
     </div>
   );
