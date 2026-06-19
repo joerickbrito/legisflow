@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DollarSign, Plus, Search, Pencil, Trash2, ExternalLink } from 'lucide-react';
+import { useExclusaoSegura } from '@/components/ExclusaoSegura';
 import FileUpload from '@/components/FileUpload';
 
 const empty = { numero: '', ano: new Date().getFullYear(), data: '', objeto: '', valor: '', vereador_id: '', vereador_nome: '', vereador_partido: '', arquivo_url: '', observacoes: '' };
@@ -67,15 +68,10 @@ export default function EmendasImpositivas() {
     }
   };
 
-  const remove = async (id) => {
-    if (!confirm('Tem certeza que deseja excluir esta emenda?')) return;
-    try {
-      await sislegisEntities.EmendaImpositiva.delete(id);
-      setItems(items.filter(i => i.id !== id));
-    } catch (e) {
-      setErrorMsg(e?.message || 'Erro ao excluir emenda.');
-    }
-  };
+  const { pedirExclusao, dialogExclusao } = useExclusaoSegura({
+    withTenant,
+    onExcluido: () => sislegisEntities.EmendaImpositiva.filter(withTenant({})).then(setItems),
+  });
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -116,7 +112,7 @@ export default function EmendasImpositivas() {
               </div>
               <div className="flex gap-1 flex-shrink-0">
                 <Button size="icon" variant="ghost" onClick={() => openEdit(item)}><Pencil size={14} /></Button>
-                <Button size="icon" variant="ghost" className="text-destructive" onClick={() => remove(item.id)}><Trash2 size={14} /></Button>
+                <Button size="icon" variant="ghost" className="text-destructive" onClick={() => pedirExclusao('EmendaImpositiva', item, `Emenda nº ${item.numero || ''}/${item.ano || ''}`)}><Trash2 size={14} /></Button>
               </div>
             </div>
           ))}
@@ -175,6 +171,8 @@ export default function EmendasImpositivas() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {dialogExclusao}
     </div>
   );
 }

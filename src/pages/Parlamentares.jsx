@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import PageHeader from '@/components/PageHeader';
+import { useExclusaoSegura } from '@/components/ExclusaoSegura';
 
 const SITUACOES = ['Ativo', 'Licenciado', 'Afastado'];
 const TIPOS = ['Titular', 'Suplente'];
@@ -26,7 +27,7 @@ export default function Parlamentares() {
   const [editando, setEditando] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(null);
+  const { pedirExclusao, dialogExclusao } = useExclusaoSegura({ withTenant, onExcluido: () => loadData() });
   const [errorMsg, setErrorMsg] = useState('');
   // Estados do vínculo com usuário
   const [usuarios, setUsuarios] = useState([]);
@@ -200,34 +201,6 @@ export default function Parlamentares() {
     }
   }
 
-  // Excluir parlamentar
-  async function handleDelete(p, e) {
-    if (e) e.stopPropagation();
-    const vinculado = vinculadosMap[p.id];
-    let msg = `Excluir permanentemente o parlamentar "${p.nome_parlamentar || p.nome}"?`;
-    if (vinculado) {
-      msg += `\n\nO usuário "${vinculado.username}" está vinculado. Deseja também desvincular (manter o login) ou excluir o usuário junto?\n\nOK = Confirmar exclusão do parlamentar`;
-    }
-    if (!confirm(msg)) return;
-
-    setDeleting(p.id);
-    try {
-      if (vinculado) {
-        // Perguntar se quer desvincular
-        const desvincular = confirm(`Deseja desvincular o usuário "${vinculado.username}"?\n\nOK = Desvincular (usuário mantém o login)\nCancelar = Usuário permanece vinculado a um parlamentar inexistente`);
-        if (desvincular) {
-          await sislegisEntities.UsuarioSislegis.update(vinculado.id, { parlamentar_id: null });
-        }
-      }
-      await sislegisEntities.Parlamentar.delete(p.id);
-      loadData();
-    } catch (e) {
-      alert('Erro ao excluir: ' + (e?.message || 'Erro desconhecido.'));
-    } finally {
-      setDeleting(null);
-    }
-  }
-
   const filtrados = parlamentares.filter(p =>
     (p.nome?.toLowerCase().includes(busca.toLowerCase()) ||
     p.nome_parlamentar?.toLowerCase().includes(busca.toLowerCase()) ||
@@ -320,12 +293,11 @@ export default function Parlamentares() {
               {/* Botão excluir */}
               {isAdminCamara && (
                 <button
-                  onClick={(e) => handleDelete(p, e)}
-                  disabled={deleting === p.id}
+                  onClick={(e) => { e.stopPropagation(); pedirExclusao('Parlamentar', p, p.nome_parlamentar || p.nome); }}
                   className="flex-shrink-0 w-8 h-8 rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-500 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
                   title="Excluir parlamentar"
                 >
-                  {deleting === p.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                  <Trash2 size={14} />
                 </button>
               )}
             </div>
@@ -606,6 +578,8 @@ export default function Parlamentares() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {dialogExclusao}
     </div>
   );
 }

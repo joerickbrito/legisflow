@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Users, Plus, Search, Upload, UserCircle, Shield, KeyRound, Loader2, Trash2 } from "lucide-react";
+import { useExclusaoSegura } from "@/components/ExclusaoSegura";
 
 const STATUS_OPTIONS = ["Pendente de Ativação", "Ativo", "Inativo", "Bloqueado", "Pendente"];
 const STATUS_COLOR = { "Pendente de Ativação": "outline", Ativo: "default", Inativo: "secondary", Bloqueado: "destructive", Pendente: "outline" };
@@ -100,17 +101,7 @@ export default function GerenciarUsuarios() {
     }
   };
 
-  const handleDeleteUser = async (e, u) => {
-    e.stopPropagation();
-    const nome = u.nome || u.full_name || u.username || u.email;
-    if (!confirm(`Excluir permanentemente o usuário "${nome}"?\n\nEsta ação é irreversível.`)) return;
-    try {
-      await sislegisEntities.UsuarioSislegis.delete(u.id);
-      await loadUsuarios();
-    } catch (err) {
-      alert('Erro ao excluir: ' + (err?.response?.data?.error || err.message));
-    }
-  };
+  const { pedirExclusao, dialogExclusao } = useExclusaoSegura({ withTenant, onExcluido: () => loadUsuarios() });
 
   const emptyForm = {
     email: "", full_name: "", username: "", cpf: "", telefone: "", cargo: "",
@@ -390,7 +381,7 @@ export default function GerenciarUsuarios() {
                     size="sm"
                     variant="ghost"
                     className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-                    onClick={(e) => handleDeleteUser(e, u)}
+                    onClick={(e) => { e.stopPropagation(); pedirExclusao('UsuarioSislegis', u, u.nome || u.full_name || u.username || u.email); }}
                     title="Excluir usuário"
                   >
                     <Trash2 size={13} />
@@ -692,6 +683,8 @@ export default function GerenciarUsuarios() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {dialogExclusao}
     </div>
   );
 }

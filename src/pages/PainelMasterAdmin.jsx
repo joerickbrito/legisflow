@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Building2, Search, LogIn, Plus, ShieldOff, Trash2, Shield, PlusCircle, ExternalLink, AlertCircle, XCircle, CheckCircle } from 'lucide-react';
+import { useExclusaoSegura } from '@/components/ExclusaoSegura';
 
 const statusColor = { Ativa: 'default', Suspensa: 'secondary', Inativa: 'destructive' };
 
@@ -68,11 +69,9 @@ export default function PainelMasterAdmin() {
     setCamaras(cs => cs.map(c => c.id === camara.id ? { ...c, status: next } : c));
   }
 
-  async function deleteCamara(camara) {
-    if (!confirm(`Excluir "${camara.nome}"? Esta ação é irreversível.`)) return;
-    await sislegisEntities.Camara.delete(camara.id);
-    setCamaras(cs => cs.filter(c => c.id !== camara.id));
-  }
+  const { pedirExclusao, dialogExclusao } = useExclusaoSegura({
+    onExcluido: () => sislegisEntities.Camara.list("-created_date", 200).then(setCamaras),
+  });
 
   return (
     <div className="p-6 space-y-6">
@@ -218,7 +217,7 @@ export default function PainelMasterAdmin() {
                         size="sm"
                         variant="ghost"
                         className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-                        onClick={() => deleteCamara(camara)}
+                        onClick={() => pedirExclusao('Camara', camara, camara.nome)}
                         title="Excluir"
                       >
                         <Trash2 size={13} />
@@ -231,6 +230,8 @@ export default function PainelMasterAdmin() {
           ))}
         </div>
       )}
+
+      {dialogExclusao}
     </div>
   );
 }

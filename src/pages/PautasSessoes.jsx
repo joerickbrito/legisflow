@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ClipboardList, Plus, Search, Pencil, Trash2, ExternalLink } from 'lucide-react';
 import FileUpload from '@/components/FileUpload';
+import { useExclusaoSegura } from '@/components/ExclusaoSegura';
 
 const empty = { numero: '', sessao_id: '', sessao_numero: '', observacoes: '', arquivo_url: '' };
 
@@ -59,15 +60,10 @@ export default function PautasSessoes() {
     }
   };
 
-  const remove = async (id) => {
-    if (!confirm('Tem certeza que deseja excluir esta pauta?')) return;
-    try {
-      await sislegisEntities.PautaSessao.delete(id);
-      setItems(items.filter(i => i.id !== id));
-    } catch (e) {
-      setErrorMsg(e?.message || 'Erro ao excluir pauta.');
-    }
-  };
+  const { pedirExclusao, dialogExclusao } = useExclusaoSegura({
+    withTenant,
+    onExcluido: () => sislegisEntities.PautaSessao.filter(withTenant({})).then(setItems),
+  });
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -107,7 +103,7 @@ export default function PautasSessoes() {
               </div>
               <div className="flex gap-1 flex-shrink-0">
                 <Button size="icon" variant="ghost" onClick={() => openEdit(item)}><Pencil size={14} /></Button>
-                <Button size="icon" variant="ghost" className="text-destructive" onClick={() => remove(item.id)}><Trash2 size={14} /></Button>
+                <Button size="icon" variant="ghost" className="text-destructive" onClick={() => pedirExclusao('PautaSessao', item, `Pauta nº ${item.numero || ''}`)}><Trash2 size={14} /></Button>
               </div>
             </div>
           ))}
@@ -150,6 +146,8 @@ export default function PautasSessoes() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {dialogExclusao}
     </div>
   );
 }

@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FileText, Plus, Search, Pencil, Trash2, ExternalLink } from 'lucide-react';
 import FileUpload from '@/components/FileUpload';
+import { useExclusaoSegura } from '@/components/ExclusaoSegura';
 
 const TIPOS = ['Projeto de Lei', 'Projeto de Lei Complementar', 'Emenda à Lei Orgânica'];
 const STATUS = ['Em tramitação', 'Aprovada', 'Rejeitada', 'Arquivada', 'Retirada', 'Transformada em Norma', 'Aguardando Votação'];
@@ -79,15 +80,10 @@ export default function ProjetosLei() {
     }
   };
 
-  const remove = async (id) => {
-    if (!confirm('Tem certeza que deseja excluir este projeto?')) return;
-    try {
-      await sislegisEntities.Materia.delete(id);
-      setItems(items.filter(i => i.id !== id));
-    } catch (e) {
-      setErrorMsg(e?.message || 'Erro ao excluir projeto.');
-    }
-  };
+  const { pedirExclusao, dialogExclusao } = useExclusaoSegura({
+    withTenant,
+    onExcluido: () => sislegisEntities.Materia.filter(withTenant({ tipo: { $in: TIPOS } })).then(setItems),
+  });
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -129,7 +125,7 @@ export default function ProjetosLei() {
               </div>
               <div className="flex gap-1 flex-shrink-0">
                 <Button size="icon" variant="ghost" onClick={() => openEdit(item)}><Pencil size={14} /></Button>
-                <Button size="icon" variant="ghost" className="text-destructive" onClick={() => remove(item.id)}><Trash2 size={14} /></Button>
+                <Button size="icon" variant="ghost" className="text-destructive" onClick={() => pedirExclusao('Materia', item, `${item.tipo} ${item.numero}/${item.ano}`)}><Trash2 size={14} /></Button>
               </div>
             </div>
           ))}
@@ -211,6 +207,8 @@ export default function ProjetosLei() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {dialogExclusao}
     </div>
   );
 }

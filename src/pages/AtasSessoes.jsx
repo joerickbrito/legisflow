@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BookOpen, Plus, Search, Pencil, Trash2, ExternalLink } from 'lucide-react';
 import FileUpload from '@/components/FileUpload';
+import { useExclusaoSegura } from '@/components/ExclusaoSegura';
 
 const empty = { numero: '', data: '', sessao_id: '', sessao_numero: '', observacoes: '', arquivo_url: '' };
 
@@ -59,15 +60,10 @@ export default function AtasSessoes() {
     }
   };
 
-  const remove = async (id) => {
-    if (!confirm('Tem certeza que deseja excluir esta ata?')) return;
-    try {
-      await sislegisEntities.AtaSessao.delete(id);
-      setItems(items.filter(i => i.id !== id));
-    } catch (e) {
-      setErrorMsg(e?.message || 'Erro ao excluir ata.');
-    }
-  };
+  const { pedirExclusao, dialogExclusao } = useExclusaoSegura({
+    withTenant,
+    onExcluido: () => sislegisEntities.AtaSessao.filter(withTenant({})).then(setItems),
+  });
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -108,7 +104,7 @@ export default function AtasSessoes() {
               </div>
               <div className="flex gap-1 flex-shrink-0">
                 <Button size="icon" variant="ghost" onClick={() => openEdit(item)}><Pencil size={14} /></Button>
-                <Button size="icon" variant="ghost" className="text-destructive" onClick={() => remove(item.id)}><Trash2 size={14} /></Button>
+                <Button size="icon" variant="ghost" className="text-destructive" onClick={() => pedirExclusao('AtaSessao', item, `Ata nº ${item.numero || ''}`)}><Trash2 size={14} /></Button>
               </div>
             </div>
           ))}
@@ -155,6 +151,8 @@ export default function AtasSessoes() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {dialogExclusao}
     </div>
   );
 }

@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, Plus, Pencil, Trash2, ExternalLink } from 'lucide-react';
 import FileUpload from '@/components/FileUpload';
+import { useExclusaoSegura } from '@/components/ExclusaoSegura';
 
 const STATUS_NORMA = ['Vigente', 'Revogada', 'Revogada Parcialmente', 'Suspensa', 'Não Vigente'];
 const statusColors = {
@@ -62,15 +63,10 @@ export default function NormaSimples({ tipo, icon: Icon, title, subtitle, addLab
     }
   };
 
-  const remove = async (id) => {
-    if (!confirm('Tem certeza que deseja excluir este registro?')) return;
-    try {
-      await sislegisEntities.NormaJuridica.delete(id);
-      setItems(items.filter(i => i.id !== id));
-    } catch (e) {
-      setErrorMsg(e?.message || 'Erro ao excluir registro.');
-    }
-  };
+  const { pedirExclusao, dialogExclusao } = useExclusaoSegura({
+    withTenant,
+    onExcluido: () => sislegisEntities.NormaJuridica.filter(withTenant({ tipo })).then(setItems),
+  });
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -111,7 +107,7 @@ export default function NormaSimples({ tipo, icon: Icon, title, subtitle, addLab
               </div>
               <div className="flex gap-1 flex-shrink-0">
                 <Button size="icon" variant="ghost" onClick={() => openEdit(item)}><Pencil size={14} /></Button>
-                <Button size="icon" variant="ghost" className="text-destructive" onClick={() => remove(item.id)}><Trash2 size={14} /></Button>
+                <Button size="icon" variant="ghost" className="text-destructive" onClick={() => pedirExclusao('NormaJuridica', item, `${item.tipo} nº ${item.numero || ''}/${item.ano || ''}`)}><Trash2 size={14} /></Button>
               </div>
             </div>
           ))}
@@ -158,6 +154,8 @@ export default function NormaSimples({ tipo, icon: Icon, title, subtitle, addLab
           </div>
         </DialogContent>
       </Dialog>
+
+      {dialogExclusao}
     </div>
   );
 }
