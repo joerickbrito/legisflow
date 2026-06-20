@@ -7,14 +7,16 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Monitor, Play, StopCircle, Plus, Settings, ExternalLink, Users } from "lucide-react";
+import { Monitor, Play, StopCircle, Plus, Settings, ExternalLink, Users, Trash2 } from "lucide-react";
 import TelaoVotacao from "@/components/painel/TelaoVotacao";
 import InterfaceVereador from "@/components/painel/InterfaceVereador";
+import { useExclusaoSegura } from "@/components/ExclusaoSegura";
 
 export default function PainelEletronico() {
   const { tenantId, withTenant, canQuery, userRole, camara, isOperadorGeral } = useTenant();
   const { user } = useAuth();
   const [votacaoAtiva, setVotacaoAtiva] = useState(null);
+  const [historico, setHistorico] = useState([]);
   const [sessoes, setSessoes] = useState([]);
   const [materias, setMaterias] = useState([]);
   const [normas, setNormas] = useState([]);
@@ -37,6 +39,8 @@ export default function PainelEletronico() {
   const isVereador = userRole === 'VEREADOR';
   const isPresidente = userRole === 'PRESIDENTE';
 
+  const { pedirExclusao, dialogExclusao } = useExclusaoSegura({ withTenant, onExcluido: () => loadHistorico() });
+
   useEffect(() => {
     if (canQuery) loadData();
   }, [tenantId, canQuery]);
@@ -45,6 +49,7 @@ export default function PainelEletronico() {
     const unsub = base44.entities.Votacao.subscribe((event) => {
       if (event.type === 'update' || event.type === 'create') {
         loadVotacaoAtiva();
+        loadHistorico();
       }
     });
     return () => unsub();
@@ -63,7 +68,15 @@ export default function PainelEletronico() {
     setNormas(normasList);
     setParlamentares(parl);
     await loadVotacaoAtiva();
+    await loadHistorico();
     setLoading(false);
+  }
+
+  async function loadHistorico() {
+    const filter = withTenant({});
+    if (!filter) return;
+    const todas = await sislegisEntities.Votacao.filter(filter, '-created_date', 100).catch(() => []);
+    setHistorico(todas || []);
   }
 
   async function loadVotacaoAtiva() {
@@ -199,6 +212,7 @@ export default function PainelEletronico() {
     }
 
     setVotacaoAtiva(null);
+    loadHistorico();
     } catch (e) {
       setErrorMsg(e?.message || 'Erro ao encerrar votação.');
     } finally {
@@ -313,6 +327,45 @@ export default function PainelEletronico() {
         </div>
       )}
 
+      {/* Histórico de votações */}
+      {historico.length > 0 && (
+        <div className="bg-card border border-border rounded-2xl overflow-hidden">
+          <div className="px-5 py-4 border-b border-border">
+            <h2 className="font-heading font-semibold">Histórico de Votações</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">Votações registradas nesta câmara</p>
+          </div>
+          <div className="divide-y divide-border max-h-96 overflow-y-auto scrollbar-slim">
+            {historico.map(v => {
+              const cor = v.resultado?.startsWith('Aprovada') ? 'bg-green-100 text-green-700'
+                : v.resultado === 'Rejeitada' ? 'bg-red-100 text-red-700'
+                : v.resultado === 'Empate' ? 'bg-yellow-100 text-yellow-700'
+                : 'bg-blue-100 text-blue-700';
+              return (
+                <div key={v.id} className="flex items-center gap-3 px-5 py-3 group">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{v.materia_ementa || v.materia_tipo || 'Votação'}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {v.tipo_votacao} · {v.votos_sim ?? 0} sim · {v.votos_nao ?? 0} não · {v.abstencoes ?? 0} abst.
+                      {v.data_hora_inicio ? ` · ${new Date(v.data_hora_inicio).toLocaleDateString('pt-BR')}` : ''}
+                    </p>
+                  </div>
+                  <span className={`text-[11px] px-2.5 py-1 rounded-full font-semibold whitespace-nowrap ${cor}`}>{v.resultado || v.status}</span>
+                  {isOperadorGeral && v.status !== 'Em Votação' && (
+                    <button
+                      onClick={() => pedirExclusao('Votacao', v, v.materia_ementa || `Votação ${v.materia_tipo || ''}`)}
+                      className="p-1.5 rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                      title="Excluir votação"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Modal configuração */}
       <Dialog open={showConfig} onOpenChange={setShowConfig}>
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
@@ -421,6 +474,8 @@ export default function PainelEletronico() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {dialogExclusao}
     </div>
   );
 }
