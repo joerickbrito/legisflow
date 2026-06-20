@@ -21,6 +21,19 @@ const ALLOWED_ENTITIES = [
 // Operações que exigem perfil ADMIN_CAMARA ou superior
 const RESTRICTED_OPERATIONS = ['create', 'update', 'delete'];
 
+// Campos sensíveis que NUNCA devem ser enviados ao cliente (segurança)
+const SENSITIVE_FIELDS = ['password_hash', 'session_token'];
+function sanitizeRecord(entity, record) {
+  if (!record || entity !== 'UsuarioSislegis') return record;
+  const clean = { ...record };
+  for (const f of SENSITIVE_FIELDS) delete clean[f];
+  return clean;
+}
+function sanitizeResult(entity, data) {
+  if (entity !== 'UsuarioSislegis' || !data) return data;
+  return Array.isArray(data) ? data.map((r) => sanitizeRecord(entity, r)) : sanitizeRecord(entity, data);
+}
+
 // Retorna o usuário autenticado
 // NOVA ORDEM DE PRIORIDADE:
 // 1. PRIMEIRO: sislegis_token (body) → UsuarioSislegis (100% das chamadas reais do frontend)
@@ -115,7 +128,7 @@ Deno.serve(async (req) => {
             limit
           );
         }
-        return Response.json({ data: results });
+        return Response.json({ data: sanitizeResult(entity, results) });
       }
 
       case 'filter': {
@@ -126,7 +139,7 @@ Deno.serve(async (req) => {
           query.tenant_id = user.tenant_id;
         }
         const results = await base44.asServiceRole.entities[entity].filter(query, sort, limit);
-        return Response.json({ data: results });
+        return Response.json({ data: sanitizeResult(entity, results) });
       }
 
       case 'get': {
@@ -138,7 +151,7 @@ Deno.serve(async (req) => {
         if (!isSuperAdmin && record.tenant_id && record.tenant_id !== user.tenant_id) {
           return Response.json({ error: 'Acesso negado. Registro de outra câmara.' }, { status: 403 });
         }
-        return Response.json({ data: record });
+        return Response.json({ data: sanitizeResult(entity, record) });
       }
 
       case 'create': {
@@ -147,7 +160,7 @@ Deno.serve(async (req) => {
           data.tenant_id = user.tenant_id;
         }
         const created = await base44.asServiceRole.entities[entity].create(data);
-        return Response.json({ data: created });
+        return Response.json({ data: sanitizeResult(entity, created) });
       }
 
       case 'update': {
@@ -160,7 +173,7 @@ Deno.serve(async (req) => {
           return Response.json({ error: 'Acesso negado. Registro de outra câmara.' }, { status: 403 });
         }
         const updated = await base44.asServiceRole.entities[entity].update(params.id, params.data);
-        return Response.json({ data: updated });
+        return Response.json({ data: sanitizeResult(entity, updated) });
       }
 
       case 'delete': {
