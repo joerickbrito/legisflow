@@ -39,9 +39,47 @@
     "sigla"
   ],
   "rls": {
-    "create": { "user_condition": { "role": "NONE" } },
-    "read": { "user_condition": { "role": "NONE" } },
-    "update": { "user_condition": { "role": "NONE" } },
-    "delete": { "user_condition": { "role": "NONE" } }
+    "create": {
+      "data.tenant_id": "{{user.data.tenant_id}}",
+      "user_condition": {
+        "$or": [
+          {
+            "role": "SUPER_ADMIN"
+          },
+          {
+            "role": "ADMIN_CAMARA"
+          }
+        ]
+      }
+    },
+    "read": {
+      "data.tenant_id": "{{user.data.tenant_id}}"
+    },
+    "update": {
+      "data.tenant_id": "{{user.data.tenant_id}}",
+      "user_condition": {
+        "$or": [
+          {
+            "role": "SUPER_ADMIN"
+          },
+          {
+            "role": "ADMIN_CAMARA"
+          }
+        ]
+      }
+    },
+    "delete": {
+      "data.tenant_id": "{{user.data.tenant_id}}",
+      "user_condition": {
+        "$or": [
+          {
+            "role": "SUPER_ADMIN"
+          },
+          {
+            "role": "ADMIN_CAMARA"
+          }
+        ]
+      }
+    }
   }
 }
