@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { sislegisEntities } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
 import { Building2, Save, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,33 +10,54 @@ import PageHeader from '@/components/PageHeader';
 const ESTADOS = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
 
 export default function CasaLegislativa() {
-  const { withTenant, canQuery, tenantId } = useTenant();
+  const { withTenant, canQuery, tenantId, camara } = useTenant();
   const [casa, setCasa] = useState(null);
-  const [form, setForm] = useState({ nome: '', sigla: '', cnpj: '', endereco: '', cep: '', cidade: '', estado: '', telefone: '', email: '', site: '' });
+  const [form, setForm] = useState({ nome: '', sigla: '', cnpj: '', endereco: '', cep: '', cidade: '', estado: '', telefone: '', email: '', site: '', brasao_url: '', logotipo_url: '' });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  useEffect(() => { if (canQuery) load(); }, [canQuery]);
+  // Recarrega quando a câmara fica disponível, para conseguir pré-preencher
+  useEffect(() => { if (canQuery) load(); }, [canQuery, camara]);
 
   async function load() {
     const filter = withTenant();
     if (!filter) return;
-    const list = await base44.entities.CasaLegislativa.filter(filter);
-    if (list.length > 0) {
-      setCasa(list[0]);
+    const list = await sislegisEntities.CasaLegislativa.filter(filter);
+    if (list && list.length > 0) {
+      const c = list[0];
+      setCasa(c);
       setForm({
-        nome: list[0].nome || '', sigla: list[0].sigla || '', cnpj: list[0].cnpj || '',
-        endereco: list[0].endereco || '', cep: list[0].cep || '', cidade: list[0].cidade || '',
-        estado: list[0].estado || '', telefone: list[0].telefone || '', email: list[0].email || '', site: list[0].site || ''
+        nome: c.nome || '', sigla: c.sigla || '', cnpj: c.cnpj || '',
+        endereco: c.endereco || '', cep: c.cep || '', cidade: c.cidade || '',
+        estado: c.estado || '', telefone: c.telefone || '', email: c.email || '', site: c.site || '',
+        brasao_url: c.brasao_url || camara?.brasao_url || '', logotipo_url: c.logotipo_url || camara?.logotipo_url || '',
       });
+    } else if (camara) {
+      // Ainda não há registro da Casa Legislativa: pré-preenche com os dados do
+      // cadastro da câmara (feito pelo Super Admin). Só preenche campos vazios,
+      // para não sobrescrever o que o usuário já tiver digitado.
+      setForm(f => ({
+        ...f,
+        nome: f.nome || camara.nome || '',
+        sigla: f.sigla || camara.sigla || '',
+        cnpj: f.cnpj || camara.cnpj || '',
+        endereco: f.endereco || camara.endereco || '',
+        cidade: f.cidade || camara.cidade || camara.municipio || '',
+        estado: f.estado || camara.estado || '',
+        telefone: f.telefone || camara.telefone || '',
+        email: f.email || camara.email || '',
+        site: f.site || camara.site || '',
+        brasao_url: f.brasao_url || camara.brasao_url || '',
+        logotipo_url: f.logotipo_url || camara.logotipo_url || '',
+      }));
     }
   }
 
   async function salvar() {
     setSaving(true);
     const data = { ...form, tenant_id: tenantId };
-    if (casa) await base44.entities.CasaLegislativa.update(casa.id, data);
-    else await base44.entities.CasaLegislativa.create(data);
+    if (casa) await sislegisEntities.CasaLegislativa.update(casa.id, data);
+    else await sislegisEntities.CasaLegislativa.create(data);
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -50,6 +71,17 @@ export default function CasaLegislativa() {
       <PageHeader icon={Building2} title="Casa Legislativa" subtitle="Dados institucionais da casa" />
 
       <div className="bg-card border border-border rounded-2xl p-6 space-y-5">
+        {(form.brasao_url || form.logotipo_url) && (
+          <div className="flex items-center gap-4 pb-4 border-b border-border">
+            {form.brasao_url && (
+              <img src={form.brasao_url} alt="Brasão" className="w-16 h-16 object-contain rounded-lg bg-muted/40 p-1 flex-shrink-0" />
+            )}
+            {form.logotipo_url && form.logotipo_url !== form.brasao_url && (
+              <img src={form.logotipo_url} alt="Logotipo" className="h-16 object-contain rounded-lg bg-muted/40 p-1 flex-shrink-0" />
+            )}
+            <p className="text-xs text-muted-foreground">Brasão e logotipo da câmara. Para alterá-los, edite o cadastro da câmara pelo Super Admin.</p>
+          </div>
+        )}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="sm:col-span-2">
             <label className="text-sm font-medium mb-1.5 block">Nome da Instituição *</label>
