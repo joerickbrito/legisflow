@@ -231,7 +231,7 @@ export default function Layout() {
         )}
 
         {/* Nav */}
-        <nav className="flex-1 overflow-y-auto py-2 space-y-0.5 px-2">
+        <nav className="flex-1 overflow-y-auto py-2 space-y-0.5 px-2 scrollbar-sidebar">
           {navGroups.map((group, gi) => (
             <div key={gi} className="mb-2">
               {!collapsed && (
