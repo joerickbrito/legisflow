@@ -48,6 +48,8 @@ export default function PainelEletronico() {
   useEffect(() => {
     const unsub = base44.entities.Votacao.subscribe((event) => {
       if (event.type === 'update' || event.type === 'create') {
+        // Isolamento: só reage a votações da própria câmara
+        if (event.data?.tenant_id && tenantId && event.data.tenant_id !== tenantId) return;
         loadVotacaoAtiva();
         loadHistorico();
       }

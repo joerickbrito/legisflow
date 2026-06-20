@@ -45,12 +45,14 @@ export default function InterfaceVereador({ votacaoAtiva, user, onRefresh, isPre
   useEffect(() => {
     const unsub = base44.entities.Votacao.subscribe((event) => {
       if (event.type === 'update' || event.type === 'create') {
+        // Isolamento: ignora votações de outra câmara
+        if (event.data?.tenant_id && tenantId && event.data.tenant_id !== tenantId) return;
         setVotacao(event.data);
         setMeuVoto(getMeuVoto(event.data));
       }
     });
     return () => unsub();
-  }, [user?.id]);
+  }, [user?.id, tenantId]);
 
   async function votar(opcao) {
     if (!votacao || meuVoto || votando) return;
