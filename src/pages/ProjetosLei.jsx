@@ -8,9 +8,10 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FileText, Plus, Search, Pencil, Trash2, ExternalLink } from 'lucide-react';
+import { FileText, Plus, Pencil, Trash2, ExternalLink } from 'lucide-react';
 import FileUpload from '@/components/FileUpload';
 import { useExclusaoSegura } from '@/components/ExclusaoSegura';
+import FilterBar, { TODOS } from '@/components/FilterBar';
 
 const TIPOS = ['Projeto de Lei', 'Projeto de Lei Complementar', 'Emenda à Lei Orgânica'];
 const STATUS = ['Em tramitação', 'Aprovada', 'Rejeitada', 'Arquivada', 'Retirada', 'Transformada em Norma', 'Aguardando Votação'];
@@ -32,6 +33,7 @@ export default function ProjetosLei() {
   const { tenantId, withTenant, canQuery } = useTenant();
   const [items, setItems] = useState([]);
   const [search, setSearch] = useState('');
+  const [filtros, setFiltros] = useState({});
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(empty);
   const [editing, setEditing] = useState(null);
@@ -43,9 +45,15 @@ export default function ProjetosLei() {
     sislegisEntities.Materia.filter(withTenant({ tipo: { $in: TIPOS } })).then(setItems);
   }, [canQuery, tenantId]);
 
-  const filtered = items.filter(i =>
-    `${i.numero} ${i.ementa} ${i.autor_nome}`.toLowerCase().includes(search.toLowerCase())
-  );
+  const anos = [...new Set(items.map(i => i.ano).filter(Boolean))].sort((a, b) => b - a).map(String);
+
+  const filtered = items.filter(i => {
+    const buscaOk = `${i.numero} ${i.ementa} ${i.autor_nome}`.toLowerCase().includes(search.toLowerCase());
+    const statusOk = !filtros.status || filtros.status === TODOS || i.status === filtros.status;
+    const tipoOk = !filtros.tipo || filtros.tipo === TODOS || i.tipo === filtros.tipo;
+    const anoOk = !filtros.ano || filtros.ano === TODOS || String(i.ano) === filtros.ano;
+    return buscaOk && statusOk && tipoOk && anoOk;
+  });
 
   const openNew = () => { setForm(empty); setEditing(null); setErrorMsg(''); setOpen(true); };
   const openEdit = (item) => { setForm({ ...item }); setEditing(item.id); setErrorMsg(''); setOpen(true); };
@@ -96,12 +104,19 @@ export default function ProjetosLei() {
         action={<Button onClick={openNew}><Plus size={16} className="mr-1" /> Novo Projeto</Button>}
       />
 
-      <div className="mb-4 flex gap-2">
-        <div className="relative flex-1">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input className="pl-9" placeholder="Buscar por número, ementa ou autor..." value={search} onChange={e => setSearch(e.target.value)} />
-        </div>
-      </div>
+      <FilterBar
+        search={search}
+        onSearch={setSearch}
+        searchPlaceholder="Buscar por número, ementa ou autor..."
+        filtros={[
+          { key: 'status', label: 'Status', options: STATUS },
+          { key: 'tipo', label: 'Tipo', options: TIPOS },
+          { key: 'ano', label: 'Ano', options: anos },
+        ]}
+        valores={filtros}
+        onChange={(k, v) => setFiltros(f => ({ ...f, [k]: v }))}
+        onLimpar={() => { setSearch(''); setFiltros({}); }}
+      />
 
       {filtered.length === 0 ? (
         <EmptyState icon={FileText} title="Nenhum projeto encontrado" description="Cadastre o primeiro projeto de lei." onAdd={openNew} addLabel="Novo Projeto" />

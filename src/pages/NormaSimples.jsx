@@ -8,9 +8,10 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Plus, Pencil, Trash2, ExternalLink } from 'lucide-react';
+import { Plus, Pencil, Trash2, ExternalLink } from 'lucide-react';
 import FileUpload from '@/components/FileUpload';
 import { useExclusaoSegura } from '@/components/ExclusaoSegura';
+import FilterBar, { TODOS } from '@/components/FilterBar';
 
 const STATUS_NORMA = ['Vigente', 'Revogada', 'Revogada Parcialmente', 'Suspensa', 'Não Vigente'];
 const statusColors = {
@@ -25,6 +26,7 @@ export default function NormaSimples({ tipo, icon: Icon, title, subtitle, addLab
   const { tenantId, withTenant, canQuery } = useTenant();
   const [items, setItems] = useState([]);
   const [search, setSearch] = useState('');
+  const [filtros, setFiltros] = useState({});
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({});
   const [editing, setEditing] = useState(null);
@@ -38,9 +40,14 @@ export default function NormaSimples({ tipo, icon: Icon, title, subtitle, addLab
     sislegisEntities.NormaJuridica.filter(withTenant({ tipo })).then(setItems);
   }, [canQuery, tenantId]);
 
-  const filtered = items.filter(i =>
-    `${i.numero} ${i.ementa}`.toLowerCase().includes(search.toLowerCase())
-  );
+  const anos = [...new Set(items.map(i => i.ano).filter(Boolean))].sort((a, b) => b - a).map(String);
+
+  const filtered = items.filter(i => {
+    const buscaOk = `${i.numero} ${i.ementa}`.toLowerCase().includes(search.toLowerCase());
+    const situacaoOk = !filtros.situacao || filtros.situacao === TODOS || (i.situacao || 'Vigente') === filtros.situacao;
+    const anoOk = !filtros.ano || filtros.ano === TODOS || String(i.ano) === filtros.ano;
+    return buscaOk && situacaoOk && anoOk;
+  });
 
   const openNew = () => { setForm(empty); setEditing(null); setErrorMsg(''); setOpen(true); };
   const openEdit = (item) => { setForm({ ...item }); setEditing(item.id); setErrorMsg(''); setOpen(true); };
@@ -79,12 +86,18 @@ export default function NormaSimples({ tipo, icon: Icon, title, subtitle, addLab
         action={<Button onClick={openNew}><Plus size={16} className="mr-1" /> {addLabel}</Button>}
       />
 
-      <div className="mb-4">
-        <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input className="pl-9" placeholder="Buscar por número ou ementa..." value={search} onChange={e => setSearch(e.target.value)} />
-        </div>
-      </div>
+      <FilterBar
+        search={search}
+        onSearch={setSearch}
+        searchPlaceholder="Buscar por número ou ementa..."
+        filtros={[
+          { key: 'situacao', label: 'Situação', options: STATUS_NORMA },
+          { key: 'ano', label: 'Ano', options: anos },
+        ]}
+        valores={filtros}
+        onChange={(k, v) => setFiltros(f => ({ ...f, [k]: v }))}
+        onLimpar={() => { setSearch(''); setFiltros({}); }}
+      />
 
       {filtered.length === 0 ? (
         <EmptyState icon={Icon} title={`Nenhum registro encontrado`} description={`Cadastre o primeiro registro.`} onAdd={openNew} addLabel={addLabel} />

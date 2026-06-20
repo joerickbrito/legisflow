@@ -7,8 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DollarSign, Plus, Search, Pencil, Trash2, ExternalLink } from 'lucide-react';
+import { DollarSign, Plus, Pencil, Trash2, ExternalLink } from 'lucide-react';
 import { useExclusaoSegura } from '@/components/ExclusaoSegura';
+import FilterBar, { TODOS } from '@/components/FilterBar';
 import FileUpload from '@/components/FileUpload';
 
 const empty = { numero: '', ano: new Date().getFullYear(), data: '', objeto: '', valor: '', vereador_id: '', vereador_nome: '', vereador_partido: '', arquivo_url: '', observacoes: '' };
@@ -18,6 +19,7 @@ export default function EmendasImpositivas() {
   const [items, setItems] = useState([]);
   const [parlamentares, setParlamentares] = useState([]);
   const [search, setSearch] = useState('');
+  const [filtros, setFiltros] = useState({});
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(empty);
   const [editing, setEditing] = useState(null);
@@ -30,9 +32,13 @@ export default function EmendasImpositivas() {
     sislegisEntities.Parlamentar.filter(withTenant({ ativo: true })).then(setParlamentares);
   }, [canQuery, tenant]);
 
-  const filtered = items.filter(i =>
-    `${i.numero} ${i.objeto} ${i.vereador_nome}`.toLowerCase().includes(search.toLowerCase())
-  );
+  const anos = [...new Set(items.map(i => i.ano).filter(Boolean))].sort((a, b) => b - a).map(String);
+
+  const filtered = items.filter(i => {
+    const buscaOk = `${i.numero} ${i.objeto} ${i.vereador_nome}`.toLowerCase().includes(search.toLowerCase());
+    const anoOk = !filtros.ano || filtros.ano === TODOS || String(i.ano) === filtros.ano;
+    return buscaOk && anoOk;
+  });
 
   const openNew = () => { setForm(empty); setEditing(null); setOpen(true); };
   const openEdit = (item) => { setForm({ ...item }); setEditing(item.id); setOpen(true); };
@@ -84,12 +90,15 @@ export default function EmendasImpositivas() {
         action={<Button onClick={openNew}><Plus size={16} className="mr-1" /> Nova Emenda</Button>}
       />
 
-      <div className="mb-4">
-        <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input className="pl-9" placeholder="Buscar por número, objeto ou vereador..." value={search} onChange={e => setSearch(e.target.value)} />
-        </div>
-      </div>
+      <FilterBar
+        search={search}
+        onSearch={setSearch}
+        searchPlaceholder="Buscar por número, objeto ou vereador..."
+        filtros={[{ key: 'ano', label: 'Ano', options: anos }]}
+        valores={filtros}
+        onChange={(k, v) => setFiltros(f => ({ ...f, [k]: v }))}
+        onLimpar={() => { setSearch(''); setFiltros({}); }}
+      />
 
       {filtered.length === 0 ? (
         <EmptyState icon={DollarSign} title="Nenhuma emenda encontrada" description="Cadastre a primeira emenda impositiva." onAdd={openNew} addLabel="Nova Emenda" />

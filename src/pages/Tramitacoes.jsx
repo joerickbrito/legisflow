@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { sislegisEntities } from '@/lib/sislegisApi';
-import { GitMerge, Plus, Search } from 'lucide-react';
+import { GitMerge, Plus } from 'lucide-react';
+import FilterBar, { TODOS } from '@/components/FilterBar';
 import { useTenant } from '@/lib/TenantContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +21,7 @@ export default function Tramitacoes() {
   const [tramitacoes, setTramitacoes] = useState([]);
   const [materias, setMaterias] = useState([]);
   const [busca, setBusca] = useState('');
+  const [filtros, setFiltros] = useState({});
   const [showForm, setShowForm] = useState(false);
 
   const [form, setForm] = useState({ materia_id: '', materia_ementa: '', materia_numero: '', unidade_tramitacao_origem: '', unidade_tramitacao_destino: '', data: format(new Date()), hora: '', status: 'Em Tramitação', texto_acao: '', urgente: false, turno: 'Único' });
@@ -54,10 +56,12 @@ export default function Tramitacoes() {
     load();
   }
 
-  const filtradas = tramitacoes.filter(t =>
-    t.materia_ementa?.toLowerCase().includes(busca.toLowerCase()) ||
-    t.unidade_tramitacao_destino?.toLowerCase().includes(busca.toLowerCase())
-  );
+  const filtradas = tramitacoes.filter(t => {
+    const buscaOk = t.materia_ementa?.toLowerCase().includes(busca.toLowerCase()) ||
+      t.unidade_tramitacao_destino?.toLowerCase().includes(busca.toLowerCase());
+    const statusOk = !filtros.status || filtros.status === TODOS || t.status === filtros.status;
+    return buscaOk && statusOk;
+  });
 
   return (
     <div className="p-6 md:p-8 max-w-5xl mx-auto space-y-6">
@@ -65,10 +69,15 @@ export default function Tramitacoes() {
         action={<Button onClick={() => { setForm({ materia_id: '', materia_ementa: '', materia_numero: '', unidade_tramitacao_origem: '', unidade_tramitacao_destino: '', data: format(new Date()), hora: '', status: 'Em Tramitação', texto_acao: '', urgente: false, turno: 'Único' }); setShowForm(true); }} className="gap-2"><Plus size={16} /> Nova Tramitação</Button>}
       />
 
-      <div className="relative">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-        <Input placeholder="Buscar por matéria ou unidade..." value={busca} onChange={e => setBusca(e.target.value)} className="pl-9" />
-      </div>
+      <FilterBar
+        search={busca}
+        onSearch={setBusca}
+        searchPlaceholder="Buscar por matéria ou unidade..."
+        filtros={[{ key: 'status', label: 'Status', options: STATUS_OPTS }]}
+        valores={filtros}
+        onChange={(k, v) => setFiltros(f => ({ ...f, [k]: v }))}
+        onLimpar={() => { setBusca(''); setFiltros({}); }}
+      />
 
       {filtradas.length === 0 ? (
         <EmptyState icon={GitMerge} title="Nenhuma tramitação registrada" description="Registre movimentos para rastrear o workflow legislativo." onAdd={() => setShowForm(true)} addLabel="Nova Tramitação" />

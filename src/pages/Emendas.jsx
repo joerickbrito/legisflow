@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FileDiff, Plus } from "lucide-react";
 import StatusBadge from "@/components/StatusBadge";
+import FilterBar, { TODOS } from "@/components/FilterBar";
 
 const TIPOS = ["Supressiva", "Modificativa", "Aditiva", "Substitutiva", "Substitutivo Global"];
 const STATUS = ["Em análise", "Aprovada", "Rejeitada", "Retirada"];
@@ -25,6 +26,8 @@ export default function Emendas() {
   const [form, setForm] = useState({ materia_id: "", numero: "", tipo: "Modificativa", ementa: "", texto: "", justificativa: "", autor_id: "", autor_nome: "", data_apresentacao: "", status: "Em análise" });
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [busca, setBusca] = useState('');
+  const [filtros, setFiltros] = useState({});
 
   useEffect(() => {
     if (!canQuery) return;
@@ -57,6 +60,13 @@ export default function Emendas() {
     }
   };
 
+  const filtradas = emendas.filter(e => {
+    const buscaOk = `${e.ementa || ''} ${e.autor_nome || ''} ${e.materia_ementa || ''}`.toLowerCase().includes(busca.toLowerCase());
+    const tipoOk = !filtros.tipo || filtros.tipo === TODOS || e.tipo === filtros.tipo;
+    const statusOk = !filtros.status || filtros.status === TODOS || e.status === filtros.status;
+    return buscaOk && tipoOk && statusOk;
+  });
+
   return (
     <div className="p-6 space-y-6">
       <PageHeader
@@ -66,9 +76,22 @@ export default function Emendas() {
         action={<Button onClick={openNew}><Plus className="w-4 h-4 mr-2" />Nova Emenda</Button>}
       />
 
+      <FilterBar
+        search={busca}
+        onSearch={setBusca}
+        searchPlaceholder="Buscar por ementa, autor ou matéria..."
+        filtros={[
+          { key: 'tipo', label: 'Tipo', options: TIPOS },
+          { key: 'status', label: 'Status', options: STATUS },
+        ]}
+        valores={filtros}
+        onChange={(k, v) => setFiltros(f => ({ ...f, [k]: v }))}
+        onLimpar={() => { setBusca(''); setFiltros({}); }}
+      />
+
       <div className="space-y-3">
-        {emendas.length === 0 && <p className="text-muted-foreground text-sm">Nenhuma emenda registrada.</p>}
-        {emendas.map(e => (
+        {filtradas.length === 0 && <p className="text-muted-foreground text-sm">Nenhuma emenda registrada.</p>}
+        {filtradas.map(e => (
           <Card key={e.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => openEdit(e)}>
             <CardContent className="pt-4">
               <div className="flex items-start justify-between gap-4">

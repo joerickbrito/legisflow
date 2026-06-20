@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { sislegisEntities } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
-import { MessageSquare, Plus, Search } from 'lucide-react';
+import { MessageSquare, Plus } from 'lucide-react';
+import FilterBar, { TODOS } from '@/components/FilterBar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -20,6 +21,7 @@ export default function Pareceres() {
   const [comissoes, setComissoes] = useState([]);
   const [parlamentares, setParlamentares] = useState([]);
   const [busca, setBusca] = useState('');
+  const [filtros, setFiltros] = useState({});
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ materia_id: '', comissao_id: '', relator_id: '', tipo: 'Favorável', texto: '', data: '' });
 
@@ -62,10 +64,12 @@ export default function Pareceres() {
     'Pela Constitucionalidade': 'bg-green-100 text-green-700',
   };
 
-  const filtrados = pareceres.filter(p =>
-    p.materia_ementa?.toLowerCase().includes(busca.toLowerCase()) ||
-    p.relator_nome?.toLowerCase().includes(busca.toLowerCase())
-  );
+  const filtrados = pareceres.filter(p => {
+    const buscaOk = p.materia_ementa?.toLowerCase().includes(busca.toLowerCase()) ||
+      p.relator_nome?.toLowerCase().includes(busca.toLowerCase());
+    const tipoOk = !filtros.tipo || filtros.tipo === TODOS || p.tipo === filtros.tipo;
+    return buscaOk && tipoOk;
+  });
 
   return (
     <div className="p-6 md:p-8 max-w-5xl mx-auto space-y-6">
@@ -73,10 +77,15 @@ export default function Pareceres() {
         action={<Button onClick={() => { setForm({ materia_id: '', comissao_id: '', relator_id: '', tipo: 'Favorável', texto: '', data: '' }); setShowForm(true); }} className="gap-2"><Plus size={16} /> Novo Parecer</Button>}
       />
 
-      <div className="relative">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-        <Input placeholder="Buscar por matéria ou relator..." value={busca} onChange={e => setBusca(e.target.value)} className="pl-9" />
-      </div>
+      <FilterBar
+        search={busca}
+        onSearch={setBusca}
+        searchPlaceholder="Buscar por matéria ou relator..."
+        filtros={[{ key: 'tipo', label: 'Tipo de parecer', options: TIPOS }]}
+        valores={filtros}
+        onChange={(k, v) => setFiltros(f => ({ ...f, [k]: v }))}
+        onLimpar={() => { setBusca(''); setFiltros({}); }}
+      />
 
       {filtrados.length === 0 ? (
         <EmptyState icon={MessageSquare} title="Nenhum parecer emitido" onAdd={() => setShowForm(true)} addLabel="Emitir Parecer" />
