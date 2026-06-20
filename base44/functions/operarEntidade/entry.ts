@@ -164,19 +164,30 @@ Deno.serve(async (req) => {
       }
 
       case 'delete': {
-        const results = await base44.asServiceRole.entities[entity].filter({ id: params.id }, null, 1);
-        if (!results || results.length === 0) {
-          return Response.json({ error: 'Registro não encontrado.' }, { status: 404 });
+        // Busca o registro pelo id usando get (método canônico do Base44), com
+        // fallback por filter. Usado apenas para a checagem de tenant — a exclusão
+        // em si é feita diretamente por id, para não falhar caso o lookup retorne vazio.
+        let existing = null;
+        try {
+          existing = await base44.asServiceRole.entities[entity].get(params.id);
+        } catch (_) {
+          try {
+            const results = await base44.asServiceRole.entities[entity].filter({ id: params.id }, null, 1);
+            existing = results && results.length > 0 ? results[0] : null;
+          } catch (_) { existing = null; }
         }
-        const existing = results[0];
-        // SUPER_ADMIN pode excluir qualquer registro
-        // ADMIN_CAMARA só pode excluir registros da própria câmara
-        if (!isSuperAdmin && existing.tenant_id && existing.tenant_id !== user.tenant_id) {
+        // ADMIN_CAMARA só pode excluir registros da própria câmara (quando o registro tem tenant_id)
+        if (existing && !isSuperAdmin && existing.tenant_id && existing.tenant_id !== user.tenant_id) {
           return Response.json({ error: 'Acesso negado. Registro de outra câmara.' }, { status: 403 });
         }
-        await base44.asServiceRole.entities[entity].delete(params.id);
+        try {
+          await base44.asServiceRole.entities[entity].delete(params.id);
+        } catch (e) {
+          return Response.json({ error: 'Não foi possível excluir o registro: ' + (e?.message || 'erro desconhecido') }, { status: 500 });
+        }
         return Response.json({ data: { id: params.id, deleted: true } });
       }
+
 
       default:
         return Response.json({ error: `Operação desconhecida: ${operation}` }, { status: 400 });
