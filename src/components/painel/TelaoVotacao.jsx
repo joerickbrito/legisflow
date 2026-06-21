@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
-import { CheckCircle2, XCircle, MinusCircle } from "lucide-react";
+import { CheckCircle2, XCircle, MinusCircle, Lock } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -44,53 +44,35 @@ function Cronometro({ segundos, label, cor }) {
   );
 }
 
-/* ─── Card do vereador ─── */
-function CardVereador({ voto, tipo_votacao }) {
-  const status = voto.voto;
-  const bg =
-    status === 'Sim' ? 'bg-green-500/15 border-green-500/50' :
-    status === 'Não' ? 'bg-red-500/15 border-red-500/50' :
-    status === 'Abstenção' ? 'bg-yellow-500/15 border-yellow-500/50' :
-    'bg-white/[0.03] border-white/10';
-  const ring =
-    status === 'Sim' ? 'ring-green-400/70' :
-    status === 'Não' ? 'ring-red-400/70' :
-    status === 'Abstenção' ? 'ring-yellow-400/70' : 'ring-white/15';
-  const textCor =
-    status === 'Sim' ? 'text-green-300' :
-    status === 'Não' ? 'text-red-300' :
-    status === 'Abstenção' ? 'text-yellow-300' : 'text-white/30';
+/* ─── Paleta semântica do voto ─── */
+function votoEstilo(status) {
+  if (status === 'Sim') return { bg: 'bg-green-500/15', border: 'border-green-500/50', ring: 'ring-green-400/70', text: 'text-green-300', label: '✓ Favorável' };
+  if (status === 'Não') return { bg: 'bg-red-500/15', border: 'border-red-500/50', ring: 'ring-red-400/70', text: 'text-red-300', label: '✗ Contrário' };
+  if (status === 'Abstenção') return { bg: 'bg-yellow-500/15', border: 'border-yellow-500/50', ring: 'ring-yellow-400/70', text: 'text-yellow-300', label: '— Abstenção' };
+  return { bg: 'bg-white/[0.03]', border: 'border-white/10', ring: 'ring-white/15', text: 'text-white/30', label: 'Aguardando' };
+}
 
-  const sigiloso = tipo_votacao === 'Sigilosa';
+/* ─── Card do vereador (somente voto nominal) ─── */
+function CardVereador({ voto }) {
+  const votou = !!voto.voto;
+  const e = votoEstilo(voto.voto);
 
   return (
-    <div className={`border rounded-xl p-3 flex flex-col items-center gap-2 transition-all duration-500 ${bg}`}>
-      {!sigiloso ? (
-        <>
-          {voto.foto_url ? (
-            <img src={voto.foto_url} alt={voto.parlamentar_nome} className={`w-12 h-12 rounded-full object-cover ring-2 ${ring}`} />
-          ) : (
-            <div className={`w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white/60 font-bold ring-2 ${ring}`}>
-              {voto.parlamentar_nome?.[0]}
-            </div>
-          )}
-          <div className="text-white text-[11px] font-semibold text-center leading-tight">
-            {voto.parlamentar_nome?.split(' ').slice(0, 2).join(' ')}
-          </div>
-          {voto.partido_sigla && <div className="text-[9px] text-white/40 -mt-1">{voto.partido_sigla}</div>}
-        </>
+    <div className={`border rounded-xl p-3 flex flex-col items-center gap-2 transition-all duration-500 ${e.bg} ${e.border} ${votou ? '' : 'opacity-60'}`}>
+      {voto.foto_url ? (
+        <img src={voto.foto_url} alt={voto.parlamentar_nome} className={`w-12 h-12 rounded-full object-cover ring-2 ${e.ring} ${votou ? '' : 'grayscale'} transition-all duration-500`} />
       ) : (
-        <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
-          <div className="w-4 h-4 rounded-full bg-white/20" />
+        <div className={`w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white/60 font-bold ring-2 ${e.ring}`}>
+          {voto.parlamentar_nome?.[0]}
         </div>
       )}
-      {status ? (
-        <div className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${bg} ${textCor}`}>
-          {status === 'Sim' ? '✓ Favorável' : status === 'Não' ? '✗ Contrário' : '— Abstenção'}
-        </div>
-      ) : (
-        <div className="text-[9px] text-white/25 uppercase tracking-wider">Aguardando</div>
-      )}
+      <div className="text-white text-[11px] font-semibold text-center leading-tight">
+        {voto.parlamentar_nome?.split(' ').slice(0, 2).join(' ')}
+      </div>
+      {voto.partido_sigla && <div className="text-[9px] text-white/40 -mt-1">{voto.partido_sigla}</div>}
+      <div className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${votou ? `border ${e.border} ${e.text}` : 'text-white/25'}`}>
+        {e.label}
+      </div>
     </div>
   );
 }
@@ -126,7 +108,10 @@ export default function TelaoVotacao({ votacaoAtiva, camara, onRefresh, embedded
   const abstencao = votos.filter(x => x.voto === 'Abstenção').length;
   const aguardando = votos.filter(x => !x.voto).length;
   const total = votos.length;
+  const votaram = total - aguardando;
+  const pctVotaram = total ? Math.round((votaram / total) * 100) : 0;
 
+  const sigiloso = v.tipo_votacao === 'Sigilosa';
   const encerrada = v.status === 'Encerrada';
   const empate = v.status === 'Aguardando Desempate' || v.resultado === 'Empate';
   const aprovada = v.resultado === 'Aprovada' || v.resultado === 'Aprovada por Unanimidade';
@@ -143,22 +128,22 @@ export default function TelaoVotacao({ votacaoAtiva, camara, onRefresh, embedded
       <div className="flex items-center justify-between px-6 py-3 border-b border-white/10 flex-shrink-0">
         <div className="flex items-center gap-3">
           {camara?.brasao_url && (
-            <img src={camara.brasao_url} alt="Brasão" className="h-10 w-10 object-contain" />
+            <img src={camara.brasao_url} alt="Brasão" className="h-11 w-11 object-contain" />
           )}
           <div>
-            <div className="text-white font-heading font-bold text-sm">{camara?.nome || 'Câmara Municipal'}</div>
+            <div className="text-white font-heading font-bold text-base leading-tight">{camara?.nome || 'Câmara Municipal'}</div>
             <div className="text-white/40 text-xs">{camara?.municipio}{camara?.estado ? ` — ${camara.estado}` : ''}</div>
           </div>
         </div>
         <div className="text-right">
-          <div className="text-white font-mono text-lg font-bold">{format(agora, 'HH:mm:ss')}</div>
+          <div className="text-white font-mono text-xl font-bold tabular-num">{format(agora, 'HH:mm:ss')}</div>
           <div className="text-white/40 text-xs capitalize">{format(agora, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}</div>
         </div>
       </div>
 
       {/* Empate banner */}
       {empate && !encerrada && (
-        <div className="bg-yellow-500/20 border-b border-yellow-500/40 px-6 py-2 text-center">
+        <div className="bg-yellow-500/20 border-b border-yellow-500/40 px-6 py-2 text-center flex-shrink-0">
           <span className="text-yellow-400 font-bold text-sm tracking-wider uppercase">
             ⚖️ Empate detectado — Aguardando voto de desempate do Presidente
           </span>
@@ -167,100 +152,131 @@ export default function TelaoVotacao({ votacaoAtiva, camara, onRefresh, embedded
 
       {/* 3 colunas */}
       <div className="flex-1 grid grid-cols-12 overflow-hidden">
-        {/* ESQUERDA — Parlamentares */}
+        {/* ESQUERDA — Parlamentares (nominal) ou agregado (sigiloso) */}
         <div className="col-span-4 border-r border-white/10 p-4 overflow-y-auto scrollbar-sidebar">
-          <div className="text-[10px] text-white/40 uppercase tracking-widest mb-3 font-semibold">
-            {v.tipo_votacao === 'Sigilosa' ? 'Votantes' : 'Parlamentares'} — {total} presentes
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            {votos.map((voto) => (
-              <CardVereador key={voto.parlamentar_id} voto={voto} tipo_votacao={v.tipo_votacao} />
-            ))}
-          </div>
+          {sigiloso ? (
+            <div className="h-full flex flex-col items-center justify-center text-center px-4">
+              <div className="w-16 h-16 rounded-2xl bg-white/5 ring-1 ring-inset ring-white/10 flex items-center justify-center mb-5">
+                <Lock size={28} className="text-white/40" />
+              </div>
+              <div className="text-white/50 text-[11px] uppercase tracking-[0.22em] mb-3">Votação Secreta</div>
+              <div className="text-white font-heading font-black tabular-num leading-none text-6xl">
+                {votaram}<span className="text-white/25 text-3xl">/{total}</span>
+              </div>
+              <div className="text-white/40 text-sm mt-3">parlamentares já votaram</div>
+              <div className="w-full max-w-[260px] h-2 bg-white/10 rounded-full overflow-hidden mt-5">
+                <div className="h-full bg-primary rounded-full transition-all duration-1000" style={{ width: `${pctVotaram}%` }} />
+              </div>
+              <p className="text-white/25 text-[11px] mt-5 max-w-[260px] leading-relaxed">
+                Os votos individuais não são exibidos para preservar o sigilo da votação.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="text-[10px] text-white/40 uppercase tracking-widest mb-3 font-semibold">
+                Parlamentares — {total} presentes
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {votos.map((voto) => (
+                  <CardVereador key={voto.parlamentar_id} voto={voto} />
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
-        {/* CENTRAL — Informações */}
-        <div className="col-span-4 border-r border-white/10 p-6 flex flex-col items-center justify-between overflow-y-auto scrollbar-sidebar">
-          <div className="text-center w-full">
+        {/* CENTRAL — Matéria + progresso + cronômetros */}
+        <div className="col-span-4 border-r border-white/10 px-6 py-6 flex flex-col overflow-y-auto scrollbar-sidebar">
+          <div className="text-center">
             {sessaoLabel && (
-              <div className="text-white/40 text-xs uppercase tracking-widest mb-2">{sessaoLabel}</div>
+              <div className="text-white/40 text-[11px] uppercase tracking-[0.2em] mb-3">{sessaoLabel}</div>
             )}
             {!encerrada && (
-              <div className="inline-flex items-center gap-2 bg-green-500/20 border border-green-500/40 text-green-400 text-xs px-3 py-1.5 rounded-full font-bold uppercase tracking-widest mb-4">
+              <div className="inline-flex items-center gap-2 bg-green-500/15 border border-green-500/40 text-green-400 text-[11px] px-3 py-1.5 rounded-full font-bold uppercase tracking-widest mb-4">
                 <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
                 Em Votação · {v.tipo_votacao}
               </div>
             )}
-            <div className="text-white/50 text-xs bg-white/5 rounded px-3 py-1 inline-block mb-3">
+            <div className="text-white/50 text-xs bg-white/5 ring-1 ring-inset ring-white/10 rounded-full px-3 py-1 inline-block mb-4">
               {v.materia_tipo}{v.materia_numero ? ` nº ${v.materia_numero}` : ''}
             </div>
-            <div className="text-white font-heading font-bold text-lg leading-snug text-center">
+            <div className="text-white font-heading font-bold text-2xl xl:text-3xl leading-snug">
               {v.materia_ementa}
             </div>
           </div>
 
-          {/* Cronômetros — apenas quando não encerrada */}
+          {/* Progresso + cronômetros (empurrados para a base, preenchendo o espaço) */}
           {!encerrada && (
-            <div className="w-full mt-6">
-              <div className="text-[10px] text-white/30 uppercase tracking-widest text-center mb-3">Cronômetros</div>
-              <div className="grid grid-cols-2 gap-4">
-                <Cronometro segundos={v.timer_discurso || 180} label="Discurso" cor="text-blue-300" />
-                <Cronometro segundos={v.timer_aparte || 60} label="Aparte" cor="text-purple-300" />
-                <Cronometro segundos={v.timer_questao || 120} label="Questão de Ordem" cor="text-cyan-300" />
-                <Cronometro segundos={v.timer_consideracoes || 60} label="Considerações Finais" cor="text-orange-300" />
-              </div>
-              {/* Progresso */}
-              <div className="mt-5">
-                <div className="flex justify-between text-xs text-white/30 mb-1.5">
-                  <span>{total - aguardando} votaram</span>
-                  <span>{aguardando} aguardando</span>
+            <div className="mt-auto pt-8">
+              {/* Progresso geral */}
+              <div className="flex items-end justify-between mb-2">
+                <div>
+                  <div className="text-white font-heading font-bold tabular-num leading-none text-3xl">
+                    {votaram}<span className="text-white/30 text-xl">/{total}</span>
+                  </div>
+                  <div className="text-white/40 text-[11px] uppercase tracking-wider mt-1">parlamentares votaram</div>
                 </div>
-                <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-primary rounded-full transition-all duration-1000"
-                    style={{ width: total ? `${((total - aguardando) / total) * 100}%` : '0%' }}
-                  />
+                <div className="text-white/50 text-lg font-semibold tabular-num">{pctVotaram}%</div>
+              </div>
+              <div className="w-full h-2.5 bg-white/10 rounded-full overflow-hidden">
+                <div className="h-full bg-primary rounded-full transition-all duration-1000" style={{ width: `${pctVotaram}%` }} />
+              </div>
+
+              {/* Cronômetros */}
+              <div className="mt-7">
+                <div className="text-[10px] text-white/30 uppercase tracking-widest text-center mb-3">Cronômetros</div>
+                <div className="grid grid-cols-2 gap-4">
+                  <Cronometro segundos={v.timer_discurso || 180} label="Discurso" cor="text-blue-300" />
+                  <Cronometro segundos={v.timer_aparte || 60} label="Aparte" cor="text-purple-300" />
+                  <Cronometro segundos={v.timer_questao || 120} label="Questão de Ordem" cor="text-cyan-300" />
+                  <Cronometro segundos={v.timer_consideracoes || 60} label="Considerações Finais" cor="text-orange-300" />
                 </div>
               </div>
             </div>
           )}
         </div>
 
-        {/* DIREITA — Resultado */}
-        <div className="col-span-4 p-6 flex flex-col items-center justify-center gap-5">
+        {/* DIREITA — Placar */}
+        <div className="col-span-4 p-6 flex flex-col justify-center gap-4">
           {encerrada ? (
-            <div className={`w-full rounded-2xl p-8 text-center border-2 ${
+            <div className={`w-full rounded-3xl p-8 text-center border-2 ${
               aprovada ? 'bg-green-500/10 border-green-500/50' :
               empate ? 'bg-yellow-500/10 border-yellow-500/50' :
               'bg-red-500/10 border-red-500/50'
             }`}>
-              <div className={`text-4xl font-heading font-black mb-3 leading-tight ${
+              <div className="text-white/40 text-[11px] uppercase tracking-[0.2em] mb-3">Resultado</div>
+              <div className={`font-heading font-black leading-tight text-4xl xl:text-5xl ${
                 aprovada ? 'text-green-400' : empate ? 'text-yellow-400' : 'text-red-400'
               }`}>
                 {unanimidade ? 'APROVADO POR UNANIMIDADE' :
                  aprovada ? 'APROVADO' :
                  empate ? 'EMPATE' : 'REPROVADO'}
               </div>
-              <div className="text-white/40 text-sm mt-2">{sim} votos a favor · {nao} votos contra · {abstencao} abstenções</div>
+              <div className="text-white/50 text-sm mt-4 tabular-num">
+                {sim} a favor · {nao} contra · {abstencao} abstenções
+              </div>
             </div>
           ) : (
             <>
-              <div className="w-full rounded-2xl bg-green-500/10 border border-green-500/30 p-5 text-center">
-                <div className="text-green-400 text-6xl font-heading font-black">{sim}</div>
-                <div className="text-green-400/80 font-bold mt-1 flex items-center justify-center gap-2 text-sm">
-                  <CheckCircle2 size={15} /> FAVORÁVEIS
+              {/* Favoráveis */}
+              <div className={`w-full rounded-2xl bg-green-500/10 border p-5 flex items-center gap-5 transition-all ${sim > nao && (sim + nao) > 0 ? 'border-green-500/60 ring-1 ring-green-500/30' : 'border-green-500/25'}`}>
+                <div className="text-green-400 font-heading font-black tabular-num leading-none text-6xl xl:text-7xl min-w-[1.6ch] text-center">{sim}</div>
+                <div className="flex items-center gap-2 text-green-400/90 font-bold uppercase tracking-wide text-lg">
+                  <CheckCircle2 size={20} /> Favoráveis
                 </div>
               </div>
-              <div className="w-full rounded-2xl bg-red-500/10 border border-red-500/30 p-5 text-center">
-                <div className="text-red-400 text-6xl font-heading font-black">{nao}</div>
-                <div className="text-red-400/80 font-bold mt-1 flex items-center justify-center gap-2 text-sm">
-                  <XCircle size={15} /> CONTRÁRIOS
+              {/* Contrários */}
+              <div className={`w-full rounded-2xl bg-red-500/10 border p-5 flex items-center gap-5 transition-all ${nao > sim && (sim + nao) > 0 ? 'border-red-500/60 ring-1 ring-red-500/30' : 'border-red-500/25'}`}>
+                <div className="text-red-400 font-heading font-black tabular-num leading-none text-6xl xl:text-7xl min-w-[1.6ch] text-center">{nao}</div>
+                <div className="flex items-center gap-2 text-red-400/90 font-bold uppercase tracking-wide text-lg">
+                  <XCircle size={20} /> Contrários
                 </div>
               </div>
-              <div className="w-full rounded-2xl bg-yellow-500/10 border border-yellow-500/30 p-4 text-center">
-                <div className="text-yellow-400 text-4xl font-heading font-bold">{abstencao}</div>
-                <div className="text-yellow-400/80 font-semibold text-sm mt-1 flex items-center justify-center gap-1.5">
-                  <MinusCircle size={13} /> ABSTENÇÕES
+              {/* Abstenções */}
+              <div className="w-full rounded-2xl bg-yellow-500/10 border border-yellow-500/25 p-4 flex items-center gap-5">
+                <div className="text-yellow-400 font-heading font-bold tabular-num leading-none text-4xl xl:text-5xl min-w-[1.6ch] text-center">{abstencao}</div>
+                <div className="flex items-center gap-2 text-yellow-400/90 font-semibold uppercase tracking-wide">
+                  <MinusCircle size={16} /> Abstenções
                 </div>
               </div>
             </>
