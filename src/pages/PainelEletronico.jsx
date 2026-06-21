@@ -24,7 +24,6 @@ export default function PainelEletronico() {
   const [showConfig, setShowConfig] = useState(false);
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  const [modeTelao, setModeTelao] = useState(false);
   const [loading, setLoading] = useState(true);
   const [config, setConfig] = useState({
     sessao_id: '',
@@ -246,25 +245,6 @@ export default function PainelEletronico() {
     );
   }
 
-  // Modo telão fullscreen
-  if (modeTelao && votacaoAtiva) {
-    return (
-      <div className="fixed inset-0 z-50 bg-gray-950">
-        <TelaoVotacao
-          votacaoAtiva={votacaoAtiva}
-          camara={camara}
-          onRefresh={loadVotacaoAtiva}
-        />
-        <button
-          onClick={() => setModeTelao(false)}
-          className="absolute top-4 right-4 text-white/30 hover:text-white text-xs bg-white/10 px-3 py-1.5 rounded-lg"
-        >
-          ESC / Sair do Telão
-        </button>
-      </div>
-    );
-  }
-
   // Interface do Operador
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
@@ -281,8 +261,8 @@ export default function PainelEletronico() {
         </div>
         <div className="flex gap-2">
           {votacaoAtiva && (
-            <Button variant="outline" onClick={() => setModeTelao(true)} className="gap-2">
-              <ExternalLink size={15} /> Abrir Telão
+            <Button variant="outline" onClick={() => window.open('/telao', 'telao_votacao', 'width=1280,height=720')} className="gap-2">
+              <ExternalLink size={15} /> Abrir Telão (janela)
             </Button>
           )}
           {isOperadorGeral && !votacaoAtiva && (

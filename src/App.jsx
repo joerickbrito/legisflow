@@ -30,6 +30,7 @@ import Documentos from '@/pages/Documentos';
 import Transparencia from '@/pages/Transparencia';
 import Relatorios from '@/pages/Relatorios';
 import PainelEletronico from '@/pages/PainelEletronico.jsx';
+import TelaoPage from '@/pages/TelaoPage.jsx';
 import Quorum from '@/pages/Quorum.jsx';
 import Emendas from '@/pages/Emendas.jsx';
 import ReuniaoComissao from '@/pages/ReuniaoComissao.jsx';
@@ -89,6 +90,7 @@ const AuthenticatedApp = () => {
       <Route path="/trocar-senha" element={<TrocarSenha />} />
       <Route path="/transparencia" element={<Transparencia />} />
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
+        <Route path="/telao" element={<TelaoPage />} />
         <Route element={<Layout />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/casa-legislativa" element={<CasaLegislativa />} />
