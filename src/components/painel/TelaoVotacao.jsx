@@ -138,7 +138,7 @@ export default function TelaoVotacao({ votacaoAtiva, camara, onRefresh, embedded
   ].filter(Boolean).join(' · ');
 
   return (
-    <div className="bg-gradient-to-b from-slate-950 to-slate-900 text-white flex flex-col" style={{ minHeight: embedded ? '75vh' : '100vh', height: embedded ? '75vh' : '100vh' }}>
+    <div className="bg-gradient-to-b from-slate-950 to-slate-900 text-white flex flex-col" style={{ minHeight: embedded ? '100%' : '100vh', height: embedded ? '100%' : '100vh' }}>
       {/* Topo */}
       <div className="flex items-center justify-between px-6 py-3 border-b border-white/10 flex-shrink-0">
         <div className="flex items-center gap-3">
@@ -168,7 +168,7 @@ export default function TelaoVotacao({ votacaoAtiva, camara, onRefresh, embedded
       {/* 3 colunas */}
       <div className="flex-1 grid grid-cols-12 overflow-hidden">
         {/* ESQUERDA — Parlamentares */}
-        <div className="col-span-4 border-r border-white/10 p-4 overflow-y-auto">
+        <div className="col-span-4 border-r border-white/10 p-4 overflow-y-auto scrollbar-sidebar">
           <div className="text-[10px] text-white/40 uppercase tracking-widest mb-3 font-semibold">
             {v.tipo_votacao === 'Sigilosa' ? 'Votantes' : 'Parlamentares'} — {total} presentes
           </div>
@@ -180,7 +180,7 @@ export default function TelaoVotacao({ votacaoAtiva, camara, onRefresh, embedded
         </div>
 
         {/* CENTRAL — Informações */}
-        <div className="col-span-4 border-r border-white/10 p-6 flex flex-col items-center justify-between overflow-y-auto">
+        <div className="col-span-4 border-r border-white/10 p-6 flex flex-col items-center justify-between overflow-y-auto scrollbar-sidebar">
           <div className="text-center w-full">
             {sessaoLabel && (
               <div className="text-white/40 text-xs uppercase tracking-widest mb-2">{sessaoLabel}</div>

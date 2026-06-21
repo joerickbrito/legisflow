@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input";
 import { Monitor, Play, StopCircle, Plus, Settings, ExternalLink, Users, Trash2 } from "lucide-react";
 import TelaoVotacao from "@/components/painel/TelaoVotacao";
+import FloatingTelao from "@/components/painel/FloatingTelao";
 import InterfaceVereador from "@/components/painel/InterfaceVereador";
 import { useExclusaoSegura } from "@/components/ExclusaoSegura";
 
@@ -17,6 +18,7 @@ export default function PainelEletronico() {
   const { user } = useAuth();
   const [votacaoAtiva, setVotacaoAtiva] = useState(null);
   const [historico, setHistorico] = useState([]);
+  const [showFloating, setShowFloating] = useState(false);
   const [sessoes, setSessoes] = useState([]);
   const [materias, setMaterias] = useState([]);
   const [normas, setNormas] = useState([]);
@@ -261,8 +263,8 @@ export default function PainelEletronico() {
         </div>
         <div className="flex gap-2">
           {votacaoAtiva && (
-            <Button variant="outline" onClick={() => window.open('/telao', 'telao_votacao', 'width=1280,height=720')} className="gap-2">
-              <ExternalLink size={15} /> Abrir Telão (janela)
+            <Button variant="outline" onClick={() => setShowFloating(true)} className="gap-2">
+              <ExternalLink size={15} /> Abrir Telão
             </Button>
           )}
           {isOperadorGeral && !votacaoAtiva && (
@@ -458,6 +460,16 @@ export default function PainelEletronico() {
       </Dialog>
 
       {dialogExclusao}
+
+      {/* Telão em janela flutuante (arrastável; pode soltar em janela separada p/ TV) */}
+      {showFloating && votacaoAtiva && (
+        <FloatingTelao
+          votacaoAtiva={votacaoAtiva}
+          camara={camara}
+          onRefresh={loadVotacaoAtiva}
+          onClose={() => setShowFloating(false)}
+        />
+      )}
     </div>
   );
 }
