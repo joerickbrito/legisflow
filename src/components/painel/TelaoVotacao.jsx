@@ -4,21 +4,57 @@ import { CheckCircle2, XCircle, MinusCircle, Lock } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-/* ─── Cronômetro individual ─── */
-function Cronometro({ segundos, label, cor }) {
+/* ─── Cronômetro individual (sincronizado entre janelas via BroadcastChannel) ─── */
+function Cronometro({ id, segundos, label, cor, channel }) {
   const [restante, setRestante] = useState(segundos);
   const [ativo, setAtivo] = useState(false);
-  const ref = useRef(null);
+  const tickRef = useRef(null);
+  const endRef = useRef(null); // timestamp em que o cronômetro deve zerar
 
+  // Contagem regressiva baseada em timestamp — mantém todas as janelas no mesmo tempo
   useEffect(() => {
-    if (ativo && restante > 0) {
-      ref.current = setInterval(() => setRestante(r => r - 1), 1000);
-    } else {
-      clearInterval(ref.current);
-      if (restante === 0) setAtivo(false);
+    if (ativo) {
+      tickRef.current = setInterval(() => {
+        const rem = Math.max(0, Math.round((endRef.current - Date.now()) / 1000));
+        setRestante(rem);
+        if (rem <= 0) setAtivo(false);
+      }, 250);
     }
-    return () => clearInterval(ref.current);
-  }, [ativo, restante]);
+    return () => clearInterval(tickRef.current);
+  }, [ativo]);
+
+  // Aplica um comando (de clique local OU vindo de outra janela)
+  function aplicar(cmd) {
+    if (cmd.action === 'start') {
+      endRef.current = cmd.endsAt;
+      setRestante(Math.max(0, Math.round((cmd.endsAt - Date.now()) / 1000)));
+      setAtivo(true);
+    } else if (cmd.action === 'pause' || cmd.action === 'reset') {
+      setAtivo(false);
+      setRestante(cmd.remaining);
+    }
+  }
+
+  // Escuta comandos das outras janelas (o espelho)
+  useEffect(() => {
+    if (!channel) return;
+    function onMsg(ev) {
+      const m = ev.data;
+      if (m && m.id === id) aplicar(m);
+    }
+    channel.addEventListener('message', onMsg);
+    return () => channel.removeEventListener('message', onMsg);
+  }, [channel, id]);
+
+  // Clique local → aplica aqui e transmite para as outras janelas
+  function onClickBtn() {
+    let cmd;
+    if (ativo) cmd = { id, action: 'pause', remaining: restante };
+    else if (restante > 0) cmd = { id, action: 'start', endsAt: Date.now() + restante * 1000 };
+    else cmd = { id, action: 'start', endsAt: Date.now() + segundos * 1000 };
+    aplicar(cmd);
+    channel?.postMessage(cmd);
+  }
 
   const mins = Math.floor(restante / 60);
   const secs = restante % 60;
@@ -35,7 +71,7 @@ function Cronometro({ segundos, label, cor }) {
         <div className={`h-full rounded transition-all duration-1000 ${alerta ? 'bg-red-500' : 'bg-white/30'}`} style={{ width: `${pct}%` }} />
       </div>
       <button
-        onClick={() => ativo ? setAtivo(false) : (restante > 0 ? setAtivo(true) : (setRestante(segundos), setAtivo(true)))}
+        onClick={onClickBtn}
         className="text-[9px] text-white/30 hover:text-white/60 uppercase tracking-wider"
       >
         {ativo ? 'Pausar' : restante === 0 ? 'Reiniciar' : 'Iniciar'}
@@ -81,6 +117,14 @@ function CardVereador({ voto }) {
 export default function TelaoVotacao({ votacaoAtiva, camara, onRefresh, embedded }) {
   const [v, setV] = useState(votacaoAtiva);
   const [agora, setAgora] = useState(new Date());
+  const [channel, setChannel] = useState(null);
+
+  // Canal de sincronização entre janelas (admin ↔ telão na TV)
+  useEffect(() => {
+    let ch = null;
+    try { ch = new BroadcastChannel('telao_cronometros'); setChannel(ch); } catch (e) { /* navegador sem suporte */ }
+    return () => { try { ch && ch.close(); } catch (e) {} };
+  }, []);
 
   useEffect(() => { setV(votacaoAtiva); }, [votacaoAtiva]);
 
@@ -226,10 +270,10 @@ export default function TelaoVotacao({ votacaoAtiva, camara, onRefresh, embedded
               <div className="mt-7">
                 <div className="text-[10px] text-white/30 uppercase tracking-widest text-center mb-3">Cronômetros</div>
                 <div className="grid grid-cols-2 gap-4">
-                  <Cronometro segundos={v.timer_discurso || 180} label="Discurso" cor="text-blue-300" />
-                  <Cronometro segundos={v.timer_aparte || 60} label="Aparte" cor="text-purple-300" />
-                  <Cronometro segundos={v.timer_questao || 120} label="Questão de Ordem" cor="text-cyan-300" />
-                  <Cronometro segundos={v.timer_consideracoes || 60} label="Considerações Finais" cor="text-orange-300" />
+                  <Cronometro id={`${v.id}_discurso`} channel={channel} segundos={v.timer_discurso || 180} label="Discurso" cor="text-blue-300" />
+                  <Cronometro id={`${v.id}_aparte`} channel={channel} segundos={v.timer_aparte || 60} label="Aparte" cor="text-purple-300" />
+                  <Cronometro id={`${v.id}_questao`} channel={channel} segundos={v.timer_questao || 120} label="Questão de Ordem" cor="text-cyan-300" />
+                  <Cronometro id={`${v.id}_consideracoes`} channel={channel} segundos={v.timer_consideracoes || 60} label="Considerações Finais" cor="text-orange-300" />
                 </div>
               </div>
             </div>
