@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import PageHeader from '@/components/PageHeader';
 import EmptyState from '@/components/EmptyState';
+import LoadingState from '@/components/LoadingState';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 export default function Partidos() {
@@ -22,19 +23,26 @@ export default function Partidos() {
   const [bancadaForm, setBancadaForm] = useState({ nome: '', sigla: '', tipo: 'Partidária', membros: [] });
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => { if (canQuery) load(); }, [tenantId, canQuery]);
 
   async function load() {
     const filter = withTenant({});
-    const [p, b, parl] = await Promise.all([
-      sislegisEntities.Partido.filter(filter),
-      sislegisEntities.Bancada.filter(filter),
-      sislegisEntities.Parlamentar.filter({ ...filter, ativo: true }),
-    ]);
-    setPartidos(p);
-    setBancadas(b);
-    setParlamentares(parl);
+    if (!filter) { setLoading(false); return; }
+    setLoading(true);
+    try {
+      const [p, b, parl] = await Promise.all([
+        sislegisEntities.Partido.filter(filter).catch(() => []),
+        sislegisEntities.Bancada.filter(filter).catch(() => []),
+        sislegisEntities.Parlamentar.filter({ ...filter, ativo: true }).catch(() => []),
+      ]);
+      setPartidos(p);
+      setBancadas(b);
+      setParlamentares(parl);
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function salvarPartido() {
@@ -92,7 +100,9 @@ export default function Partidos() {
               <Plus size={16} /> Novo Partido
             </Button>
           </div>
-          {partidos.length === 0 ? (
+          {loading ? (
+            <LoadingState label="Carregando partidos..." />
+          ) : partidos.length === 0 ? (
             <EmptyState icon={Scale} title="Nenhum partido cadastrado" onAdd={() => setShowForm(true)} addLabel="Cadastrar Partido" />
           ) : (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -124,7 +134,9 @@ export default function Partidos() {
               <Plus size={16} /> Nova Bancada
             </Button>
           </div>
-          {bancadas.length === 0 ? (
+          {loading ? (
+            <LoadingState label="Carregando..." />
+          ) : bancadas.length === 0 ? (
             <EmptyState icon={Users} title="Nenhuma bancada cadastrada" onAdd={() => setShowBancada(true)} addLabel="Criar Bancada" />
           ) : (
             <div className="grid sm:grid-cols-2 gap-3">

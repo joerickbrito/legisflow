@@ -3,6 +3,7 @@ import { sislegisEntities } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
 import { Calendar, Clock, Users, Plus, Pencil, CheckCircle2, Trash2 } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
+import LoadingState from '@/components/LoadingState';
 import { useExclusaoSegura } from '@/components/ExclusaoSegura';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -42,6 +43,7 @@ export default function Sessoes() {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [loading, setLoading] = useState(true);
 
   const podeGerenciar = isOperadorGeral || isPresidente;
 
@@ -51,12 +53,21 @@ export default function Sessoes() {
 
   async function loadData() {
     const filter = withTenant({});
-    if (!filter) return;
-    try { const s = await sislegisEntities.Sessao.filter(filter, '-data', 50); setSessoes(s); } catch (e) { console.error('Erro ao carregar sessões:', e); }
-    try { const p = await sislegisEntities.Parlamentar.filter({ ...filter, ativo: true }); setParlamentares(p); } catch (e) { console.error('Erro ao carregar parlamentares:', e); }
-    try { const m = await sislegisEntities.Materia.filter({ ...filter, status: 'Em tramitação' }); setMaterias(m); } catch (e) { console.error('Erro ao carregar matérias:', e); }
-    try { const sl = await sislegisEntities.SessaoLegislativa.filter(filter); setSessoesLeg(sl); } catch (e) { console.error('Erro ao carregar sessões leg:', e); }
-    try { const leg = await sislegisEntities.Legislatura.filter(filter); setLegislaturas(leg); } catch (e) { console.error('Erro ao carregar legislaturas:', e); }
+    if (!filter) { setLoading(false); return; }
+    setLoading(true);
+    try {
+      // Carrega tudo em PARALELO (muito mais rápido que uma busca após a outra)
+      const [s, p, m, sl, leg] = await Promise.all([
+        sislegisEntities.Sessao.filter(filter, '-data', 50).catch(() => []),
+        sislegisEntities.Parlamentar.filter({ ...filter, ativo: true }).catch(() => []),
+        sislegisEntities.Materia.filter({ ...filter, status: 'Em tramitação' }).catch(() => []),
+        sislegisEntities.SessaoLegislativa.filter(filter).catch(() => []),
+        sislegisEntities.Legislatura.filter(filter).catch(() => []),
+      ]);
+      setSessoes(s); setParlamentares(p); setMaterias(m); setSessoesLeg(sl); setLegislaturas(leg);
+    } finally {
+      setLoading(false);
+    }
   }
 
   function buildPresencas(existing) {
@@ -148,7 +159,9 @@ export default function Sessoes() {
         )}
       />
 
-      {sessoes.length === 0 ? (
+      {loading ? (
+        <LoadingState label="Carregando sessões..." />
+      ) : sessoes.length === 0 ? (
         <div className="bg-card border border-border rounded-3xl p-12 text-center">
           <Calendar size={40} className="mx-auto text-muted-foreground mb-3" />
           <p className="text-muted-foreground">Nenhuma sessão cadastrada ainda.</p>

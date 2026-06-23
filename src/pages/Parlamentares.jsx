@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import PageHeader from '@/components/PageHeader';
+import LoadingState from '@/components/LoadingState';
 import { useExclusaoSegura } from '@/components/ExclusaoSegura';
 
 const SITUACOES = ['Ativo', 'Licenciado', 'Afastado'];
@@ -29,6 +30,7 @@ export default function Parlamentares() {
   const [saving, setSaving] = useState(false);
   const { pedirExclusao, dialogExclusao } = useExclusaoSegura({ withTenant, onExcluido: () => loadData() });
   const [errorMsg, setErrorMsg] = useState('');
+  const [loading, setLoading] = useState(true);
   // Estados do vínculo com usuário
   const [usuarios, setUsuarios] = useState([]);
   const [showUserForm, setShowUserForm] = useState(false);
@@ -52,8 +54,11 @@ export default function Parlamentares() {
 
   async function loadData() {
     const filter = withTenant({});
+    if (!filter) { setLoading(false); return; }
+    setLoading(true);
+    try {
     const [p, part, legs, usrs] = await Promise.all([
-      sislegisEntities.Parlamentar.filter(filter, 'nome', 100),
+      sislegisEntities.Parlamentar.filter(filter, 'nome', 100).catch(() => []),
       sislegisEntities.Partido.filter(filter, 'sigla', 50).catch(() => []),
       sislegisEntities.Legislatura.filter(filter, '-numero', 20).catch(() => []),
       sislegisEntities.UsuarioSislegis.filter(filter, 'nome', 500).catch(() => []),
@@ -62,6 +67,9 @@ export default function Parlamentares() {
     setPartidos(part);
     setLegislaturas(legs);
     setUsuarios(usrs || []);
+    } finally {
+      setLoading(false);
+    }
   }
 
   // Mapa: parlamentar_id → usuário vinculado
@@ -228,7 +236,9 @@ export default function Parlamentares() {
         <Input placeholder="Buscar por nome ou partido..." value={busca} onChange={e => setBusca(e.target.value)} className="pl-9" />
       </div>
 
-      {sorted.length === 0 ? (
+      {loading ? (
+        <LoadingState label="Carregando parlamentares..." />
+      ) : sorted.length === 0 ? (
         <div className="bg-card border border-border rounded-3xl p-12 text-center">
           <Users size={40} className="mx-auto text-muted-foreground mb-3" />
           <p className="text-muted-foreground">Nenhum parlamentar cadastrado ainda.</p>
