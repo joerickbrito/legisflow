@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Mail, Plus, Search } from "lucide-react";
 import StatusBadge from "@/components/StatusBadge";
+import LoadingState from "@/components/LoadingState";
 
 const STATUS = ["Rascunho", "Enviado", "Recebido", "Respondido", "Arquivado"];
 const TIPOS = ["Interno", "Externo"];
@@ -25,12 +26,14 @@ export default function Oficios() {
   const [form, setForm] = useState({ numero: "", ano: new Date().getFullYear(), tipo: "Externo", direcao: "Enviado", assunto: "", remetente: "", destinatario: "", data: "", texto: "", status: "Rascunho", observacoes: "" });
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!canQuery) return;
     const filter = withTenant();
-    if (!filter) return;
-    sislegisEntities.Oficio.filter(filter, "-created_date", 100).then(setOficios);
+    if (!filter) { setLoading(false); return; }
+    setLoading(true);
+    sislegisEntities.Oficio.filter(filter, "-created_date", 100).then(setOficios).catch(() => setOficios([])).finally(() => setLoading(false));
   }, [canQuery]);
 
   const openNew = () => { setEditing(null); setForm({ numero: "", ano: new Date().getFullYear(), tipo: "Externo", direcao: "Enviado", assunto: "", remetente: "", destinatario: "", data: "", texto: "", status: "Rascunho", observacoes: "" }); setOpen(true); };
@@ -75,8 +78,9 @@ export default function Oficios() {
       </div>
 
       <div className="space-y-3">
-        {filtered.length === 0 && <p className="text-muted-foreground text-sm">Nenhum ofício encontrado.</p>}
-        {filtered.map(o => (
+        {loading && <LoadingState label="Carregando ofícios..." />}
+        {!loading && filtered.length === 0 && <p className="text-muted-foreground text-sm">Nenhum ofício encontrado.</p>}
+        {!loading && filtered.map(o => (
           <Card key={o.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => openEdit(o)}>
             <CardContent className="pt-4">
               <div className="flex items-start justify-between gap-4">

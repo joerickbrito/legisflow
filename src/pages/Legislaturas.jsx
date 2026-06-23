@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import PageHeader from '@/components/PageHeader';
 import StatusBadge from '@/components/StatusBadge';
 import EmptyState from '@/components/EmptyState';
+import LoadingState from '@/components/LoadingState';
 
 export default function Legislaturas() {
   const { tenantId, withTenant, canQuery } = useTenant();
@@ -29,20 +30,24 @@ export default function Legislaturas() {
   const [delChecando, setDelChecando] = useState(false); // verificando vínculos
   const [delExcluindo, setDelExcluindo] = useState(false); // exclusão em andamento
   const [delErro, setDelErro] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => { if (canQuery) load(); }, [tenantId, canQuery]);
 
   async function load() {
     const filter = withTenant({});
-    if (!filter) return;
+    if (!filter) { setLoading(false); return; }
+    setLoading(true);
     try {
-      const l = await sislegisEntities.Legislatura.filter(filter, '-data_inicio');
+      const [l, s] = await Promise.all([
+        sislegisEntities.Legislatura.filter(filter, '-data_inicio').catch(() => []),
+        sislegisEntities.SessaoLegislativa.filter(filter, '-ano').catch(() => []),
+      ]);
       setLegislaturas(l);
-    } catch (e) { console.error('Erro ao carregar legislaturas:', e); }
-    try {
-      const s = await sislegisEntities.SessaoLegislativa.filter(filter, '-ano');
       setSessoesLeg(s);
-    } catch (e) { console.error('Erro ao carregar sessões legislativas:', e); }
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function salvarLeg() {
@@ -159,7 +164,9 @@ export default function Legislaturas() {
         }
       />
 
-      {legislaturas.length === 0 ? (
+      {loading ? (
+        <LoadingState label="Carregando legislaturas..." />
+      ) : legislaturas.length === 0 ? (
         <EmptyState icon={BookOpen} title="Nenhuma legislatura cadastrada" description="Cadastre a legislatura atual para começar." onAdd={() => setShowForm(true)} addLabel="Cadastrar Legislatura" />
       ) : (
         <div className="space-y-4">

@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import PageHeader from '@/components/PageHeader';
 import StatusBadge from '@/components/StatusBadge';
 import EmptyState from '@/components/EmptyState';
+import LoadingState from '@/components/LoadingState';
 
 const UNIDADES = ['Protocolo', 'Presidência', 'Secretaria', 'CCJ', 'CFO', 'Comissão de Saúde', 'Comissão de Educação', 'Plenário', 'Executivo', 'Arquivo'];
 const STATUS_OPTS = ['Em Tramitação', 'Devolvida', 'Aprovada', 'Rejeitada', 'Arquivada', 'Aguardando Deliberação'];
@@ -23,6 +24,7 @@ export default function Tramitacoes() {
   const [busca, setBusca] = useState('');
   const [filtros, setFiltros] = useState({});
   const [showForm, setShowForm] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const [form, setForm] = useState({ materia_id: '', materia_ementa: '', materia_numero: '', unidade_tramitacao_origem: '', unidade_tramitacao_destino: '', data: format(new Date()), hora: '', status: 'Em Tramitação', texto_acao: '', urgente: false, turno: 'Único' });
 
@@ -32,12 +34,17 @@ export default function Tramitacoes() {
 
   async function load() {
     const filter = withTenant({});
-    const [t, m] = await Promise.all([
-      sislegisEntities.Tramitacao.filter(filter, '-created_date', 100),
-      sislegisEntities.Materia.filter({ ...filter, status: 'Em tramitação' }),
-    ]);
-    setTramitacoes(t);
-    setMaterias(m);
+    setLoading(true);
+    try {
+      const [t, m] = await Promise.all([
+        sislegisEntities.Tramitacao.filter(filter, '-created_date', 100).catch(() => []),
+        sislegisEntities.Materia.filter({ ...filter, status: 'Em tramitação' }).catch(() => []),
+      ]);
+      setTramitacoes(t);
+      setMaterias(m);
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function salvar() {
@@ -79,7 +86,9 @@ export default function Tramitacoes() {
         onLimpar={() => { setBusca(''); setFiltros({}); }}
       />
 
-      {filtradas.length === 0 ? (
+      {loading ? (
+        <LoadingState label="Carregando tramitações..." />
+      ) : filtradas.length === 0 ? (
         <EmptyState icon={GitMerge} title="Nenhuma tramitação registrada" description="Registre movimentos para rastrear o workflow legislativo." onAdd={() => setShowForm(true)} addLabel="Nova Tramitação" />
       ) : (
         <div className="space-y-2">

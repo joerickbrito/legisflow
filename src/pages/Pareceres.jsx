@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import PageHeader from '@/components/PageHeader';
 import StatusBadge from '@/components/StatusBadge';
 import EmptyState from '@/components/EmptyState';
+import LoadingState from '@/components/LoadingState';
 
 const TIPOS = ['Favorável', 'Contrário', 'Favorável com Emendas', 'Pela Inconstitucionalidade', 'Pela Constitucionalidade'];
 
@@ -24,21 +25,27 @@ export default function Pareceres() {
   const [filtros, setFiltros] = useState({});
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ materia_id: '', comissao_id: '', relator_id: '', tipo: 'Favorável', texto: '', data: '' });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => { if (canQuery) load(); }, [tenantId, canQuery]);
 
   async function load() {
     const filter = withTenant({});
-    const [p, m, c, parl] = await Promise.all([
-      sislegisEntities.Parecer.filter(filter, '-created_date', 50),
-      sislegisEntities.Materia.filter({ ...filter, status: 'Em tramitação' }),
-      sislegisEntities.Comissao.filter({ ...filter, ativa: true }),
-      sislegisEntities.Parlamentar.filter({ ...filter, ativo: true }),
-    ]);
-    setPareceres(p);
-    setMaterias(m);
-    setComissoes(c);
-    setParlamentares(parl);
+    setLoading(true);
+    try {
+      const [p, m, c, parl] = await Promise.all([
+        sislegisEntities.Parecer.filter(filter, '-created_date', 50).catch(() => []),
+        sislegisEntities.Materia.filter({ ...filter, status: 'Em tramitação' }).catch(() => []),
+        sislegisEntities.Comissao.filter({ ...filter, ativa: true }).catch(() => []),
+        sislegisEntities.Parlamentar.filter({ ...filter, ativo: true }).catch(() => []),
+      ]);
+      setPareceres(p);
+      setMaterias(m);
+      setComissoes(c);
+      setParlamentares(parl);
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function salvar() {
@@ -87,7 +94,9 @@ export default function Pareceres() {
         onLimpar={() => { setBusca(''); setFiltros({}); }}
       />
 
-      {filtrados.length === 0 ? (
+      {loading ? (
+        <LoadingState label="Carregando pareceres..." />
+      ) : filtrados.length === 0 ? (
         <EmptyState icon={MessageSquare} title="Nenhum parecer emitido" onAdd={() => setShowForm(true)} addLabel="Emitir Parecer" />
       ) : (
         <div className="bg-card border border-border rounded-xl overflow-hidden">

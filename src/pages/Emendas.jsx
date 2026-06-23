@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FileDiff, Plus } from "lucide-react";
 import StatusBadge from "@/components/StatusBadge";
 import FilterBar, { TODOS } from "@/components/FilterBar";
+import LoadingState from "@/components/LoadingState";
 
 const TIPOS = ["Supressiva", "Modificativa", "Aditiva", "Substitutiva", "Substitutivo Global"];
 const STATUS = ["Em análise", "Aprovada", "Rejeitada", "Retirada"];
@@ -28,13 +29,15 @@ export default function Emendas() {
   const [errorMsg, setErrorMsg] = useState('');
   const [busca, setBusca] = useState('');
   const [filtros, setFiltros] = useState({});
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!canQuery) return;
     const filter = withTenant();
-    sislegisEntities.Emenda.filter(filter, "-created_date", 50).then(setEmendas);
-    sislegisEntities.Materia.filter(filter).then(setMaterias);
-    sislegisEntities.Parlamentar.filter(filter).then(setParlamentares);
+    setLoading(true);
+    sislegisEntities.Emenda.filter(filter, "-created_date", 50).then(setEmendas).catch(() => setEmendas([])).finally(() => setLoading(false));
+    sislegisEntities.Materia.filter(filter).then(setMaterias).catch(() => {});
+    sislegisEntities.Parlamentar.filter(filter).then(setParlamentares).catch(() => {});
   }, [canQuery]);
 
   const openNew = () => { setEditing(null); setForm({ materia_id: "", numero: "", tipo: "Modificativa", ementa: "", texto: "", justificativa: "", autor_id: "", autor_nome: "", data_apresentacao: "", status: "Em análise" }); setOpen(true); };
@@ -90,8 +93,9 @@ export default function Emendas() {
       />
 
       <div className="space-y-3">
-        {filtradas.length === 0 && <p className="text-muted-foreground text-sm">Nenhuma emenda registrada.</p>}
-        {filtradas.map(e => (
+        {loading && <LoadingState label="Carregando emendas..." />}
+        {!loading && filtradas.length === 0 && <p className="text-muted-foreground text-sm">Nenhuma emenda registrada.</p>}
+        {!loading && filtradas.map(e => (
           <Card key={e.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => openEdit(e)}>
             <CardContent className="pt-4">
               <div className="flex items-start justify-between gap-4">

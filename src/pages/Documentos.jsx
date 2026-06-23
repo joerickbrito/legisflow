@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import PageHeader from '@/components/PageHeader';
 import StatusBadge from '@/components/StatusBadge';
 import EmptyState from '@/components/EmptyState';
+import LoadingState from '@/components/LoadingState';
 
 const TIPOS = ['Ofício', 'Memorando', 'Circular', 'Portaria', 'Despacho', 'Resolução Interna', 'Ato da Mesa'];
 const STATUS_OPTS = ['Rascunho', 'Emitido', 'Entregue', 'Arquivado'];
@@ -22,14 +23,20 @@ export default function Documentos() {
   const [showForm, setShowForm] = useState(false);
   const [editando, setEditando] = useState(null);
   const [form, setForm] = useState({ tipo: 'Ofício', numero: '', ano: new Date().getFullYear(), assunto: '', texto: '', remetente: '', destinatario: '', data: '', status: 'Rascunho', arquivo_url: '' });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => { if (canQuery) load(); }, [canQuery]);
 
   async function load() {
     const filter = withTenant();
-    if (!filter) return;
-    const d = await sislegisEntities.DocumentoAdministrativo.filter(filter, '-created_date', 100);
-    setDocumentos(d);
+    if (!filter) { setLoading(false); return; }
+    setLoading(true);
+    try {
+      const d = await sislegisEntities.DocumentoAdministrativo.filter(filter, '-created_date', 100);
+      setDocumentos(d);
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function salvar() {
@@ -59,7 +66,9 @@ export default function Documentos() {
         <Input placeholder="Buscar por assunto ou remetente..." value={busca} onChange={e => setBusca(e.target.value)} className="pl-9" />
       </div>
 
-      {filtrados.length === 0 ? (
+      {loading ? (
+        <LoadingState label="Carregando documentos..." />
+      ) : filtrados.length === 0 ? (
         <EmptyState icon={FolderOpen} title="Nenhum documento cadastrado" onAdd={() => setShowForm(true)} addLabel="Criar Documento" />
       ) : (
         <div className="bg-card border border-border rounded-xl overflow-hidden">

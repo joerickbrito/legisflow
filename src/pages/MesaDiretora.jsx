@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import PageHeader from '@/components/PageHeader';
 import EmptyState from '@/components/EmptyState';
 import StatusBadge from '@/components/StatusBadge';
+import LoadingState from '@/components/LoadingState';
 
 const CARGOS = ['Presidente', 'Vice-Presidente', '1º Secretário', '2º Secretário'];
 
@@ -23,16 +24,28 @@ export default function MesaDiretora() {
   const [form, setForm] = useState({ legislatura_id: '', legislatura_numero: '', sessao_legislativa_id: '', data_inicio: '', data_fim: '', presidente_id: '', presidente_nome: '', vice_presidente_id: '', vice_presidente_nome: '', primeiro_secretario_id: '', primeiro_secretario_nome: '', segundo_secretario_id: '', segundo_secretario_nome: '', status: 'Ativa' });
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => { if (canQuery) load(); }, [canQuery]);
 
   async function load() {
     const filter = withTenant();
-    if (!filter) return;
-    try { const m = await sislegisEntities.MesaDiretora.filter(filter, '-created_date'); setMesas(m); } catch (e) { console.error('Erro ao carregar mesas:', e); }
-    try { const p = await sislegisEntities.Parlamentar.filter({ ...filter, ativo: true }); setParlamentares(p); } catch (e) { console.error('Erro ao carregar parlamentares:', e); }
-    try { const l = await sislegisEntities.Legislatura.filter(filter); setLegislaturas(l); } catch (e) { console.error('Erro ao carregar legislaturas:', e); }
-    try { const sl = await sislegisEntities.SessaoLegislativa.filter(filter, '-ano'); setSessoesLeg(sl); } catch (e) { console.error('Erro ao carregar sessões:', e); }
+    if (!filter) { setLoading(false); return; }
+    setLoading(true);
+    try {
+      const [m, p, l, sl] = await Promise.all([
+        sislegisEntities.MesaDiretora.filter(filter, '-created_date').catch(() => []),
+        sislegisEntities.Parlamentar.filter({ ...filter, ativo: true }).catch(() => []),
+        sislegisEntities.Legislatura.filter(filter).catch(() => []),
+        sislegisEntities.SessaoLegislativa.filter(filter, '-ano').catch(() => []),
+      ]);
+      setMesas(m);
+      setParlamentares(p);
+      setLegislaturas(l);
+      setSessoesLeg(sl);
+    } finally {
+      setLoading(false);
+    }
   }
 
   function setParlamentarCargo(cargo, id) {
@@ -78,7 +91,9 @@ export default function MesaDiretora() {
         action={<Button onClick={() => { setEditando(null); setForm({ legislatura_id: '', legislatura_numero: '', sessao_legislativa_id: '', data_inicio: '', data_fim: '', presidente_id: '', presidente_nome: '', vice_presidente_id: '', vice_presidente_nome: '', primeiro_secretario_id: '', primeiro_secretario_nome: '', segundo_secretario_id: '', segundo_secretario_nome: '', status: 'Ativa' }); setShowForm(true); }} className="gap-2"><Plus size={16} /> Nova Mesa</Button>}
       />
 
-      {mesas.length === 0 ? (
+      {loading ? (
+        <LoadingState label="Carregando mesa diretora..." />
+      ) : mesas.length === 0 ? (
         <EmptyState icon={Gavel} title="Nenhuma Mesa Diretora cadastrada" onAdd={() => setShowForm(true)} addLabel="Cadastrar Mesa Diretora" />
       ) : (
         <div className="space-y-4">

@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DollarSign, Plus, Pencil, Trash2, ExternalLink } from 'lucide-react';
 import { useExclusaoSegura } from '@/components/ExclusaoSegura';
 import FilterBar, { TODOS } from '@/components/FilterBar';
+import LoadingState from '@/components/LoadingState';
 import FileUpload from '@/components/FileUpload';
 
 const empty = { numero: '', ano: new Date().getFullYear(), data: '', objeto: '', valor: '', vereador_id: '', vereador_nome: '', vereador_partido: '', arquivo_url: '', observacoes: '' };
@@ -25,11 +26,13 @@ export default function EmendasImpositivas() {
   const [editing, setEditing] = useState(null);
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!canQuery) return;
-    sislegisEntities.EmendaImpositiva.filter(withTenant({})).then(setItems);
-    sislegisEntities.Parlamentar.filter(withTenant({ ativo: true })).then(setParlamentares);
+    setLoading(true);
+    sislegisEntities.EmendaImpositiva.filter(withTenant({})).then(setItems).catch(() => setItems([])).finally(() => setLoading(false));
+    sislegisEntities.Parlamentar.filter(withTenant({ ativo: true })).then(setParlamentares).catch(() => {});
   }, [canQuery, tenant]);
 
   const anos = [...new Set(items.map(i => i.ano).filter(Boolean))].sort((a, b) => b - a).map(String);
@@ -100,7 +103,9 @@ export default function EmendasImpositivas() {
         onLimpar={() => { setSearch(''); setFiltros({}); }}
       />
 
-      {filtered.length === 0 ? (
+      {loading ? (
+        <LoadingState label="Carregando emendas..." />
+      ) : filtered.length === 0 ? (
         <EmptyState icon={DollarSign} title="Nenhuma emenda encontrada" description="Cadastre a primeira emenda impositiva." onAdd={openNew} addLabel="Nova Emenda" />
       ) : (
         <div className="space-y-3">

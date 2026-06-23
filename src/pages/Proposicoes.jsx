@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import PageHeader from '@/components/PageHeader';
 import EmptyState from '@/components/EmptyState';
+import LoadingState from '@/components/LoadingState';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -42,6 +43,7 @@ export default function Proposicoes() {
   const [form, setForm] = useState({ tipo: 'Projeto de Lei', ementa: '', justificativa: '', texto: '', autor_id: '', autor_nome: '', data_apresentacao: format(new Date(), 'yyyy-MM-dd') });
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [loading, setLoading] = useState(true);
 
   const canReceive = ['SUPER_ADMIN', 'ADMIN_CAMARA', 'SECRETARIA_LEGISLATIVA', 'PROTOCOLO'].includes(userRole);
   const canCreate = !['CONSULTA_PUBLICA'].includes(userRole);
@@ -50,10 +52,20 @@ export default function Proposicoes() {
 
   async function load() {
     const filter = withTenant({});
-    if (!filter) return;
-    try { const p = await sislegisEntities.Proposicao.filter(filter, '-created_date', 100); setProposicoes(p); } catch (e) { console.error('Erro ao carregar proposições:', e); }
-    try { const parl = await sislegisEntities.Parlamentar.filter({ ...filter, ativo: true }); setParlamentares(parl); } catch (e) { console.error('Erro ao carregar parlamentares:', e); }
-    try { const tipos = await sislegisEntities.TipoMateria.filter({ ...filter, ativo: true }, 'ordem', 50); setTiposMateria(tipos.length > 0 ? tipos.map(t => t.nome) : TIPOS_DEFAULT); } catch (e) { console.error('Erro ao carregar tipos:', e); }
+    if (!filter) { setLoading(false); return; }
+    setLoading(true);
+    try {
+      const [p, parl, tipos] = await Promise.all([
+        sislegisEntities.Proposicao.filter(filter, '-created_date', 100).catch(() => []),
+        sislegisEntities.Parlamentar.filter({ ...filter, ativo: true }).catch(() => []),
+        sislegisEntities.TipoMateria.filter({ ...filter, ativo: true }, 'ordem', 50).catch(() => []),
+      ]);
+      setProposicoes(p);
+      setParlamentares(parl);
+      setTiposMateria(tipos.length > 0 ? tipos.map(t => t.nome) : TIPOS_DEFAULT);
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function salvar() {
@@ -200,7 +212,9 @@ export default function Proposicoes() {
       </div>
 
       {/* Lista */}
-      {filtradas.length === 0 ? (
+      {loading ? (
+        <LoadingState label="Carregando proposições..." />
+      ) : filtradas.length === 0 ? (
         <EmptyState icon={FolderOpen} title="Nenhuma proposição encontrada" onAdd={canCreate ? () => setShowForm(true) : undefined} addLabel="Nova Proposição" />
       ) : (
         <div className="bg-card border border-border rounded-xl overflow-hidden">

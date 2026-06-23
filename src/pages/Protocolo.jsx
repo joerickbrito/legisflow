@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import LoadingState from '@/components/LoadingState';
 
 const TIPOS = ['Ofício', 'Requerimento', 'Petição', 'Memorando', 'Relatório', 'Outros'];
 const STATUS_OPTS = ['Recebido', 'Em Análise', 'Encaminhado', 'Arquivado', 'Respondido'];
@@ -19,12 +20,20 @@ export default function Protocolo() {
   const [showForm, setShowForm] = useState(false);
   const [editando, setEditando] = useState(null);
   const [form, setForm] = useState({ tipo: 'Ofício', assunto: '', remetente: '', data_recebimento: '', status: 'Recebido', destino: '', observacoes: '' });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => { if (canQuery) loadData(); }, [tenantId, canQuery]);
 
   async function loadData() {
-    const p = await sislegisEntities.Protocolo.filter(withTenant({}), '-created_date', 100);
-    setProtocolos(p);
+    setLoading(true);
+    try {
+      const p = await sislegisEntities.Protocolo.filter(withTenant({}), '-created_date', 100);
+      setProtocolos(p);
+    } catch (e) {
+      setProtocolos([]);
+    } finally {
+      setLoading(false);
+    }
   }
 
   function openNew() {
@@ -84,7 +93,9 @@ export default function Protocolo() {
         </Select>
       </div>
 
-      {filtrados.length === 0 ? (
+      {loading ? (
+        <LoadingState label="Carregando protocolos..." />
+      ) : filtrados.length === 0 ? (
         <div className="bg-card border border-border rounded-3xl p-12 text-center">
           <Inbox size={40} className="mx-auto text-muted-foreground mb-3" />
           <p className="text-muted-foreground">Nenhum protocolo encontrado.</p>

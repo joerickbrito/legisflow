@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UsersRound, Plus, Trash2 } from "lucide-react";
 import { useExclusaoSegura } from "@/components/ExclusaoSegura";
+import LoadingState from "@/components/LoadingState";
 
 const STATUS = ["Agendada", "Realizada", "Cancelada"];
 
@@ -21,13 +22,15 @@ export default function ReuniaoComissao() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ comissao_id: "", comissao_nome: "", numero: "", data: "", hora_inicio: "", hora_fim: "", local: "", status: "Agendada", ata: "", observacoes: "" });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!canQuery) return;
     const filter = withTenant();
-    if (!filter) return;
-    sislegisEntities.ReuniaoComissao.filter(filter, "-created_date", 50).then(setReunioes);
-    sislegisEntities.Comissao.filter(filter).then(setComissoes);
+    if (!filter) { setLoading(false); return; }
+    setLoading(true);
+    sislegisEntities.ReuniaoComissao.filter(filter, "-created_date", 50).then(setReunioes).catch(() => setReunioes([])).finally(() => setLoading(false));
+    sislegisEntities.Comissao.filter(filter).then(setComissoes).catch(() => {});
   }, [canQuery]);
 
   const openNew = () => { setEditing(null); setForm({ comissao_id: "", comissao_nome: "", numero: "", data: "", hora_inicio: "", hora_fim: "", local: "", status: "Agendada", ata: "", observacoes: "" }); setOpen(true); };
@@ -63,8 +66,9 @@ export default function ReuniaoComissao() {
       />
 
       <div className="space-y-3">
-        {reunioes.length === 0 && <p className="text-muted-foreground text-sm">Nenhuma reunião registrada.</p>}
-        {reunioes.map(r => (
+        {loading && <LoadingState label="Carregando reuniões..." />}
+        {!loading && reunioes.length === 0 && <p className="text-muted-foreground text-sm">Nenhuma reunião registrada.</p>}
+        {!loading && reunioes.map(r => (
           <Card key={r.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => openEdit(r)}>
             <CardContent className="pt-4">
               <div className="flex items-center justify-between gap-4">

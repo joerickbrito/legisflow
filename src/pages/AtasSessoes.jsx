@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { BookOpen, Plus, Search, Pencil, Trash2, ExternalLink } from 'lucide-react';
 import FileUpload from '@/components/FileUpload';
 import { useExclusaoSegura } from '@/components/ExclusaoSegura';
+import LoadingState from '@/components/LoadingState';
 
 const empty = { numero: '', data: '', sessao_id: '', sessao_numero: '', observacoes: '', arquivo_url: '' };
 
@@ -23,11 +24,13 @@ export default function AtasSessoes() {
   const [editing, setEditing] = useState(null);
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!canQuery) return;
-    sislegisEntities.AtaSessao.filter(withTenant({})).then(setItems);
-    sislegisEntities.Sessao.filter(withTenant({})).then(setSessoes);
+    setLoading(true);
+    sislegisEntities.AtaSessao.filter(withTenant({})).then(setItems).catch(() => setItems([])).finally(() => setLoading(false));
+    sislegisEntities.Sessao.filter(withTenant({})).then(setSessoes).catch(() => {});
   }, [canQuery, tenant]);
 
   const filtered = items.filter(i =>
@@ -83,7 +86,9 @@ export default function AtasSessoes() {
         </div>
       </div>
 
-      {filtered.length === 0 ? (
+      {loading ? (
+        <LoadingState label="Carregando atas..." />
+      ) : filtered.length === 0 ? (
         <EmptyState icon={BookOpen} title="Nenhuma ata encontrada" description="Cadastre a primeira ata de sessão." onAdd={openNew} addLabel="Nova Ata" />
       ) : (
         <div className="space-y-3">

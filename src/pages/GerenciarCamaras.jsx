@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import { Building2, Plus, Search, Users, Upload, MapPin, ChevronDown, ChevronUp, AlertCircle } from "lucide-react";
+import LoadingState from "@/components/LoadingState";
 
 const REQUIRED_FIELDS = ['nome', 'municipio', 'estado', 'cnpj', 'email', 'telefone'];
 
@@ -67,10 +68,13 @@ export default function GerenciarCamaras() {
   const [solicitacoes, setSolicitacoes] = useState([]);
   const [atendendoSolicitacao, setAtendendoSolicitacao] = useState(null);
   const [solicitacoesCounts, setSolicitacoesCounts] = useState({});
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!isSuperAdmin) { setLoading(false); return; }
     if (isSuperAdmin) {
-      sislegisEntities.Camara.list("-created_date", 200).then(setCamaras);
+      setLoading(true);
+      sislegisEntities.Camara.list("-created_date", 200).then(setCamaras).catch(() => setCamaras([])).finally(() => setLoading(false));
       // Carregar contagem de solicitações pendentes
       sislegisEntities.SolicitacoesRecuperacaoSenha.filter({ status: 'pendente' }, '-created_date', 200)
         .then(sols => {
@@ -336,7 +340,8 @@ export default function GerenciarCamaras() {
       </div>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filtered.map(c => (
+        {loading && <div className="col-span-full"><LoadingState label="Carregando câmaras..." /></div>}
+        {!loading && filtered.map(c => (
           <Card key={c.id} className="cursor-pointer hover:shadow-md transition-all" onClick={() => openEdit(c)}>
             <CardContent className="pt-4">
               <div className="flex items-start gap-3">
@@ -380,7 +385,7 @@ export default function GerenciarCamaras() {
             </CardContent>
           </Card>
         ))}
-        {filtered.length === 0 && (
+        {!loading && filtered.length === 0 && (
           <p className="text-muted-foreground text-sm text-center py-8 col-span-3">Nenhuma câmara encontrada.</p>
         )}
       </div>

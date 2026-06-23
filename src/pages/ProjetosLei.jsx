@@ -12,6 +12,7 @@ import { FileText, Plus, Pencil, Trash2, ExternalLink } from 'lucide-react';
 import FileUpload from '@/components/FileUpload';
 import { useExclusaoSegura } from '@/components/ExclusaoSegura';
 import FilterBar, { TODOS } from '@/components/FilterBar';
+import LoadingState from '@/components/LoadingState';
 
 const TIPOS = ['Projeto de Lei', 'Projeto de Lei Complementar', 'Emenda à Lei Orgânica'];
 const STATUS = ['Em tramitação', 'Aprovada', 'Rejeitada', 'Arquivada', 'Retirada', 'Transformada em Norma', 'Aguardando Votação'];
@@ -39,10 +40,12 @@ export default function ProjetosLei() {
   const [editing, setEditing] = useState(null);
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!canQuery) return;
-    sislegisEntities.Materia.filter(withTenant({ tipo: { $in: TIPOS } })).then(setItems);
+    setLoading(true);
+    sislegisEntities.Materia.filter(withTenant({ tipo: { $in: TIPOS } })).then(setItems).catch(() => setItems([])).finally(() => setLoading(false));
   }, [canQuery, tenantId]);
 
   const anos = [...new Set(items.map(i => i.ano).filter(Boolean))].sort((a, b) => b - a).map(String);
@@ -118,7 +121,9 @@ export default function ProjetosLei() {
         onLimpar={() => { setSearch(''); setFiltros({}); }}
       />
 
-      {filtered.length === 0 ? (
+      {loading ? (
+        <LoadingState label="Carregando projetos..." />
+      ) : filtered.length === 0 ? (
         <EmptyState icon={FileText} title="Nenhum projeto encontrado" description="Cadastre o primeiro projeto de lei." onAdd={openNew} addLabel="Novo Projeto" />
       ) : (
         <div className="space-y-3">

@@ -4,6 +4,7 @@ import { useTenant } from '@/lib/TenantContext';
 import { BarChart3, TrendingUp, Users, FileText, Vote } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import PageHeader from '@/components/PageHeader';
+import LoadingState from '@/components/LoadingState';
 
 const COLORS = ['#3b82f6', '#22c55e', '#ef4444', '#f59e0b', '#8b5cf6', '#06b6d4'];
 
@@ -17,13 +18,18 @@ export default function Relatorios() {
     async function load() {
       const filter = withTenant();
       if (!filter) { setLoading(false); return; }
-      const result = { materias: [], parlamentares: [], votacoes: [], sessoes: [] };
-      try { result.materias = await sislegisEntities.Materia.filter(filter, '-created_date', 500); } catch (e) { console.error('Erro matérias:', e); }
-      try { result.parlamentares = await sislegisEntities.Parlamentar.filter({ ...filter, ativo: true }); } catch (e) { console.error('Erro parlamentares:', e); }
-      try { result.votacoes = await sislegisEntities.Votacao.filter(filter, '-created_date', 200); } catch (e) { console.error('Erro votações:', e); }
-      try { result.sessoes = await sislegisEntities.Sessao.filter(filter, '-data', 100); } catch (e) { console.error('Erro sessões:', e); }
-      setData(result);
-      setLoading(false);
+      setLoading(true);
+      try {
+        const [materias, parlamentares, votacoes, sessoes] = await Promise.all([
+          sislegisEntities.Materia.filter(filter, '-created_date', 500).catch(() => []),
+          sislegisEntities.Parlamentar.filter({ ...filter, ativo: true }).catch(() => []),
+          sislegisEntities.Votacao.filter(filter, '-created_date', 200).catch(() => []),
+          sislegisEntities.Sessao.filter(filter, '-data', 100).catch(() => []),
+        ]);
+        setData({ materias, parlamentares, votacoes, sessoes });
+      } finally {
+        setLoading(false);
+      }
     }
     load();
   }, [canQuery]);
@@ -60,7 +66,7 @@ export default function Relatorios() {
     { label: 'Sessões Realizadas', value: data.sessoes.filter(s => s.status === 'Encerrada').length, icon: Users, color: 'text-orange-600 bg-orange-50' },
   ];
 
-  if (loading) return <div className="p-8 text-center text-muted-foreground">Carregando relatórios...</div>;
+  if (loading) return <LoadingState label="Carregando relatórios..." />;
 
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">

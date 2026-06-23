@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import PageHeader from '@/components/PageHeader';
 import StatusBadge from '@/components/StatusBadge';
 import EmptyState from '@/components/EmptyState';
+import LoadingState from '@/components/LoadingState';
 
 export default function Audiencias() {
   const { tenantId, withTenant, canQuery } = useTenant();
@@ -19,12 +20,20 @@ export default function Audiencias() {
   const [form, setForm] = useState({ tema: '', descricao: '', data: '', hora: '', local: '', status: 'Agendada', ata: '' });
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => { if (canQuery) load(); }, [tenantId, canQuery]);
 
   async function load() {
-    const a = await sislegisEntities.AudienciaPublica.filter(withTenant({}), '-data', 50);
-    setAudiencias(a);
+    setLoading(true);
+    try {
+      const a = await sislegisEntities.AudienciaPublica.filter(withTenant({}), '-data', 50);
+      setAudiencias(a);
+    } catch (e) {
+      setAudiencias([]);
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function salvar() {
@@ -57,7 +66,9 @@ export default function Audiencias() {
         action={<Button onClick={() => { setEditando(null); setForm({ tema: '', descricao: '', data: '', hora: '', local: '', status: 'Agendada', ata: '' }); setShowForm(true); }} className="gap-2"><Plus size={16} /> Nova Audiência</Button>}
       />
 
-      {audiencias.length === 0 ? (
+      {loading ? (
+        <LoadingState label="Carregando audiências..." />
+      ) : audiencias.length === 0 ? (
         <EmptyState icon={Users} title="Nenhuma audiência cadastrada" onAdd={() => setShowForm(true)} addLabel="Agendar Audiência" />
       ) : (
         <div className="grid sm:grid-cols-2 gap-4">

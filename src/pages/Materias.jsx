@@ -10,6 +10,7 @@ import { Link } from 'react-router-dom';
 import TramitacaoTimeline from '@/components/TramitacaoTimeline';
 import { useTenant } from '@/lib/TenantContext';
 import { format } from 'date-fns';
+import LoadingState from '@/components/LoadingState';
 
 const TIPOS_DEFAULT = ['Projeto de Lei', 'Projeto de Lei Complementar', 'Projeto de Resolução', 'Requerimento', 'Indicação', 'Moção', 'Emenda à Lei Orgânica'];
 const STATUS = ['Em tramitação', 'Aprovada', 'Rejeitada', 'Arquivada', 'Retirada', 'Transformada em Norma'];
@@ -41,10 +42,19 @@ export default function Materias() {
   async function loadData() {
     const filter = withTenant({});
     if (!filter) { setLoading(false); return; }
-    try { const m = await sislegisEntities.Materia.filter(filter, '-created_date', 100); setMaterias(m); } catch (e) { console.error('Erro ao carregar matérias:', e); }
-    try { const p = await sislegisEntities.Parlamentar.filter({ ...filter, ativo: true }); setParlamentares(p); } catch (e) { console.error('Erro ao carregar parlamentares:', e); }
-    try { const tipos = await sislegisEntities.TipoMateria.filter({ ...filter, ativo: true }, 'ordem', 50); if (tipos.length > 0) setTiposMateria(tipos.map(t => t.nome)); } catch (e) { console.error('Erro ao carregar tipos:', e); }
-    setLoading(false);
+    setLoading(true);
+    try {
+      const [m, p, tipos] = await Promise.all([
+        sislegisEntities.Materia.filter(filter, '-created_date', 100).catch(() => []),
+        sislegisEntities.Parlamentar.filter({ ...filter, ativo: true }).catch(() => []),
+        sislegisEntities.TipoMateria.filter({ ...filter, ativo: true }, 'ordem', 50).catch(() => []),
+      ]);
+      setMaterias(m);
+      setParlamentares(p);
+      if (tipos.length > 0) setTiposMateria(tipos.map(t => t.nome));
+    } finally {
+      setLoading(false);
+    }
   }
 
   function openNew() {
@@ -158,7 +168,7 @@ export default function Materias() {
       {/* Lista */}
       <div className="bg-card border border-border rounded-2xl overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center text-muted-foreground">Carregando...</div>
+          <LoadingState label="Carregando matérias..." />
         ) : filtradas.length === 0 ? (
           <div className="p-12 text-center">
             <FileText size={40} className="mx-auto text-muted-foreground mb-3" />

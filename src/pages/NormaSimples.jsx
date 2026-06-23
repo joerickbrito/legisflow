@@ -12,6 +12,7 @@ import { Plus, Pencil, Trash2, ExternalLink } from 'lucide-react';
 import FileUpload from '@/components/FileUpload';
 import { useExclusaoSegura } from '@/components/ExclusaoSegura';
 import FilterBar, { TODOS } from '@/components/FilterBar';
+import LoadingState from '@/components/LoadingState';
 
 const STATUS_NORMA = ['Vigente', 'Revogada', 'Revogada Parcialmente', 'Suspensa', 'Não Vigente'];
 const statusColors = {
@@ -32,12 +33,14 @@ export default function NormaSimples({ tipo, icon: Icon, title, subtitle, addLab
   const [editing, setEditing] = useState(null);
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [loading, setLoading] = useState(true);
 
   const empty = { tipo, numero: '', ano: new Date().getFullYear(), ementa: '', data_publicacao: '', situacao: 'Vigente', arquivo_url: '' };
 
   useEffect(() => {
     if (!canQuery) return;
-    sislegisEntities.NormaJuridica.filter(withTenant({ tipo })).then(setItems);
+    setLoading(true);
+    sislegisEntities.NormaJuridica.filter(withTenant({ tipo })).then(setItems).catch(() => setItems([])).finally(() => setLoading(false));
   }, [canQuery, tenantId]);
 
   const anos = [...new Set(items.map(i => i.ano).filter(Boolean))].sort((a, b) => b - a).map(String);
@@ -99,7 +102,9 @@ export default function NormaSimples({ tipo, icon: Icon, title, subtitle, addLab
         onLimpar={() => { setSearch(''); setFiltros({}); }}
       />
 
-      {filtered.length === 0 ? (
+      {loading ? (
+        <LoadingState label="Carregando..." />
+      ) : filtered.length === 0 ? (
         <EmptyState icon={Icon} title={`Nenhum registro encontrado`} description={`Cadastre o primeiro registro.`} onAdd={openNew} addLabel={addLabel} />
       ) : (
         <div className="space-y-3">

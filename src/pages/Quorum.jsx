@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { UserCheck, Plus, CheckCircle, XCircle, Trash2 } from "lucide-react";
 import { useExclusaoSegura } from "@/components/ExclusaoSegura";
+import LoadingState from "@/components/LoadingState";
 
 export default function Quorum() {
   const { withTenant, canQuery, tenantId } = useTenant();
@@ -17,14 +18,16 @@ export default function Quorum() {
   const [parlamentares, setParlamentares] = useState([]);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ sessao_id: "", data: "", total_parlamentares: 0, quorum_minimo: 0, registro_presencas: [], observacoes: "" });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!canQuery) return;
     const filter = withTenant();
-    if (!filter) return;
-    sislegisEntities.Quorum.filter(filter, "-created_date", 50).then(setRegistros);
-    sislegisEntities.Sessao.filter(filter, "-created_date", 20).then(setSessoes);
-    sislegisEntities.Parlamentar.filter(filter).then(setParlamentares);
+    if (!filter) { setLoading(false); return; }
+    setLoading(true);
+    sislegisEntities.Quorum.filter(filter, "-created_date", 50).then(setRegistros).catch(() => setRegistros([])).finally(() => setLoading(false));
+    sislegisEntities.Sessao.filter(filter, "-created_date", 20).then(setSessoes).catch(() => {});
+    sislegisEntities.Parlamentar.filter(filter).then(setParlamentares).catch(() => {});
   }, [canQuery]);
 
   const handleSave = async () => {
@@ -98,8 +101,9 @@ export default function Quorum() {
       />
 
       <div className="space-y-4">
-        {registros.length === 0 && <p className="text-muted-foreground text-sm">Nenhum registro de quórum encontrado.</p>}
-        {registros.map(r => {
+        {loading && <LoadingState label="Carregando registros..." />}
+        {!loading && registros.length === 0 && <p className="text-muted-foreground text-sm">Nenhum registro de quórum encontrado.</p>}
+        {!loading && registros.map(r => {
           const sessao = sessoes.find(s => s.id === r.sessao_id);
           return (
             <Card key={r.id}>

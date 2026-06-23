@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Users, Plus, Search, Upload, UserCircle, Shield, KeyRound, Loader2, Trash2 } from "lucide-react";
 import { useExclusaoSegura } from "@/components/ExclusaoSegura";
+import LoadingState from "@/components/LoadingState";
 
 const STATUS_OPTIONS = ["Pendente de Ativação", "Ativo", "Inativo", "Bloqueado", "Pendente"];
 const STATUS_COLOR = { "Pendente de Ativação": "outline", Ativo: "default", Inativo: "secondary", Bloqueado: "destructive", Pendente: "outline" };
@@ -113,9 +114,10 @@ export default function GerenciarUsuarios() {
     permissoes: { ...DEFAULT_PERMISSIONS.VEREADOR },
   };
   const [form, setForm] = useState(emptyForm);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!isAdminCamara && !isSuperAdmin) return;
+    if (!isAdminCamara && !isSuperAdmin) { setLoading(false); return; }
     loadUsuarios();
     if (isSuperAdmin) {
       sislegisEntities.Camara.list().then(setCamaras).catch(() => {});
@@ -131,6 +133,7 @@ export default function GerenciarUsuarios() {
   }, [isAdminCamara, isSuperAdmin, tenantId]);
 
   const loadUsuarios = async () => {
+    setLoading(true);
     try {
       let users;
       if (isSuperAdmin) {
@@ -144,6 +147,8 @@ export default function GerenciarUsuarios() {
     } catch (e) {
       console.error('Erro ao carregar usuários:', e);
       setUsuarios([]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -341,7 +346,8 @@ export default function GerenciarUsuarios() {
 
       {/* Lista */}
       <div className="space-y-2">
-        {filtered.map(u => (
+        {loading && <LoadingState label="Carregando usuários..." />}
+        {!loading && filtered.map(u => (
           <Card key={u.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => openEdit(u)}>
             <CardContent className="py-3 px-4">
               <div className="flex items-center gap-3">
@@ -397,7 +403,7 @@ export default function GerenciarUsuarios() {
             </CardContent>
           </Card>
         ))}
-        {filtered.length === 0 && <p className="text-muted-foreground text-sm text-center py-8">Nenhum usuário encontrado.</p>}
+        {!loading && filtered.length === 0 && <p className="text-muted-foreground text-sm text-center py-8">Nenhum usuário encontrado.</p>}
       </div>
 
       {/* Dialog — FORMULÁRIO COMPLETO */}

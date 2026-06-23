@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import PageHeader from '@/components/PageHeader';
+import LoadingState from '@/components/LoadingState';
 
 const TIPOS = ['Lei Ordinária', 'Lei Complementar', 'Lei Orgânica', 'Decreto Legislativo', 'Resolução', 'Portaria', 'Emenda à Lei Orgânica'];
 const SITUACOES = ['Vigente', 'Revogada', 'Revogada Parcialmente', 'Suspensa', 'Não Vigente'];
@@ -23,11 +24,19 @@ export default function Normas() {
   const [editando, setEditando] = useState(null);
   const emptyForm = { tipo: 'Lei Ordinária', numero: '', ano: new Date().getFullYear(), ementa: '', data_publicacao: '', data_vigencia: '', texto_articulado: '', situacao: 'Vigente', arquivo_url: '', tenant_id: tenantId || '' };
   const [form, setForm] = useState(emptyForm);
+  const [loading, setLoading] = useState(true);
   useEffect(() => { if (canQuery) loadData(); }, [tenantId, canQuery]);
 
   async function loadData() {
-    const n = await sislegisEntities.NormaJuridica.filter(withTenant({}), '-ano', 200);
-    setNormas(n);
+    setLoading(true);
+    try {
+      const n = await sislegisEntities.NormaJuridica.filter(withTenant({}), '-ano', 200);
+      setNormas(n);
+    } catch (e) {
+      setNormas([]);
+    } finally {
+      setLoading(false);
+    }
   }
 
   function openNew() {
@@ -95,7 +104,9 @@ export default function Normas() {
         </Select>
       </div>
 
-      {filtradas.length === 0 ? (
+      {loading ? (
+        <LoadingState label="Carregando normas..." />
+      ) : filtradas.length === 0 ? (
         <div className="bg-card border border-border rounded-3xl p-12 text-center">
           <ScrollText size={40} className="mx-auto text-muted-foreground mb-3" />
           <p className="text-muted-foreground">Nenhuma norma encontrada.</p>

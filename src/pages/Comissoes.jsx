@@ -12,6 +12,7 @@ const TIPOS = ['Permanente', 'Temporária', 'CPI', 'Especial', 'Mista'];
 const CARGOS_MEMBRO = ['Presidente', 'Vice-Presidente', 'Membro', 'Suplente'];
 
 import PageHeader from '@/components/PageHeader';
+import LoadingState from '@/components/LoadingState';
 
 export default function Comissoes() {
   const { tenantId, withTenant, canQuery, isAdminCamara } = useTenant();
@@ -23,14 +24,24 @@ export default function Comissoes() {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => { if (canQuery) loadData(); }, [tenantId, canQuery]);
 
   async function loadData() {
     const filter = withTenant({});
-    if (!filter) return;
-    try { const c = await sislegisEntities.Comissao.filter(filter, '-created_date', 50); setComissoes(c); } catch (e) { console.error('Erro ao carregar comissões:', e); }
-    try { const p = await sislegisEntities.Parlamentar.filter({ ...filter, ativo: true }); setParlamentares(p); } catch (e) { console.error('Erro ao carregar parlamentares:', e); }
+    if (!filter) { setLoading(false); return; }
+    setLoading(true);
+    try {
+      const [c, p] = await Promise.all([
+        sislegisEntities.Comissao.filter(filter, '-created_date', 50).catch(() => []),
+        sislegisEntities.Parlamentar.filter({ ...filter, ativo: true }).catch(() => []),
+      ]);
+      setComissoes(c);
+      setParlamentares(p);
+    } finally {
+      setLoading(false);
+    }
   }
 
   function openNew() {
@@ -78,7 +89,9 @@ export default function Comissoes() {
         action={isAdminCamara && <Button onClick={openNew} className="gap-2 shadow-lg shadow-primary/20"><Plus size={16} /> Nova Comissão</Button>}
       />
 
-      {comissoes.length === 0 ? (
+      {loading ? (
+        <LoadingState label="Carregando comissões..." />
+      ) : comissoes.length === 0 ? (
         <div className="bg-card border border-border rounded-3xl p-12 text-center">
           <Building2 size={40} className="mx-auto text-muted-foreground mb-3" />
           <p className="text-muted-foreground">Nenhuma comissão cadastrada.</p>
