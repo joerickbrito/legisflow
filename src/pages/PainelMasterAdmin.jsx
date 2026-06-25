@@ -194,7 +194,6 @@ export default function PainelMasterAdmin() {
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5 truncate">
                       {[camara.municipio, camara.estado].filter(Boolean).join(', ') || '—'}
-                      {camara.plano && <span className="ml-2 opacity-60">· {camara.plano}</span>}
                     </p>
                     <div className="flex items-center gap-1.5 mt-3">
                       <Button

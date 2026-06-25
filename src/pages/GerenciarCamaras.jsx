@@ -42,7 +42,7 @@ export default function GerenciarCamaras() {
   const emptyForm = {
     nome: "", sigla: "", cnpj: "", municipio: "", estado: "",
     telefone: "", email: "", site: "", cor_institucional: "#1d4ed8",
-    brasao_url: "", logotipo_url: "", status: "Ativa", plano: "Básico",
+    brasao_url: "", logotipo_url: "", status: "Ativa",
     total_vereadores: 9, observacoes: "",
   };
   const [form, setForm] = useState(emptyForm);
@@ -375,7 +375,6 @@ export default function GerenciarCamaras() {
                         <span className="text-xs text-muted-foreground font-mono">{c.cor_institucional}</span>
                       </div>
                     )}
-                    <Badge variant="outline" className="text-[10px] px-1.5">{c.plano}</Badge>
                     {solicitacoesCounts[c.id] > 0 && (
                       <Badge variant="destructive" className="text-[10px] px-1.5">{solicitacoesCounts[c.id]} recuperação</Badge>
                     )}
@@ -501,28 +500,16 @@ export default function GerenciarCamaras() {
                     <Input value={form.site} onChange={e => setForm(f => ({ ...f, site: e.target.value }))} placeholder="https://www.camara.sp.gov.br" />
                   </FormField>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <FormField label="Plano">
-                      <Select value={form.plano} onValueChange={v => setForm(f => ({ ...f, plano: v }))}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Básico">Básico</SelectItem>
-                          <SelectItem value="Profissional">Profissional</SelectItem>
-                          <SelectItem value="Enterprise">Enterprise</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </FormField>
-                    <FormField label="Status">
-                      <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Ativa">Ativa</SelectItem>
-                          <SelectItem value="Suspensa">Suspensa</SelectItem>
-                          <SelectItem value="Inativa">Inativa</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </FormField>
-                  </div>
+                  <FormField label="Status">
+                    <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Ativa">Ativa</SelectItem>
+                        <SelectItem value="Suspensa">Suspensa</SelectItem>
+                        <SelectItem value="Inativa">Inativa</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormField>
 
                   <FormField label="Observações">
                     <Input value={form.observacoes} onChange={e => setForm(f => ({ ...f, observacoes: e.target.value }))} />

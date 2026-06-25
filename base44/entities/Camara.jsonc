@@ -51,15 +51,6 @@
       ],
       "default": "Ativa"
     },
-    "plano": {
-      "type": "string",
-      "enum": [
-        "B\u00e1sico",
-        "Profissional",
-        "Enterprise"
-      ],
-      "default": "B\u00e1sico"
-    },
     "total_vereadores": {
       "type": "number"
     },

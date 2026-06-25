@@ -34,8 +34,6 @@ export default function DashboardSuperAdmin() {
     { label: 'Logs de Auditoria', value: stats.logs.length, sub: 'últimos 10', icon: Shield, color: 'bg-slate-100 text-slate-600', link: '/auditoria' },
   ];
 
-  const planCount = (plano) => stats.camaras.filter(c => c.plano === plano).length;
-
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8">
       <div>
@@ -68,57 +66,31 @@ export default function DashboardSuperAdmin() {
         ))}
       </div>
 
-      {/* Câmaras por plano + Status */}
-      <div className="grid lg:grid-cols-2 gap-6">
-        <Card>
-          <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-            <h2 className="font-heading font-semibold text-foreground">Distribuição por Plano</h2>
-          </div>
-          <CardContent className="pt-4 space-y-3">
-            {['Básico', 'Profissional', 'Enterprise'].map(plano => (
-              <div key={plano} className="flex items-center justify-between">
-                <span className="text-sm text-foreground">{plano}</span>
-                <div className="flex items-center gap-3">
-                  <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-primary rounded-full"
-                      style={{ width: stats.camaras.length ? `${(planCount(plano) / stats.camaras.length) * 100}%` : '0%' }}
-                    />
-                  </div>
-                  <span className="text-sm font-bold w-6 text-right">{planCount(plano)}</span>
-                </div>
+      {/* Câmaras recentes */}
+      <Card>
+        <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+          <h2 className="font-heading font-semibold text-foreground">Câmaras Recentes</h2>
+          <Link to="/gerenciar-camaras" className="text-primary text-sm font-medium flex items-center gap-1 hover:gap-2 transition-all">
+            Ver todas <ArrowRight size={13} />
+          </Link>
+        </div>
+        <div className="divide-y divide-border">
+          {stats.camaras.slice(0, 5).map(c => (
+            <div key={c.id} className="flex items-center justify-between px-5 py-3">
+              <div>
+                <p className="text-sm font-medium">{c.nome}</p>
+                <p className="text-xs text-muted-foreground">{c.cidade || '—'}{c.estado ? ` / ${c.estado}` : ''}</p>
               </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        {/* Câmaras recentes */}
-        <Card>
-          <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-            <h2 className="font-heading font-semibold text-foreground">Câmaras Recentes</h2>
-            <Link to="/gerenciar-camaras" className="text-primary text-sm font-medium flex items-center gap-1 hover:gap-2 transition-all">
-              Ver todas <ArrowRight size={13} />
-            </Link>
-          </div>
-          <div className="divide-y divide-border">
-            {stats.camaras.slice(0, 5).map(c => (
-              <div key={c.id} className="flex items-center justify-between px-5 py-3">
-                <div>
-                  <p className="text-sm font-medium">{c.nome}</p>
-                  <p className="text-xs text-muted-foreground">{c.cidade || '—'}{c.estado ? ` / ${c.estado}` : ''}</p>
-                </div>
-                <div className="flex gap-2">
-                  <Badge variant={c.status === 'Ativa' ? 'default' : 'secondary'} className="text-xs">{c.status}</Badge>
-                  <Badge variant="outline" className="text-xs">{c.plano}</Badge>
-                </div>
+              <div className="flex gap-2">
+                <Badge variant={c.status === 'Ativa' ? 'default' : 'secondary'} className="text-xs">{c.status}</Badge>
               </div>
-            ))}
-            {stats.camaras.length === 0 && !loading && (
-              <p className="text-muted-foreground text-sm text-center py-6">Nenhuma câmara cadastrada.</p>
-            )}
-          </div>
-        </Card>
-      </div>
+            </div>
+          ))}
+          {stats.camaras.length === 0 && !loading && (
+            <p className="text-muted-foreground text-sm text-center py-6">Nenhuma câmara cadastrada.</p>
+          )}
+        </div>
+      </Card>
 
       {/* Log de auditoria recente */}
       <Card>
