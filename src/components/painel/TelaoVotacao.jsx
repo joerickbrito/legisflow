@@ -1,15 +1,20 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
+import { sincronizarCronometro } from "@/lib/sislegisApi";
 import { CheckCircle2, XCircle, MinusCircle, Lock } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-/* ─── Cronômetro individual (sincronizado entre janelas via BroadcastChannel) ─── */
-function Cronometro({ id, segundos, label, cor, channel }) {
+/* ─── Cronômetro individual ───────────────────────────────────────────────
+   Sincronizado entre TODAS as janelas/telas pelo registro da votação:
+   o clique grava o comando (via backend) e o tempo real (subscribe) o
+   propaga. Funciona mesmo em outro monitor/computador.                      */
+function Cronometro({ id, segundos, label, cor, cmd, onCmd }) {
   const [restante, setRestante] = useState(segundos);
   const [ativo, setAtivo] = useState(false);
   const tickRef = useRef(null);
   const endRef = useRef(null); // timestamp em que o cronômetro deve zerar
+  const lastTsRef = useRef(0); // último comando aplicado (evita reaplicar)
 
   // Contagem regressiva baseada em timestamp — mantém todas as janelas no mesmo tempo
   useEffect(() => {
@@ -23,37 +28,36 @@ function Cronometro({ id, segundos, label, cor, channel }) {
     return () => clearInterval(tickRef.current);
   }, [ativo]);
 
-  // Aplica um comando (de clique local OU vindo de outra janela)
-  function aplicar(cmd) {
-    if (cmd.action === 'start') {
-      endRef.current = cmd.endsAt;
-      setRestante(Math.max(0, Math.round((cmd.endsAt - Date.now()) / 1000)));
+  // Aplica um comando (de clique local OU vindo de outra janela/tela)
+  function aplicar(c) {
+    if (c.action === 'start') {
+      endRef.current = c.endsAt;
+      setRestante(Math.max(0, Math.round((c.endsAt - Date.now()) / 1000)));
       setAtivo(true);
-    } else if (cmd.action === 'pause' || cmd.action === 'reset') {
+    } else if (c.action === 'pause' || c.action === 'reset') {
       setAtivo(false);
-      setRestante(cmd.remaining);
+      setRestante(c.remaining ?? segundos);
     }
   }
 
-  // Escuta comandos das outras janelas (o espelho)
+  // Comando vindo de outra janela/tela (propagado pelo registro da votação)
   useEffect(() => {
-    if (!channel) return;
-    function onMsg(ev) {
-      const m = ev.data;
-      if (m && m.id === id) aplicar(m);
+    if (cmd && cmd.id === id && cmd.ts && cmd.ts > lastTsRef.current) {
+      lastTsRef.current = cmd.ts;
+      aplicar(cmd);
     }
-    channel.addEventListener('message', onMsg);
-    return () => channel.removeEventListener('message', onMsg);
-  }, [channel, id]);
+  }, [cmd, id]);
 
-  // Clique local → aplica aqui e transmite para as outras janelas
+  // Clique local → aplica aqui e grava o comando para espelhar nas outras telas
   function onClickBtn() {
-    let cmd;
-    if (ativo) cmd = { id, action: 'pause', remaining: restante };
-    else if (restante > 0) cmd = { id, action: 'start', endsAt: Date.now() + restante * 1000 };
-    else cmd = { id, action: 'start', endsAt: Date.now() + segundos * 1000 };
-    aplicar(cmd);
-    channel?.postMessage(cmd);
+    let c;
+    if (ativo) c = { id, action: 'pause', remaining: restante };
+    else if (restante > 0) c = { id, action: 'start', endsAt: Date.now() + restante * 1000 };
+    else c = { id, action: 'start', endsAt: Date.now() + segundos * 1000 };
+    c.ts = Date.now();
+    lastTsRef.current = c.ts;
+    aplicar(c);
+    onCmd?.(c);
   }
 
   const mins = Math.floor(restante / 60);
@@ -117,16 +121,23 @@ function CardVereador({ voto }) {
 export default function TelaoVotacao({ votacaoAtiva, camara, onRefresh, embedded }) {
   const [v, setV] = useState(votacaoAtiva);
   const [agora, setAgora] = useState(new Date());
-  const [channel, setChannel] = useState(null);
-
-  // Canal de sincronização entre janelas (admin ↔ telão na TV)
-  useEffect(() => {
-    let ch = null;
-    try { ch = new BroadcastChannel('telao_cronometros'); setChannel(ch); } catch (e) { /* navegador sem suporte */ }
-    return () => { try { ch && ch.close(); } catch (e) {} };
-  }, []);
 
   useEffect(() => { setV(votacaoAtiva); }, [votacaoAtiva]);
+
+  // Comando de cronômetro atual (gravado na votação e propagado em tempo real).
+  const cronometroCmd = useMemo(() => {
+    if (!v?.cronometro_cmd) return null;
+    try {
+      return typeof v.cronometro_cmd === 'string' ? JSON.parse(v.cronometro_cmd) : v.cronometro_cmd;
+    } catch {
+      return null;
+    }
+  }, [v?.cronometro_cmd]);
+
+  // Grava o comando do cronômetro para espelhar em todas as telas.
+  function enviarCronometro(cmd) {
+    if (v?.id) sincronizarCronometro(v.id, cmd);
+  }
 
   useEffect(() => {
     const t = setInterval(() => setAgora(new Date()), 1000);
@@ -270,10 +281,10 @@ export default function TelaoVotacao({ votacaoAtiva, camara, onRefresh, embedded
               <div className="mt-7">
                 <div className="text-[10px] text-white/30 uppercase tracking-widest text-center mb-3">Cronômetros</div>
                 <div className="grid grid-cols-2 gap-4">
-                  <Cronometro id={`${v.id}_discurso`} channel={channel} segundos={v.timer_discurso || 180} label="Discurso" cor="text-blue-300" />
-                  <Cronometro id={`${v.id}_aparte`} channel={channel} segundos={v.timer_aparte || 60} label="Aparte" cor="text-purple-300" />
-                  <Cronometro id={`${v.id}_questao`} channel={channel} segundos={v.timer_questao || 120} label="Questão de Ordem" cor="text-cyan-300" />
-                  <Cronometro id={`${v.id}_consideracoes`} channel={channel} segundos={v.timer_consideracoes || 60} label="Considerações Finais" cor="text-orange-300" />
+                  <Cronometro id={`${v.id}_discurso`} cmd={cronometroCmd} onCmd={enviarCronometro} segundos={v.timer_discurso || 180} label="Discurso" cor="text-blue-300" />
+                  <Cronometro id={`${v.id}_aparte`} cmd={cronometroCmd} onCmd={enviarCronometro} segundos={v.timer_aparte || 60} label="Aparte" cor="text-purple-300" />
+                  <Cronometro id={`${v.id}_questao`} cmd={cronometroCmd} onCmd={enviarCronometro} segundos={v.timer_questao || 120} label="Questão de Ordem" cor="text-cyan-300" />
+                  <Cronometro id={`${v.id}_consideracoes`} cmd={cronometroCmd} onCmd={enviarCronometro} segundos={v.timer_consideracoes || 60} label="Considerações Finais" cor="text-orange-300" />
                 </div>
               </div>
             </div>

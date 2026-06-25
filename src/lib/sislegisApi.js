@@ -177,6 +177,17 @@ export async function atualizarUsuarioSislegis(id, data) {
   return operarEntidade('UsuarioSislegis', 'update', { id, data });
 }
 
+// Espelha um comando de cronômetro para todas as janelas/telas via o registro
+// da votação (propagado pelo subscribe em tempo real). Não gera auditoria.
+export async function sincronizarCronometro(votacaoId, cmd) {
+  if (!votacaoId || !cmd) return;
+  try {
+    await base44.functions.invoke('sincronizarCronometro', withAuth({ votacao_id: votacaoId, cmd }));
+  } catch {
+    /* sincronização de exibição não deve interromper o uso */
+  }
+}
+
 export async function listarUsuariosSislegis(query = {}, sort, limit) {
   return operarEntidade('UsuarioSislegis', 'filter', { query, sort, limit });
 }

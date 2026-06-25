@@ -5,6 +5,9 @@
     "tenant_id": {
       "type": "string"
     },
+    "cronometro_cmd": {
+      "type": "string"
+    },
     "sessao_id": {
       "type": "string"
     },
