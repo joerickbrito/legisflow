@@ -77,22 +77,31 @@
   "rls": {
     "create": {
       "user_condition": {
-        "role": "admin"
+        "role": "SUPER_ADMIN"
       }
     },
     "read": {
-      "user_condition": {
-        "role": "admin"
-      }
+      "$or": [
+        {
+          "user_condition": {
+            "role": "SUPER_ADMIN"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "ADMIN_CAMARA"
+          }
+        }
+      ]
     },
     "update": {
       "user_condition": {
-        "role": "admin"
+        "role": "SUPER_ADMIN"
       }
     },
     "delete": {
       "user_condition": {
-        "role": "admin"
+        "role": "SUPER_ADMIN"
       }
     }
   }
