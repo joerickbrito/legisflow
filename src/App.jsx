@@ -24,7 +24,6 @@ import Tramitacoes from '@/pages/Tramitacoes';
 import Pareceres from '@/pages/Pareceres';
 import Audiencias from '@/pages/Audiencias';
 import Sessoes from '@/pages/Sessoes';
-import Votacao from '@/pages/Votacao';
 import Normas from '@/pages/Normas';
 import Documentos from '@/pages/Documentos';
 import Transparencia from '@/pages/Transparencia';
@@ -106,7 +105,6 @@ const AuthenticatedApp = () => {
           <Route path="/pareceres" element={<Pareceres />} />
           <Route path="/audiencias" element={<Audiencias />} />
           <Route path="/sessoes" element={<Sessoes />} />
-          <Route path="/votacao" element={<Votacao />} />
           <Route path="/normas" element={<Normas />} />
           <Route path="/documentos" element={<Documentos />} />
           <Route path="/relatorios" element={<Relatorios />} />

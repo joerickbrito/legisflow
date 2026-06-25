@@ -117,7 +117,7 @@ export default function DashboardAdminCamara() {
 
       {/* Votação ativa */}
       {data.votacaoAtiva && (
-        <Link to="/votacao">
+        <Link to="/painel-eletronico">
           <div className="bg-primary text-primary-foreground rounded-2xl p-5 flex items-center justify-between shadow-lg shadow-primary/25">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
