@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { sislegisEntities } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
 import { useAuth } from '@/lib/AuthContext';
-import { registrarAuditoria } from '@/lib/auditoria';
 import { FolderOpen, Plus, Search, ArrowRight, CheckCircle2, XCircle, Clock, Send, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -79,7 +78,6 @@ export default function Proposicoes() {
       } else {
         await sislegisEntities.Proposicao.create(payload);
       }
-      try { await registrarAuditoria({ acao: editando ? 'EDITAR' : 'CRIAR', modulo: 'Proposicao', descricao: `Proposição: ${form.ementa.substring(0, 60)}`, tenant_id: tenantId, user }); } catch (e) { /* auditoria não deve bloquear */ }
       setShowForm(false);
       setErrorMsg('');
       load();
@@ -108,7 +106,6 @@ export default function Proposicoes() {
       status: 'Recebido',
       proposicao_id: p.id,
     });
-    await registrarAuditoria({ acao: 'PROTOCOLAR', modulo: 'Proposicao', registro_id: p.id, descricao: `Protocolada como ${numero}`, tenant_id: tenantId, user });
     load();
   }
 
@@ -149,7 +146,6 @@ export default function Proposicoes() {
         turno: 'Único',
         usuario_nome: user?.full_name || '',
       });
-      await registrarAuditoria({ acao: 'TRANSFORMAR', modulo: 'Proposicao', registro_id: selecionada.id, descricao: `Transformada em Matéria Legislativa: ${novaMateria.id}`, tenant_id: tenantId, user });
     }
     setShowReceber(false);
     load();

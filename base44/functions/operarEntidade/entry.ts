@@ -74,6 +74,34 @@ async function getAuthenticatedUser(base44, sislegis_token) {
   return null;
 }
 
+// ===== Auditoria automática =====
+// Registra toda mutação (create/update/delete) de forma centralizada,
+// completa e à prova de adulteração. Nunca bloqueia a operação principal.
+const NAO_AUDITAR = ['LogAuditoria', 'TentativasAcesso'];
+const ACAO_AUDITORIA = { create: 'CRIAR', update: 'EDITAR', delete: 'EXCLUIR' };
+async function auditar(base44, req, user, entity, operation, registroId) {
+  try {
+    if (NAO_AUDITAR.includes(entity)) return;
+    const acao = ACAO_AUDITORIA[operation];
+    if (!acao) return;
+    const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0].trim();
+    const userAgent = (req.headers.get('user-agent') || '').slice(0, 200);
+    await base44.asServiceRole.entities.LogAuditoria.create({
+      acao,
+      modulo: entity,
+      registro_id: registroId || '',
+      descricao: `${acao} em ${entity}`,
+      tenant_id: user.tenant_id || '',
+      usuario_id: user.id || '',
+      usuario_nome: user.nome || user.full_name || '',
+      usuario_email: user.email || '',
+      ip,
+      data_hora: new Date().toISOString(),
+      user_agent: userAgent,
+    });
+  } catch (_) { /* auditoria nunca bloqueia a operação */ }
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -176,6 +204,7 @@ Deno.serve(async (req) => {
           data.tenant_id = user.tenant_id;
         }
         const created = await base44.asServiceRole.entities[entity].create(data);
+        await auditar(base44, req, user, entity, 'create', created?.id);
         return Response.json({ data: sanitizeResult(entity, created) });
       }
 
@@ -189,6 +218,7 @@ Deno.serve(async (req) => {
           return Response.json({ error: 'Acesso negado. Registro de outra câmara.' }, { status: 403 });
         }
         const updated = await base44.asServiceRole.entities[entity].update(params.id, params.data);
+        await auditar(base44, req, user, entity, 'update', params.id);
         return Response.json({ data: sanitizeResult(entity, updated) });
       }
 
@@ -223,6 +253,7 @@ Deno.serve(async (req) => {
         }
 
         await base44.asServiceRole.entities[entity].delete(params.id);
+        await auditar(base44, req, user, entity, 'delete', params.id);
         return Response.json({ data: { id: params.id, deleted: true } });
       }
 
