@@ -62,6 +62,27 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Logout automático por inatividade — complementa o logout ao fechar a guia.
+  // Encerra a sessão após 30 minutos sem nenhuma interação (importante para PCs
+  // compartilhados da câmara).
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const INATIVIDADE_MS = 30 * 60 * 1000; // 30 minutos
+    let timer;
+    const reiniciar = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => logout(true), INATIVIDADE_MS);
+    };
+    const eventos = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
+    eventos.forEach((ev) => window.addEventListener(ev, reiniciar, { passive: true }));
+    reiniciar();
+    return () => {
+      clearTimeout(timer);
+      eventos.forEach((ev) => window.removeEventListener(ev, reiniciar));
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated]);
+
   const navigateToLogin = () => {
     clearSession();
     window.location.href = '/login';

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { criarUsuario, listarUsuariosSislegis, atualizarUsuarioSislegis, sislegisEntities } from "@/lib/sislegisApi";
+import { criarUsuario, listarUsuariosSislegis, atualizarUsuarioSislegis, sislegisEntities, validarSenhaForte } from "@/lib/sislegisApi";
 import { useTenant } from "@/lib/TenantContext";
 import { PERFIS_ORDER, PERFIL_LABELS, PERFIL_DESCRIPTIONS, DEFAULT_PERMISSIONS, PERMISSION_GROUPS, PERFIS_PARTIDO_OBRIGATORIO, PERFIS_FOTO_OBRIGATORIA } from "@/lib/perfis";
 import PageHeader from "@/components/PageHeader";
@@ -67,15 +67,15 @@ export default function GerenciarUsuarios() {
 
     // Prompt para o admin definir a senha (ou deixar em branco para geração automática)
     const senhaEscolhida = prompt(
-      `Redefinir senha de ${nome}\n\nDigite a nova senha temporária (mínimo 6 caracteres) ou deixe em branco para gerar automaticamente:`
+      `Redefinir senha de ${nome}\n\nDigite a nova senha temporária (mínimo 8 caracteres) ou deixe em branco para gerar automaticamente:`
     );
 
     // Se o usuário clicou Cancelar, abortar
     if (senhaEscolhida === null) return;
 
-    // Se digitou algo mas menos de 6 caracteres
-    if (senhaEscolhida.trim() !== '' && senhaEscolhida.trim().length < 6) {
-      alert('A senha deve ter pelo menos 6 caracteres.');
+    // Se digitou algo mas menos de 8 caracteres
+    if (senhaEscolhida.trim() !== '' && senhaEscolhida.trim().length < 8) {
+      alert('A senha deve ter pelo menos 8 caracteres.');
       return;
     }
 
@@ -220,6 +220,14 @@ export default function GerenciarUsuarios() {
     if (form.role === 'ADMIN_CAMARA' && !form.camara_id) {
       alert('Selecione a Câmara vinculada para o perfil Admin da Câmara.');
       return;
+    }
+    // Validação de senha forte ao criar novo usuário
+    if (!editing) {
+      const erroSenha = validarSenhaForte(form.senha || '');
+      if (erroSenha) {
+        alert(erroSenha);
+        return;
+      }
     }
     // Bloquear vínculo de parlamentar já vinculado a outro usuário
     if (form.parlamentar_id && PERFIS_PARTIDO_OBRIGATORIO.includes(form.role)) {
@@ -474,7 +482,7 @@ export default function GerenciarUsuarios() {
                     type="password"
                     value={form.senha || ""}
                     onChange={e => setForm(f => ({ ...f, senha: e.target.value }))}
-                    placeholder="Mínimo 6 caracteres"
+                    placeholder="Mín. 8, com letras e números"
                   />
                 </FormField>
                 <FormField label="Confirmar Senha" required>
@@ -683,7 +691,7 @@ export default function GerenciarUsuarios() {
 
           <DialogFooter className="pt-2">
             <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-            <Button onClick={handleSave} disabled={saving || !form.username || !form.full_name || (!editing && (!form.senha || form.senha.length < 6))}>
+            <Button onClick={handleSave} disabled={saving || !form.username || !form.full_name || (!editing && (!form.senha || form.senha.length < 8))}>
               {saving ? "Salvando..." : editing ? "Salvar Alterações" : "Criar Usuário"}
             </Button>
           </DialogFooter>

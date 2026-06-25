@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
-import { trocarSenha, getSessionUser } from '@/lib/sislegisApi';
+import { trocarSenha, getSessionUser, validarSenhaForte } from '@/lib/sislegisApi';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, Scale, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react';
@@ -20,8 +20,9 @@ export default function TrocarSenha() {
     e.preventDefault();
     setError('');
 
-    if (novaSenha.length < 6) {
-      setError('A nova senha deve ter pelo menos 6 caracteres.');
+    const erroSenha = validarSenhaForte(novaSenha);
+    if (erroSenha) {
+      setError(erroSenha);
       return;
     }
     if (novaSenha !== confirmarSenha) {
@@ -125,7 +126,7 @@ export default function TrocarSenha() {
                       type={showNova ? 'text' : 'password'}
                       value={novaSenha}
                       onChange={e => setNovaSenha(e.target.value)}
-                      placeholder="Mínimo 6 caracteres"
+                      placeholder="Mín. 8, com letras e números"
                       className="bg-white/10 border-white/20 text-white placeholder:text-slate-500 pr-10"
                       required
                     />

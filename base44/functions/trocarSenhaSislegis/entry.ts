@@ -1,5 +1,18 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
+// Política de senha forte (server-side = fonte da verdade).
+const SENHAS_COMUNS = [
+  '12345678', '123456789', '1234567890', 'senha123', 'password', 'password1',
+  'qwerty123', 'camara123', 'admin123', 'sislegis', 'mudar123', 'abc12345',
+];
+function validarSenhaForte(senha) {
+  if (!senha || senha.length < 8) return 'A nova senha deve ter no mínimo 8 caracteres.';
+  if (/^(.)\1+$/.test(senha)) return 'A senha não pode ser um único caractere repetido.';
+  if (!/[A-Za-z]/.test(senha) || !/[0-9]/.test(senha)) return 'A senha deve conter letras e números.';
+  if (SENHAS_COMUNS.includes(senha.toLowerCase())) return 'Essa senha é muito comum. Escolha uma mais forte.';
+  return null;
+}
+
 const MAX_TENTATIVAS = 5;
 const JANELA_MINUTOS = 15;
 const BLOQUEIO_MINUTOS = 15;
@@ -154,8 +167,9 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Todos os campos são obrigatórios.' }, { status: 400 });
     }
 
-    if (nova_senha.length < 6) {
-      return Response.json({ error: 'A nova senha deve ter no mínimo 6 caracteres.' }, { status: 400 });
+    const erroSenha = validarSenhaForte(nova_senha);
+    if (erroSenha) {
+      return Response.json({ error: erroSenha }, { status: 400 });
     }
 
     const usernameLower = username.trim().toLowerCase();
@@ -193,6 +207,12 @@ Deno.serve(async (req) => {
       status: 'Ativo',
       session_token: novoSessionToken
     });
+    // Marca a data de emissão do novo token (best-effort).
+    try {
+      await base44.asServiceRole.entities.UsuarioSislegis.update(usuario.id, {
+        token_emitido_em: new Date().toISOString()
+      });
+    } catch (_) { /* ignora durante janela de deploy */ }
 
     return Response.json({
       success: true,
@@ -200,6 +220,7 @@ Deno.serve(async (req) => {
       message: 'Senha alterada com sucesso.'
     });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error('trocarSenhaSislegis erro:', error?.message);
+    return Response.json({ error: 'Erro interno ao trocar a senha. Tente novamente.' }, { status: 500 });
   }
 });

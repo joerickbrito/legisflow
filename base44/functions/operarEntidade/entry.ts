@@ -22,7 +22,10 @@ const ALLOWED_ENTITIES = [
 const RESTRICTED_OPERATIONS = ['create', 'update', 'delete'];
 
 // Campos sensíveis que NUNCA devem ser enviados ao cliente (segurança)
-const SENSITIVE_FIELDS = ['password_hash', 'session_token'];
+const SENSITIVE_FIELDS = ['password_hash', 'session_token', 'token_emitido_em'];
+
+// Validade do token de sessão (expiração). Após esse prazo, exige novo login.
+const TOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24 horas
 function sanitizeRecord(entity, record) {
   if (!record || entity !== 'UsuarioSislegis') return record;
   const clean = { ...record };
@@ -81,6 +84,19 @@ Deno.serve(async (req) => {
 
     if (!user) {
       return Response.json({ error: 'Não autorizado. Faça login.' }, { status: 401 });
+    }
+
+    // Expiração de sessão: só se aplica ao login por session_token (não ao
+    // fallback do Master Admin nativo) e somente quando há data de emissão
+    // (sessões antigas, sem a data, continuam válidas até o próximo login).
+    if (sislegis_token && user.token_emitido_em) {
+      const idadeMs = Date.now() - new Date(user.token_emitido_em).getTime();
+      if (idadeMs > TOKEN_TTL_MS) {
+        return Response.json(
+          { error: 'Sessão expirada. Faça login novamente.', code: 'SESSION_EXPIRED' },
+          { status: 401 }
+        );
+      }
     }
 
     if (!entity || !operation) {
@@ -215,6 +231,7 @@ Deno.serve(async (req) => {
         return Response.json({ error: `Operação desconhecida: ${operation}` }, { status: 400 });
     }
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error('operarEntidade erro:', error?.message);
+    return Response.json({ error: 'Erro interno ao processar a operação. Tente novamente.' }, { status: 500 });
   }
 });

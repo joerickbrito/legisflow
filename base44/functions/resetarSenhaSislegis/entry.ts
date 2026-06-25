@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
 
     // Se fornecida, valida tamanho mínimo; senão, gera aleatória
     let senhaFinal;
-    if (nova_senha && nova_senha.length >= 6) {
+    if (nova_senha && nova_senha.length >= 8) {
       senhaFinal = nova_senha;
     } else {
       senhaFinal = gerarSenhaAleatoria();
@@ -121,6 +121,7 @@ Deno.serve(async (req) => {
 
     return Response.json({ success: true, senha_temporaria: senhaFinal });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error('resetarSenhaSislegis erro:', error?.message);
+    return Response.json({ error: 'Erro interno ao redefinir a senha. Tente novamente.' }, { status: 500 });
   }
 });

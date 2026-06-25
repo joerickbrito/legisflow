@@ -11,6 +11,9 @@
     "session_token": {
       "type": "string"
     },
+    "token_emitido_em": {
+      "type": "string"
+    },
     "nome": {
       "type": "string"
     },

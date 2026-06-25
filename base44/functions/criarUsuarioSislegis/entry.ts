@@ -22,6 +22,19 @@
 
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
+// Política de senha forte (server-side = fonte da verdade).
+const SENHAS_COMUNS = [
+  '12345678', '123456789', '1234567890', 'senha123', 'password', 'password1',
+  'qwerty123', 'camara123', 'admin123', 'sislegis', 'mudar123', 'abc12345',
+];
+function validarSenhaForte(senha) {
+  if (!senha || senha.length < 8) return 'A senha deve ter no mínimo 8 caracteres.';
+  if (/^(.)\1+$/.test(senha)) return 'A senha não pode ser um único caractere repetido.';
+  if (!/[A-Za-z]/.test(senha) || !/[0-9]/.test(senha)) return 'A senha deve conter letras e números.';
+  if (SENHAS_COMUNS.includes(senha.toLowerCase())) return 'Essa senha é muito comum. Escolha uma mais forte.';
+  return null;
+}
+
 async function hashPassword(password) {
   const encoder = new TextEncoder();
   const salt = crypto.getRandomValues(new Uint8Array(16));
@@ -97,8 +110,9 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Campos obrigatórios: username, nome, role, senha.' }, { status: 400 });
     }
 
-    if (senha.length < 6) {
-      return Response.json({ error: 'A senha deve ter no mínimo 6 caracteres.' }, { status: 400 });
+    const erroSenha = validarSenhaForte(senha);
+    if (erroSenha) {
+      return Response.json({ error: erroSenha }, { status: 400 });
     }
 
     // Validação de hierarquia de perfis
@@ -166,6 +180,7 @@ Deno.serve(async (req) => {
       }
     });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error('criarUsuarioSislegis erro:', error?.message);
+    return Response.json({ error: 'Erro interno ao criar o usuário. Tente novamente.' }, { status: 500 });
   }
 });

@@ -89,20 +89,23 @@ function usePublicData(camaraId) {
   useEffect(() => {
     if (!camaraId) return;
     setLoading(true);
-    const filter = { tenant_id: camaraId };
-    Promise.all([
-      base44.entities.Parlamentar.filter({ ...filter, ativo: true }, 'nome', 200),
-      base44.entities.Materia.filter(filter, '-created_date', 500),
-      base44.entities.NormaJuridica.filter(filter, '-data_publicacao', 500),
-      base44.entities.Sessao.filter(filter, '-data', 200),
-      base44.entities.AtaSessao.filter(filter, '-data', 200),
-      base44.entities.PautaSessao.filter(filter, '-created_date', 200),
-      base44.entities.EmendaImpositiva.filter(filter, '-created_date', 500),
-      base44.entities.Camara.filter({ id: camaraId }, '-created_date', 1),
-    ]).then(([parlamentares, materias, normas, sessoes, atas, pautas, emendas, camaras]) => {
-      setData({ parlamentares, materias, normas, sessoes, atas, pautas, emendas, camara: camaras[0] || null });
-      setLoading(false);
-    });
+    // Lê pelo backend (portalPublico), que devolve só campos públicos — sem dados pessoais.
+    base44.functions.invoke('portalPublico', { camara_id: camaraId })
+      .then((resp) => {
+        const d = resp?.data?.data || {};
+        setData({
+          parlamentares: d.parlamentares || [],
+          materias: d.materias || [],
+          normas: d.normas || [],
+          sessoes: d.sessoes || [],
+          atas: d.atas || [],
+          pautas: d.pautas || [],
+          emendas: d.emendas || [],
+          camara: d.camara || null,
+        });
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
   }, [camaraId]);
 
   return { data, loading };
@@ -195,8 +198,8 @@ export default function Transparencia() {
   const { data, loading } = usePublicData(camaraId);
 
   useEffect(() => {
-    base44.entities.Camara.filter({ status: 'Ativa' }, 'nome', 100)
-      .then(list => { setCamaras(list); setLoadingCamaras(false); })
+    base44.functions.invoke('portalPublico', { listar: true })
+      .then((resp) => { setCamaras(resp?.data?.data || []); setLoadingCamaras(false); })
       .catch(() => setLoadingCamaras(false));
   }, []);
 

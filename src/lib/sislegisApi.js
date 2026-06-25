@@ -31,6 +31,20 @@ export function clearSession() {
   sessionStorage.removeItem(SESSION_KEY);
 }
 
+// Política de senha forte — mesma regra do backend (criar/trocar senha).
+// Retorna uma mensagem de erro, ou null se a senha for válida.
+const SENHAS_COMUNS = [
+  '12345678', '123456789', '1234567890', 'senha123', 'password', 'password1',
+  'qwerty123', 'camara123', 'admin123', 'sislegis', 'mudar123', 'abc12345',
+];
+export function validarSenhaForte(senha) {
+  if (!senha || senha.length < 8) return 'A senha deve ter no mínimo 8 caracteres.';
+  if (/^(.)\1+$/.test(senha)) return 'A senha não pode ser um único caractere repetido.';
+  if (!/[A-Za-z]/.test(senha) || !/[0-9]/.test(senha)) return 'A senha deve conter letras e números.';
+  if (SENHAS_COMUNS.includes(senha.toLowerCase())) return 'Essa senha é muito comum. Escolha uma mais forte.';
+  return null;
+}
+
 export function getSessionToken() {
   return getSession()?.session_token || null;
 }
@@ -54,6 +68,13 @@ async function operarEntidade(entity, operation, params = {}) {
     operation,
     params,
   }));
+
+  // Sessão expirada: limpa e volta ao login de forma transparente.
+  if (response.data?.code === 'SESSION_EXPIRED') {
+    clearSession();
+    if (typeof window !== 'undefined') window.location.href = '/login';
+    throw new Error('Sessão expirada. Faça login novamente.');
+  }
 
   if (response.data?.error) {
     throw new Error(response.data.error);

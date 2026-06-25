@@ -77,6 +77,7 @@ Deno.serve(async (req) => {
       senha_temporaria: foundUser.senha_temporaria,
     });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error('buscarEmailPorUsername erro:', error?.message);
+    return Response.json({ error: 'Erro interno. Tente novamente.' }, { status: 500 });
   }
 });

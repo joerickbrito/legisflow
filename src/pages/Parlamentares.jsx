@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { sislegisEntities, criarUsuario } from '@/lib/sislegisApi';
+import { sislegisEntities, criarUsuario, validarSenhaForte } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
 import { Plus, Users, Search, Upload, Camera, UserPlus, Link, Unlink, ExternalLink, Key, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -139,8 +139,9 @@ export default function Parlamentares() {
       setUserFormError('Preencha username e senha.');
       return;
     }
-    if (newUserPassword.length < 6) {
-      setUserFormError('A senha deve ter no mínimo 6 caracteres.');
+    const erroSenha = validarSenhaForte(newUserPassword);
+    if (erroSenha) {
+      setUserFormError(erroSenha);
       return;
     }
     setCreatingUser(true);
@@ -536,7 +537,7 @@ export default function Parlamentares() {
                                 type="password"
                                 value={newUserPassword}
                                 onChange={e => setNewUserPassword(e.target.value)}
-                                placeholder="Mín. 6 caracteres"
+                                placeholder="Mín. 8, com letras e números"
                                 className="h-8 text-sm"
                               />
                             </div>

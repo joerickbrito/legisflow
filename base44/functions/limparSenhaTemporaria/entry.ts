@@ -97,6 +97,7 @@ Deno.serve(async (req) => {
 
     return Response.json({ success: true });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error('limparSenhaTemporaria erro:', error?.message);
+    return Response.json({ error: 'Erro interno. Tente novamente.' }, { status: 500 });
   }
 });

@@ -210,9 +210,17 @@ Deno.serve(async (req) => {
     await resetarRateLimit(base44, usernameLower, 'login');
 
     const sessionToken = generateToken();
+    // Define o token de sessão (passo essencial do login).
     await base44.asServiceRole.entities.UsuarioSislegis.update(usuario.id, {
       session_token: sessionToken
     });
+    // Marca a data de emissão (para expiração). Best-effort: se o campo ainda
+    // não estiver disponível (janela de deploy), o login não falha por isso.
+    try {
+      await base44.asServiceRole.entities.UsuarioSislegis.update(usuario.id, {
+        token_emitido_em: new Date().toISOString()
+      });
+    } catch (_) { /* ignora — sessão sem expiração até o schema estar no ar */ }
 
     return Response.json({
       session_token: sessionToken,
@@ -238,6 +246,7 @@ Deno.serve(async (req) => {
       }
     });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error('autenticarSislegis erro:', error?.message);
+    return Response.json({ error: 'Erro interno ao autenticar. Tente novamente.' }, { status: 500 });
   }
 });
