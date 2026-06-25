@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useTenant } from "@/lib/TenantContext";
 import { useAuth } from "@/lib/AuthContext";
-import { sislegisEntities } from "@/lib/sislegisApi";
+import { sislegisEntities, abrirJanelaComSessao } from "@/lib/sislegisApi";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -261,7 +261,7 @@ export default function PainelEletronico() {
         </div>
         <div className="flex gap-2">
           {votacaoAtiva && (
-            <Button variant="outline" onClick={() => window.open('/telao', 'telao_votacao', 'width=1280,height=720')} className="gap-2">
+            <Button variant="outline" onClick={() => abrirJanelaComSessao('/telao', 'telao_votacao', 'width=1280,height=720')} className="gap-2">
               <ExternalLink size={15} /> Abrir Telão
             </Button>
           )}

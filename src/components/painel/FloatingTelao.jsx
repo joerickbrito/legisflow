@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import { X, Maximize2, Minimize2, ExternalLink, GripHorizontal } from 'lucide-react';
 import TelaoVotacao from '@/components/painel/TelaoVotacao';
+import { abrirJanelaComSessao } from '@/lib/sislegisApi';
 
 export default function FloatingTelao({ votacaoAtiva, camara, onRefresh, onClose }) {
   const [pos, setPos] = useState({ x: 60, y: 60 });
@@ -48,7 +49,7 @@ export default function FloatingTelao({ votacaoAtiva, camara, onRefresh, onClose
         </div>
         <div className="flex items-center gap-1">
           <button
-            onClick={() => window.open('/telao', 'telao_votacao', 'width=1280,height=720')}
+            onClick={() => abrirJanelaComSessao('/telao', 'telao_votacao', 'width=1280,height=720')}
             title="Abrir em janela separada (para a TV / 2º monitor)"
             className="p-1.5 rounded text-white/50 hover:text-white hover:bg-white/10 transition-colors"
           >

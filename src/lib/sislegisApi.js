@@ -31,6 +31,40 @@ export function clearSession() {
   sessionStorage.removeItem(SESSION_KEY);
 }
 
+// ===== Handoff de sessão entre janelas (ex.: telão em outro monitor) =====
+// O sessionStorage NÃO é compartilhado entre janelas/abas. Para que a janela
+// do telão (aberta via window.open) já entre autenticada — sem novo login —
+// passamos a sessão atual no hash da URL ao abrir, e a janela nova a consome
+// no boot. O hash não é enviado ao servidor e é removido logo após o uso.
+const HANDOFF_KEY = 'sislegis_handoff';
+
+export function abrirJanelaComSessao(url, nome, features) {
+  const raw = sessionStorage.getItem(SESSION_KEY) || '';
+  let full = url;
+  if (raw) {
+    const token = btoa(unescape(encodeURIComponent(raw)));
+    const sep = url.includes('#') ? '&' : '#';
+    full = `${url}${sep}${HANDOFF_KEY}=${encodeURIComponent(token)}`;
+  }
+  return window.open(full, nome, features);
+}
+
+export function consumirHandoffSessao() {
+  try {
+    const m = (window.location.hash || '').match(new RegExp(`${HANDOFF_KEY}=([^&]+)`));
+    if (!m) return;
+    if (!sessionStorage.getItem(SESSION_KEY)) {
+      const raw = decodeURIComponent(escape(atob(decodeURIComponent(m[1]))));
+      JSON.parse(raw); // valida que é uma sessão íntegra
+      sessionStorage.setItem(SESSION_KEY, raw);
+    }
+    // Remove o handoff da URL (não deixa a sessão exposta na barra de endereços)
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+  } catch {
+    /* handoff ausente ou inválido — segue o fluxo normal de login */
+  }
+}
+
 // Política de senha forte — mesma regra do backend (criar/trocar senha).
 // Retorna uma mensagem de erro, ou null se a senha for válida.
 const SENHAS_COMUNS = [
