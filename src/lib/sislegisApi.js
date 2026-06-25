@@ -5,9 +5,18 @@ import { base44 } from '@/api/base44Client';
 
 const SESSION_KEY = 'sislegis_session';
 
+// Sessão guardada em sessionStorage: o navegador a apaga automaticamente
+// quando a guia/janela é fechada. Sobrevive a recarregar a página (F5) na
+// mesma guia, mas exige novo login se a guia for fechada — importante para
+// computadores compartilhados (ex.: PCs da câmara).
+//
+// Migração de segurança: remove qualquer sessão antiga que tenha ficado
+// persistida em localStorage de versões anteriores.
+try { localStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
+
 function getSession() {
   try {
-    const raw = localStorage.getItem(SESSION_KEY);
+    const raw = sessionStorage.getItem(SESSION_KEY);
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
@@ -15,11 +24,11 @@ function getSession() {
 }
 
 function saveSession(data) {
-  localStorage.setItem(SESSION_KEY, JSON.stringify(data));
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify(data));
 }
 
 export function clearSession() {
-  localStorage.removeItem(SESSION_KEY);
+  sessionStorage.removeItem(SESSION_KEY);
 }
 
 export function getSessionToken() {
