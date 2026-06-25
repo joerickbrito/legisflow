@@ -50,13 +50,6 @@ export default function GerenciarCamaras() {
   const [uploadingBrasao, setUploadingBrasao] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
 
-  // Admin da câmara (exibição/edição pelo Master)
-  const [adminUser, setAdminUser] = useState(null);
-  const [editingAdmin, setEditingAdmin] = useState(false);
-  const [adminForm, setAdminForm] = useState({ nome: '', username: '', status: 'Ativo' });
-  const [savingAdmin, setSavingAdmin] = useState(false);
-  const [resettingAdmin, setResettingAdmin] = useState(false);
-
   // Usuários da câmara
   const [chamberUsers, setChamberUsers] = useState([]);
   const [editingChamberUser, setEditingChamberUser] = useState(null);
@@ -97,17 +90,10 @@ export default function GerenciarCamaras() {
     setEditing(c);
     setForm({ ...emptyForm, ...c });
     setSecaoExpandida("camara");
-    setEditingAdmin(false);
-    setAdminUser(null);
     setChamberUsers([]);
     setSolicitacoes([]);
     setOpen(true);
-    // Buscar admin da câmara
-    try {
-      const admins = await sislegisEntities.UsuarioSislegis.filter({ username: c.admin_username, tenant_id: c.id });
-      setAdminUser(admins?.[0] || null);
-    } catch { setAdminUser(null); }
-    // Buscar todos os usuários da câmara
+    // Buscar todos os usuários da câmara (inclui o admin)
     try {
       const users = await sislegisEntities.UsuarioSislegis.filter({ tenant_id: c.id }, 'nome', 200);
       setChamberUsers(users || []);
@@ -146,52 +132,6 @@ export default function GerenciarCamaras() {
       setErrorMsg(e?.message || 'Erro ao salvar câmara.');
     } finally {
       setSaving(false);
-    }
-  };
-
-  // ===== ADMIN DA CÂMARA =====
-  const startEditAdmin = () => {
-    if (!adminUser) return;
-    setAdminForm({ nome: adminUser.nome || '', username: adminUser.username || '', status: adminUser.status || 'Ativo' });
-    setEditingAdmin(true);
-  };
-
-  const cancelEditAdmin = () => { setEditingAdmin(false); setAdminForm({ nome: '', username: '', status: 'Ativo' }); };
-
-  const handleSaveAdmin = async () => {
-    if (!adminUser || !adminForm.nome.trim() || !adminForm.username.trim()) return;
-    setSavingAdmin(true);
-    try {
-      await sislegisEntities.UsuarioSislegis.update(adminUser.id, {
-        nome: adminForm.nome.trim(),
-        username: adminForm.username.trim(),
-        status: adminForm.status,
-      });
-      setAdminUser(prev => prev ? { ...prev, ...adminForm } : prev);
-      setEditingAdmin(false);
-    } catch (e) {
-      alert('Erro ao salvar: ' + (e?.message || 'Erro desconhecido.'));
-    } finally {
-      setSavingAdmin(false);
-    }
-  };
-
-  const handleResetAdminPassword = async () => {
-    if (!adminUser) return;
-    if (!confirm(`Deseja redefinir a senha de ${adminUser.nome || adminUser.username}?\n\nUma nova senha temporária será gerada.`)) return;
-    setResettingAdmin(true);
-    try {
-      const res = await base44.functions.invoke('resetarSenhaSislegis', { usuario_id: adminUser.id });
-      const senha = res.data?.senha_temporaria;
-      if (senha) {
-        alert(`Senha redefinida com sucesso!\n\nNova senha temporária: ${senha}\n\nAnote esta senha. Ela não será exibida novamente.`);
-      } else {
-        alert('Senha redefinida com sucesso.');
-      }
-    } catch (e) {
-      alert('Erro ao redefinir senha: ' + (e?.response?.data?.error || e?.message || 'Erro desconhecido.'));
-    } finally {
-      setResettingAdmin(false);
     }
   };
 
@@ -518,93 +458,7 @@ export default function GerenciarCamaras() {
               )}
             </div>
 
-            {/* SEÇÃO 2: ADMIN DA CÂMARA (somente edição) */}
-            {editing && (
-              <div className="rounded-lg border border-border overflow-hidden">
-                <button
-                  type="button"
-                  onClick={() => setSecaoExpandida(s => s === "admin-edit" ? "" : "admin-edit")}
-                  className="w-full flex items-center justify-between px-4 py-3 bg-muted/40 hover:bg-muted/60 transition-colors"
-                >
-                  <span className="text-sm font-semibold text-foreground">Seção 2 — Usuário Administrador da Câmara</span>
-                  {secaoExpandida === "admin-edit" ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
-                </button>
-                {secaoExpandida === "admin-edit" && (
-                  <div className="p-4 space-y-4">
-                    {!adminUser ? (
-                      <p className="text-sm text-muted-foreground">
-                        {editing?.admin_username
-                          ? `Nenhum usuário encontrado com username "${editing.admin_username}" nesta câmara. O admin pode não ter sido criado ou o username foi alterado.`
-                          : 'Nenhum administrador configurado para esta câmara.'}
-                      </p>
-                    ) : editingAdmin ? (
-                      /* Formulário de edição do admin */
-                      <div className="space-y-3">
-                        <FormField label="Nome do Administrador" required>
-                          <Input value={adminForm.nome} onChange={e => setAdminForm(f => ({ ...f, nome: e.target.value }))} placeholder="Nome completo" />
-                        </FormField>
-                        <FormField label="Nome de Usuário" required>
-                          <Input value={adminForm.username} onChange={e => setAdminForm(f => ({ ...f, username: e.target.value }))} placeholder="admin.camara" />
-                        </FormField>
-                        <FormField label="Status">
-                          <Select value={adminForm.status} onValueChange={v => setAdminForm(f => ({ ...f, status: v }))}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Ativo">Ativo</SelectItem>
-                              <SelectItem value="Pendente de Ativação">Pendente de Ativação</SelectItem>
-                              <SelectItem value="Inativo">Inativo</SelectItem>
-                              <SelectItem value="Bloqueado">Bloqueado</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </FormField>
-                        <div className="flex gap-2 pt-1">
-                          <Button size="sm" onClick={handleSaveAdmin} disabled={savingAdmin}>{savingAdmin ? 'Salvando...' : 'Salvar'}</Button>
-                          <Button size="sm" variant="outline" onClick={cancelEditAdmin}>Cancelar</Button>
-                        </div>
-                      </div>
-                    ) : (
-                      /* Visualização do admin */
-                      <div>
-                        <div className="grid grid-cols-2 gap-3 mb-4">
-                          <div>
-                            <p className="text-xs text-muted-foreground">Nome</p>
-                            <p className="font-medium text-sm">{adminUser.nome || '—'}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Usuário</p>
-                            <p className="font-medium text-sm font-mono">{adminUser.username || '—'}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Status</p>
-                            <Badge variant={STATUS_LABEL[adminUser.status] || 'secondary'} className="text-xs">{adminUser.status || '—'}</Badge>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Perfil</p>
-                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${ROLE_COLOR[adminUser.role] || 'bg-muted text-muted-foreground'}`}>
-                              {ROLE_LABEL[adminUser.role] || adminUser.role || '—'}
-                            </span>
-                          </div>
-                          {adminUser.email && (
-                            <div className="col-span-2">
-                              <p className="text-xs text-muted-foreground">E-mail</p>
-                              <p className="text-sm">{adminUser.email}</p>
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline" onClick={startEditAdmin}>Editar</Button>
-                          <Button size="sm" variant="outline" onClick={handleResetAdminPassword} disabled={resettingAdmin}>
-                            {resettingAdmin ? 'Redefinindo...' : 'Redefinir Senha'}
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* SEÇÃO 3: USUÁRIOS DA CÂMARA (somente edição) */}
+            {/* SEÇÃO 2: USUÁRIOS DA CÂMARA (somente edição) — inclui o admin, destacado no topo */}
             {editing && (
               <div className="rounded-lg border border-border overflow-hidden">
                 <button
@@ -613,7 +467,7 @@ export default function GerenciarCamaras() {
                   className="w-full flex items-center justify-between px-4 py-3 bg-muted/40 hover:bg-muted/60 transition-colors"
                 >
                   <span className="text-sm font-semibold text-foreground">
-                    Seção 3 — Usuários da Câmara
+                    Seção 2 — Usuários da Câmara
                     {chamberUsers.length > 0 && <span className="ml-2 text-xs font-normal text-muted-foreground">({chamberUsers.length} usuário{chamberUsers.length !== 1 ? 's' : ''})</span>}
                   </span>
                   {secaoExpandida === "users" ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
@@ -623,40 +477,48 @@ export default function GerenciarCamaras() {
                     {chamberUsers.length === 0 ? (
                       <p className="text-sm text-muted-foreground text-center py-4">Nenhum usuário cadastrado nesta câmara.</p>
                     ) : (
-                      chamberUsers.map(u => (
-                        <div key={u.id} className="flex items-center gap-3 py-2 px-3 rounded-lg border border-border bg-background hover:bg-muted/30 transition-colors">
-                          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                            <Users size={14} className="text-muted-foreground" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{u.nome || u.username}</p>
-                            <p className="text-xs text-muted-foreground truncate">{u.username}{u.email ? ` · ${u.email}` : ''}</p>
-                          </div>
-                          <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${ROLE_COLOR[u.role] || 'bg-muted text-muted-foreground'}`}>
-                            {ROLE_LABEL[u.role] || u.role}
-                          </span>
-                          <Badge variant={STATUS_LABEL[u.status] || 'secondary'} className="text-[10px] flex-shrink-0">{u.status || 'Ativo'}</Badge>
-                          <div className="flex gap-1 flex-shrink-0">
-                            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={(e) => { e.stopPropagation(); openEditChamberUser(u); }}>Editar</Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-7 px-2 text-xs"
-                              onClick={(e) => { e.stopPropagation(); handleResetUserPassword(u); }}
-                              disabled={resettingUserId === u.id}
-                            >
-                              {resettingUserId === u.id ? '...' : 'Senha'}
-                            </Button>
-                          </div>
-                        </div>
-                      ))
+                      [...chamberUsers]
+                        .sort((a, b) => (b.role === 'ADMIN_CAMARA' ? 1 : 0) - (a.role === 'ADMIN_CAMARA' ? 1 : 0))
+                        .map(u => {
+                          const isAdmin = u.role === 'ADMIN_CAMARA';
+                          return (
+                            <div key={u.id} className={`flex items-center gap-3 py-2 px-3 rounded-lg border transition-colors ${isAdmin ? 'border-primary/40 bg-primary/5 hover:bg-primary/10' : 'border-border bg-background hover:bg-muted/30'}`}>
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${isAdmin ? 'bg-primary/15' : 'bg-muted'}`}>
+                                <Users size={14} className={isAdmin ? 'text-primary' : 'text-muted-foreground'} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate flex items-center gap-1.5">
+                                  {u.nome || u.username}
+                                  {isAdmin && <span className="text-[9px] font-bold uppercase tracking-wide text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">Admin</span>}
+                                </p>
+                                <p className="text-xs text-muted-foreground truncate">{u.username}{u.email ? ` · ${u.email}` : ''}</p>
+                              </div>
+                              <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${ROLE_COLOR[u.role] || 'bg-muted text-muted-foreground'}`}>
+                                {ROLE_LABEL[u.role] || u.role}
+                              </span>
+                              <Badge variant={STATUS_LABEL[u.status] || 'secondary'} className="text-[10px] flex-shrink-0">{u.status || 'Ativo'}</Badge>
+                              <div className="flex gap-1 flex-shrink-0">
+                                <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={(e) => { e.stopPropagation(); openEditChamberUser(u); }}>Editar</Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 px-2 text-xs"
+                                  onClick={(e) => { e.stopPropagation(); handleResetUserPassword(u); }}
+                                  disabled={resettingUserId === u.id}
+                                >
+                                  {resettingUserId === u.id ? '...' : 'Senha'}
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        })
                     )}
                   </div>
                 )}
               </div>
             )}
 
-            {/* SEÇÃO 4: SOLICITAÇÕES DE RECUPERAÇÃO DE SENHA (somente edição) */}
+            {/* SEÇÃO 3: SOLICITAÇÕES DE RECUPERAÇÃO DE SENHA (somente edição) */}
             {editing && (
               <div className="rounded-lg border border-border overflow-hidden">
                 <button
@@ -665,7 +527,7 @@ export default function GerenciarCamaras() {
                   className="w-full flex items-center justify-between px-4 py-3 bg-muted/40 hover:bg-muted/60 transition-colors"
                 >
                   <span className="text-sm font-semibold text-foreground">
-                    Seção 4 — Solicitações de Recuperação de Senha
+                    Seção 3 — Solicitações de Recuperação de Senha
                     {solicitacoes.length > 0 && (
                       <Badge variant="destructive" className="ml-2 text-[10px]">{solicitacoes.length} pendente{solicitacoes.length !== 1 ? 's' : ''}</Badge>
                     )}
