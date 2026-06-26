@@ -51,6 +51,14 @@
     --chart-3: 38 92% 50%;
     --chart-4: 280 65% 55%;
     --chart-5: 0 84% 58%;
+
+    /* Cores de voto (painel/telão) — valores completos, usados como var(--favor) direto */
+    --favor: oklch(0.50 0.13 150);
+    --favor-soft: oklch(0.50 0.13 150 / 0.10);
+    --against: oklch(0.50 0.18 25);
+    --against-soft: oklch(0.50 0.18 25 / 0.10);
+    --abstain: oklch(0.62 0.13 70);
+    --abstain-soft: oklch(0.62 0.13 70 / 0.10);
   }
 
   .dark {
@@ -88,6 +96,14 @@
     --chart-3: 38 92% 60%;
     --chart-4: 280 65% 65%;
     --chart-5: 0 84% 65%;
+
+    /* Cores de voto (painel/telão) — versão escura, mais vivas */
+    --favor: oklch(0.70 0.16 150);
+    --favor-soft: oklch(0.70 0.16 150 / 0.14);
+    --against: oklch(0.65 0.22 25);
+    --against-soft: oklch(0.65 0.22 25 / 0.14);
+    --abstain: oklch(0.78 0.15 78);
+    --abstain-soft: oklch(0.78 0.15 78 / 0.14);
   }
 }
 
