@@ -39,6 +39,24 @@ export function painelEscuro(t = getTema()) {
   return t !== 'claro';
 }
 
+// ===== Paletas de cor da câmara (cor de detalhe) =====
+// A paleta é uma preferência DA CÂMARA (salva no registro Camara), então vale
+// para todos os usuários/telas daquela câmara. O modo claro/mesclado/escuro
+// continua por dispositivo (acima).
+export const PALETAS = [
+  { v: 'azul', label: 'Azul Institucional', desc: 'Azul profundo com base bege/off-white. Padrão sóbrio e clássico.', cor: '#1e4d8b' },
+  { v: 'dourado', label: 'Dourado', desc: 'Azul-marinho com dourado discreto nos detalhes. Ar cerimonial.', cor: '#b08114' },
+  { v: 'verde', label: 'Verde', desc: 'Verde institucional sobre base neutra. Sóbrio e sereno.', cor: '#2f8f5b' },
+  { v: 'vermelho', label: 'Vermelho', desc: 'Bordô sobre base neutra. Forte, sem exageros.', cor: '#b03a3a' },
+];
+const PALETAS_VALIDAS = PALETAS.map((p) => p.v);
+
+export function aplicarPaleta(p) {
+  if (typeof document === 'undefined') return;
+  const val = PALETAS_VALIDAS.includes(p) ? p : 'azul';
+  document.documentElement.dataset.paleta = val;
+}
+
 // Hook reativo: re-renderiza quando o tema muda (inclusive em outra aba/janela).
 export function useTema() {
   const [tema, set] = useState(getTema());

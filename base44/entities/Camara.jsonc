@@ -54,6 +54,16 @@
     "total_vereadores": {
       "type": "number"
     },
+    "paleta": {
+      "type": "string",
+      "enum": [
+        "azul",
+        "dourado",
+        "verde",
+        "vermelho"
+      ],
+      "default": "azul"
+    },
     "observacoes": {
       "type": "string"
     },

@@ -3,6 +3,7 @@ import { sislegisEntities } from '@/lib/sislegisApi';
 import { useAuth } from '@/lib/AuthContext';
 import { createAuditor } from '@/lib/auditoria';
 import { PERFIS, PERFIL_LABELS, DEFAULT_PERMISSIONS } from '@/lib/perfis';
+import { aplicarPaleta } from '@/lib/theme';
 
 const TenantContext = createContext(null);
 
@@ -89,7 +90,10 @@ export function TenantProvider({ children }) {
         const list = await sislegisEntities.Camara.list('-created_date', 200).catch(() => []);
         found = list.find(c => c.id === tenantId);
       }
-      if (found) setCamara(found);
+      if (found) {
+        setCamara(found);
+        aplicarPaleta(found.paleta || 'azul'); // cor de detalhe da câmara (vale p/ todos)
+      }
     } catch (e) {
       console.error('Failed to load camara', e);
     }

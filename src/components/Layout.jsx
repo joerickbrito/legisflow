@@ -286,7 +286,7 @@ export default function Layout() {
         </nav>
 
         <div className="px-2 py-2 border-t border-sidebar-border/70 flex-shrink-0 space-y-1">
-          <TemaSwitch collapsed={collapsed} />
+          {!isAdminCamara && !isSuperAdmin && <TemaSwitch collapsed={collapsed} />}
           <button
             onClick={() => logout(true)}
             className={cn(

@@ -1,16 +1,21 @@
 import { useEffect, useState } from 'react';
 import { sislegisEntities } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
-import { Building2, Save, Pencil } from 'lucide-react';
+import { Building2, Save, Pencil, Sun, Moon, LayoutDashboard, Check, Palette } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import PageHeader from '@/components/PageHeader';
+import { cn } from '@/lib/utils';
+import { PALETAS, aplicarPaleta, useTema, setTema } from '@/lib/theme';
 
 const ESTADOS = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
 
 export default function CasaLegislativa() {
   const { withTenant, canQuery, tenantId, camara } = useTenant();
+  const tema = useTema();
+  const [paletaSel, setPaletaSel] = useState('azul');
+  const [salvandoPaleta, setSalvandoPaleta] = useState(false);
   const [casa, setCasa] = useState(null);
   const [form, setForm] = useState({ nome: '', sigla: '', cnpj: '', endereco: '', cep: '', cidade: '', estado: '', telefone: '', email: '', site: '', brasao_url: '', logotipo_url: '' });
   const [saving, setSaving] = useState(false);
@@ -69,9 +74,90 @@ export default function CasaLegislativa() {
 
   const f = (field) => ({ value: form[field], disabled: !editando, onChange: e => setForm(p => ({ ...p, [field]: e.target.value })) });
 
+  // Paleta da câmara (vale para todos os usuários desta câmara)
+  useEffect(() => { if (camara?.paleta) setPaletaSel(camara.paleta); }, [camara?.paleta]);
+
+  async function escolherPaleta(v) {
+    setPaletaSel(v);
+    aplicarPaleta(v); // aplica na hora (preview)
+    if (!tenantId) return;
+    setSalvandoPaleta(true);
+    try { await sislegisEntities.Camara.update(tenantId, { paleta: v }); }
+    catch (e) { /* mantém o preview mesmo se o salvamento falhar */ }
+    finally { setSalvandoPaleta(false); }
+  }
+
+  const MODOS = [
+    { v: 'claro', label: 'Claro', Icon: Sun },
+    { v: 'mesclado', label: 'Mesclado', Icon: LayoutDashboard },
+    { v: 'escuro', label: 'Escuro', Icon: Moon },
+  ];
+
   return (
     <div className="p-6 md:p-8 max-w-3xl mx-auto space-y-6">
       <PageHeader icon={Building2} title="Casa Legislativa" subtitle="Dados institucionais da casa" />
+
+      {/* Aparência — paleta da câmara + modo */}
+      <div className="bg-card border border-border rounded-2xl p-6 space-y-5">
+        <div className="flex items-center gap-2">
+          <Palette size={18} className="text-primary" />
+          <h3 className="font-heading font-semibold text-foreground">Aparência do sistema</h3>
+        </div>
+
+        <div>
+          <p className="text-sm text-muted-foreground mb-3">
+            <strong className="text-foreground font-medium">Cor da câmara</strong> — define a cor de destaque do site para todos os usuários desta câmara. As cores ficam nos detalhes (base sempre bege/off-white); nada exagerado.
+            {salvandoPaleta && <span className="ml-2 text-xs">salvando…</span>}
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {PALETAS.map((p) => (
+              <button
+                key={p.v}
+                type="button"
+                onClick={() => escolherPaleta(p.v)}
+                className={cn(
+                  'text-left rounded-xl border p-4 flex items-start gap-3 transition-colors',
+                  paletaSel === p.v ? 'border-primary ring-2 ring-primary/30 bg-primary/5' : 'border-border hover:bg-muted'
+                )}
+              >
+                <span className="w-8 h-8 rounded-lg flex-shrink-0 ring-1 ring-black/10" style={{ backgroundColor: p.cor }} />
+                <span className="min-w-0">
+                  <span className="flex items-center gap-1.5 font-medium text-sm text-foreground">
+                    {p.label}
+                    {paletaSel === p.v && <Check size={14} className="text-primary" />}
+                  </span>
+                  <span className="block text-xs text-muted-foreground mt-0.5">{p.desc}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="pt-4 border-t border-border">
+          <p className="text-sm text-muted-foreground mb-3">
+            <strong className="text-foreground font-medium">Modo de exibição</strong> — preferência deste dispositivo.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {MODOS.map((o) => (
+              <button
+                key={o.v}
+                type="button"
+                onClick={() => setTema(o.v)}
+                className={cn(
+                  'text-left rounded-xl border p-4 transition-colors',
+                  tema === o.v ? 'border-primary ring-2 ring-primary/30 bg-primary/5' : 'border-border hover:bg-muted'
+                )}
+              >
+                <o.Icon size={20} className={tema === o.v ? 'text-primary' : 'text-muted-foreground'} />
+                <div className="font-medium text-sm mt-2 text-foreground">{o.label}</div>
+                <div className="text-xs text-muted-foreground">
+                  {o.v === 'claro' ? 'Tudo claro' : o.v === 'mesclado' ? 'Site claro, painel escuro' : 'Tudo escuro'}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
 
       <div className="bg-card border border-border rounded-2xl p-6 space-y-5">
         {(form.brasao_url || form.logotipo_url) && (
