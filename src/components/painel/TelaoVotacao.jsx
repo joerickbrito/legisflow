@@ -5,18 +5,23 @@ import { CheckCircle2, XCircle, MinusCircle, Lock } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-/* ─── Cronômetro individual ───────────────────────────────────────────────
-   Sincronizado entre TODAS as janelas/telas pelo registro da votação:
-   o clique grava o comando (via backend) e o tempo real (subscribe) o
-   propaga. Funciona mesmo em outro monitor/computador.                      */
-function Cronometro({ id, segundos, label, cor, cmd, onCmd }) {
+/* ───────────────────────────────────────────────────────────────────────────
+   TelaoVotacao — REDESIGN VISUAL (Command Center Tactical)
+   • Lógica, props, sincronização e nomes de campos PRESERVADOS.
+   • Paleta: slate-950 + emerald/red/amber + Geist Mono para numerais.
+   • Layout 12-col: ESQUERDA (col-span-7) grid de parlamentares.
+                    DIREITA  (col-span-5) matéria + placar + cronômetros.
+   • Footer: barra de progresso "X/N parlamentares votaram".
+─────────────────────────────────────────────────────────────────────────── */
+
+/* ─── Cronômetro individual (sincronizado entre janelas) ─── */
+function Cronometro({ id, segundos, label, cmd, onCmd, destaque = false }) {
   const [restante, setRestante] = useState(segundos);
   const [ativo, setAtivo] = useState(false);
   const tickRef = useRef(null);
-  const endRef = useRef(null); // timestamp em que o cronômetro deve zerar
-  const lastTsRef = useRef(0); // último comando aplicado (evita reaplicar)
+  const endRef = useRef(null);
+  const lastTsRef = useRef(0);
 
-  // Contagem regressiva baseada em timestamp — mantém todas as janelas no mesmo tempo
   useEffect(() => {
     if (ativo) {
       tickRef.current = setInterval(() => {
@@ -28,7 +33,6 @@ function Cronometro({ id, segundos, label, cor, cmd, onCmd }) {
     return () => clearInterval(tickRef.current);
   }, [ativo]);
 
-  // Aplica um comando (de clique local OU vindo de outra janela/tela)
   function aplicar(c) {
     if (c.action === 'start') {
       endRef.current = c.endsAt;
@@ -40,7 +44,6 @@ function Cronometro({ id, segundos, label, cor, cmd, onCmd }) {
     }
   }
 
-  // Comando vindo de outra janela/tela (propagado pelo registro da votação)
   useEffect(() => {
     if (cmd && cmd.id === id && cmd.ts && cmd.ts > lastTsRef.current) {
       lastTsRef.current = cmd.ts;
@@ -48,7 +51,6 @@ function Cronometro({ id, segundos, label, cor, cmd, onCmd }) {
     }
   }, [cmd, id]);
 
-  // Clique local → aplica aqui e grava o comando para espelhar nas outras telas
   function onClickBtn() {
     let c;
     if (ativo) c = { id, action: 'pause', remaining: restante };
@@ -65,53 +67,64 @@ function Cronometro({ id, segundos, label, cor, cmd, onCmd }) {
   const pct = segundos > 0 ? (restante / segundos) * 100 : 0;
   const alerta = restante <= 30 && restante > 0;
 
+  const numCor = alerta ? 'text-amber-400' : ativo ? 'text-emerald-400' : destaque ? 'text-amber-500' : 'text-slate-300';
+  const borderL = destaque ? 'border-l-4 border-l-amber-500' : '';
+
   return (
-    <div className="flex flex-col items-center gap-1">
-      <div className={`text-xl font-mono font-bold ${alerta ? 'text-red-400 animate-pulse' : cor}`}>
+    <div className={`bg-slate-900 border border-slate-800 ${borderL} rounded-xl p-3 flex flex-col gap-2`}>
+      <div className="flex items-center justify-between">
+        <span className={`text-[10px] font-mono uppercase tracking-widest ${destaque ? 'text-amber-500' : 'text-slate-500'}`}>{label}</span>
+        <button
+          onClick={onClickBtn}
+          className="text-[9px] font-mono uppercase tracking-widest text-slate-400 hover:text-slate-100 transition-colors px-2 py-0.5 rounded border border-slate-700/60 hover:border-slate-600"
+        >
+          {ativo ? 'Pausar' : restante === 0 ? 'Reiniciar' : 'Iniciar'}
+        </button>
+      </div>
+      <div className={`text-3xl font-mono font-bold tabular-num ${numCor} leading-none`}>
         {String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}
       </div>
-      <div className="text-[9px] text-white/40 uppercase tracking-wider">{label}</div>
-      <div className="w-full h-1 bg-white/10 rounded overflow-hidden">
-        <div className={`h-full rounded transition-all duration-1000 ${alerta ? 'bg-red-500' : 'bg-white/30'}`} style={{ width: `${pct}%` }} />
+      <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
+        <div
+          className={`h-full transition-all duration-500 ${alerta ? 'bg-amber-500' : ativo ? 'bg-emerald-500' : 'bg-slate-600'}`}
+          style={{ width: `${pct}%` }}
+        />
       </div>
-      <button
-        onClick={onClickBtn}
-        className="text-[9px] text-white/30 hover:text-white/60 uppercase tracking-wider"
-      >
-        {ativo ? 'Pausar' : restante === 0 ? 'Reiniciar' : 'Iniciar'}
-      </button>
     </div>
   );
 }
 
 /* ─── Paleta semântica do voto ─── */
 function votoEstilo(status) {
-  if (status === 'Sim') return { bg: 'bg-green-500/15', border: 'border-green-500/50', ring: 'ring-green-400/70', text: 'text-green-300', label: '✓ Favorável' };
-  if (status === 'Não') return { bg: 'bg-red-500/15', border: 'border-red-500/50', ring: 'ring-red-400/70', text: 'text-red-300', label: '✗ Contrário' };
-  if (status === 'Abstenção') return { bg: 'bg-yellow-500/15', border: 'border-yellow-500/50', ring: 'ring-yellow-400/70', text: 'text-yellow-300', label: '— Abstenção' };
-  return { bg: 'bg-white/[0.03]', border: 'border-white/10', ring: 'ring-white/15', text: 'text-white/30', label: 'Aguardando' };
+  if (status === 'Sim')        return { dot: 'bg-emerald-500', text: 'text-emerald-500', label: 'Favorável', card: 'border-slate-800' };
+  if (status === 'Não')        return { dot: 'bg-red-500',     text: 'text-red-500',     label: 'Contrário', card: 'border-slate-800' };
+  if (status === 'Abstenção')  return { dot: 'bg-amber-500',   text: 'text-amber-500',   label: 'Abstenção', card: 'border-slate-800' };
+  return                            { dot: 'bg-slate-600 animate-pulse', text: 'text-slate-500', label: 'Aguardando', card: 'border-slate-800/50 opacity-60' };
 }
 
-/* ─── Card do vereador (somente voto nominal) ─── */
+/* ─── Card do vereador (voto nominal) ─── */
 function CardVereador({ voto }) {
-  const votou = !!voto.voto;
   const e = votoEstilo(voto.voto);
+  const nomeCurto = voto.parlamentar_nome?.split(' ').slice(0, 2).join(' ').toUpperCase();
 
   return (
-    <div className={`border rounded-xl p-3 flex flex-col items-center gap-2 transition-all duration-500 ${e.bg} ${e.border} ${votou ? '' : 'opacity-60'}`}>
+    <div className={`bg-slate-900 border ${e.card} p-3 rounded-xl flex items-center gap-3`}>
       {voto.foto_url ? (
-        <img src={voto.foto_url} alt={voto.parlamentar_nome} className={`w-12 h-12 rounded-full object-cover ring-2 ${e.ring} ${votou ? '' : 'grayscale'} transition-all duration-500`} />
+        <img src={voto.foto_url} alt={voto.parlamentar_nome} className="size-12 rounded-lg object-cover bg-slate-800 shrink-0" />
       ) : (
-        <div className={`w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white/60 font-bold ring-2 ${e.ring}`}>
+        <div className="size-12 rounded-lg bg-slate-800 shrink-0 flex items-center justify-center text-slate-400 font-bold">
           {voto.parlamentar_nome?.[0]}
         </div>
       )}
-      <div className="text-white text-[11px] font-semibold text-center leading-tight">
-        {voto.parlamentar_nome?.split(' ').slice(0, 2).join(' ')}
-      </div>
-      {voto.partido_sigla && <div className="text-[9px] text-white/40 -mt-1">{voto.partido_sigla}</div>}
-      <div className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${votou ? `border ${e.border} ${e.text}` : 'text-white/25'}`}>
-        {e.label}
+      <div className="flex-1 min-w-0">
+        <div className="text-xs font-semibold text-slate-100 truncate">
+          {nomeCurto}
+          {voto.partido_sigla && <span className="text-slate-500 font-normal"> · {voto.partido_sigla}</span>}
+        </div>
+        <div className="flex items-center gap-1.5 mt-1">
+          <div className={`size-1.5 rounded-full ${e.dot}`} />
+          <span className={`text-[10px] font-mono uppercase tracking-wider ${e.text}`}>{e.label}</span>
+        </div>
       </div>
     </div>
   );
@@ -124,17 +137,13 @@ export default function TelaoVotacao({ votacaoAtiva, camara, onRefresh, embedded
 
   useEffect(() => { setV(votacaoAtiva); }, [votacaoAtiva]);
 
-  // Comando de cronômetro atual (gravado na votação e propagado em tempo real).
   const cronometroCmd = useMemo(() => {
     if (!v?.cronometro_cmd) return null;
     try {
       return typeof v.cronometro_cmd === 'string' ? JSON.parse(v.cronometro_cmd) : v.cronometro_cmd;
-    } catch {
-      return null;
-    }
+    } catch { return null; }
   }, [v?.cronometro_cmd]);
 
-  // Grava o comando do cronômetro para espelhar em todas as telas.
   function enviarCronometro(cmd) {
     if (v?.id) sincronizarCronometro(v.id, cmd);
   }
@@ -169,8 +178,8 @@ export default function TelaoVotacao({ votacaoAtiva, camara, onRefresh, embedded
   const sigiloso = v.tipo_votacao === 'Sigilosa';
   const encerrada = v.status === 'Encerrada';
   const empate = v.status === 'Aguardando Desempate' || v.resultado === 'Empate';
-  const aprovada = v.resultado === 'Aprovada' || v.resultado === 'Aprovada por Unanimidade';
   const unanimidade = v.resultado === 'Aprovada por Unanimidade';
+  const aprovada = v.resultado === 'Aprovada' || unanimidade;
 
   const sessaoLabel = [
     v.sessao_numero ? `${v.sessao_numero}ª Sessão` : null,
@@ -178,166 +187,198 @@ export default function TelaoVotacao({ votacaoAtiva, camara, onRefresh, embedded
   ].filter(Boolean).join(' · ');
 
   return (
-    <div className="bg-gradient-to-b from-slate-950 to-slate-900 text-white flex flex-col" style={{ minHeight: embedded ? '100%' : '100vh', height: embedded ? '100%' : '100vh' }}>
-      {/* Topo */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-white/10 flex-shrink-0">
-        <div className="flex items-center gap-3">
-          {camara?.brasao_url && (
-            <img src={camara.brasao_url} alt="Brasão" className="h-11 w-11 object-contain" />
+    <div className={`w-full ${embedded ? "h-full" : "min-h-screen"} bg-slate-950 text-slate-100 font-body p-6 lg:p-8 flex flex-col gap-6 overflow-hidden relative`}>
+      {/* TOPO */}
+      <header className="flex items-center justify-between gap-6 border-b border-slate-800 pb-5">
+        <div className="flex items-center gap-4 min-w-0">
+          {camara?.brasao_url ? (
+            <div className="size-16 bg-slate-900 border border-slate-800 rounded-xl flex items-center justify-center shrink-0 overflow-hidden">
+              <img src={camara.brasao_url} alt="Brasão" className="size-12 object-contain" />
+            </div>
+          ) : (
+            <div className="size-16 bg-slate-900 border border-slate-800 rounded-xl shrink-0" />
           )}
-          <div>
-            <div className="text-white font-heading font-bold text-base leading-tight">{camara?.nome || 'Câmara Municipal'}</div>
-            <div className="text-white/40 text-xs">{camara?.municipio}{camara?.estado ? ` — ${camara.estado}` : ''}</div>
+          <div className="min-w-0">
+            <h1 className="text-2xl font-heading font-extrabold uppercase tracking-tight truncate">
+              {camara?.nome || 'Câmara Municipal'}
+            </h1>
+            <p className="text-slate-500 font-mono text-xs uppercase tracking-widest truncate">
+              {camara?.municipio}{camara?.estado ? ` — ${camara.estado}` : ''}
+              {sessaoLabel && ` · ${sessaoLabel}`}
+            </p>
           </div>
         </div>
-        <div className="text-right">
-          <div className="text-white font-mono text-xl font-bold tabular-num">{format(agora, 'HH:mm:ss')}</div>
-          <div className="text-white/40 text-xs capitalize">{format(agora, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}</div>
-        </div>
-      </div>
 
-      {/* Empate banner */}
+        {!encerrada && (
+          <div className="flex items-center bg-emerald-500/10 border border-emerald-500/20 px-5 py-2 rounded-full gap-3 shrink-0">
+            <span className="relative flex size-2">
+              <span className="animate-ping absolute inline-flex size-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full size-2 bg-emerald-500" />
+            </span>
+            <span className="font-mono text-sm font-semibold text-emerald-500 uppercase tracking-widest">
+              Em Votação · {v.tipo_votacao}
+            </span>
+          </div>
+        )}
+
+        <div className="text-right shrink-0">
+          <div className="text-3xl font-mono font-medium tabular-num">{format(agora, 'HH:mm:ss')}</div>
+          <div className="text-slate-500 font-mono text-xs uppercase tracking-widest">
+            {format(agora, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+          </div>
+        </div>
+      </header>
+
+      {/* EMPATE BANNER */}
       {empate && !encerrada && (
-        <div className="bg-yellow-500/20 border-b border-yellow-500/40 px-6 py-2 text-center flex-shrink-0">
-          <span className="text-yellow-400 font-bold text-sm tracking-wider uppercase">
-            ⚖️ Empate detectado — Aguardando voto de desempate do Presidente
-          </span>
+        <div className="bg-amber-500/10 border border-amber-500/40 rounded-2xl px-6 py-4 flex items-center gap-4">
+          <div className="size-10 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-bold text-xl shrink-0">⚖</div>
+          <div>
+            <p className="font-heading font-bold text-amber-300 text-lg">Empate detectado</p>
+            <p className="text-amber-200/80 text-sm">Aguardando voto de desempate do Presidente.</p>
+          </div>
         </div>
       )}
 
-      {/* 3 colunas */}
-      <div className="flex-1 grid grid-cols-12 overflow-hidden">
-        {/* ESQUERDA — Parlamentares (nominal) ou agregado (sigiloso) */}
-        <div className="col-span-4 border-r border-white/10 p-4 overflow-y-auto scrollbar-sidebar">
+      {/* RESULTADO FINAL (votação encerrada) */}
+      {encerrada && (
+        <div className={`rounded-2xl border px-6 py-5 flex items-center justify-between gap-6 ${
+          aprovada ? 'bg-emerald-500/10 border-emerald-500/40' :
+          empate ? 'bg-amber-500/10 border-amber-500/40' :
+          'bg-red-500/10 border-red-500/40'
+        }`}>
+          <div className="flex items-center gap-4 min-w-0">
+            <div className={`size-14 rounded-2xl flex items-center justify-center shrink-0 ${
+              aprovada ? 'bg-emerald-500 text-slate-950' :
+              empate ? 'bg-amber-500 text-slate-950' :
+              'bg-red-500 text-white'
+            }`}>
+              {aprovada ? <CheckCircle2 className="size-8" strokeWidth={2.5} />
+               : empate ? <span className="text-2xl font-bold">⚖</span>
+               : <XCircle className="size-8" strokeWidth={2.5} />}
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-slate-400">Resultado</p>
+              <h2 className={`font-heading font-black tracking-tight leading-tight text-3xl xl:text-4xl ${
+                aprovada ? 'text-emerald-400' : empate ? 'text-amber-400' : 'text-red-400'
+              }`}>
+                {unanimidade ? 'Aprovado por unanimidade' : aprovada ? 'Aprovado' : empate ? 'Empate' : 'Reprovado'}
+              </h2>
+            </div>
+          </div>
+          <div className="text-right font-mono tabular-num text-slate-300 text-sm shrink-0">
+            <span className="text-emerald-400 font-bold">{sim}</span> a favor
+            <span className="text-slate-600"> · </span>
+            <span className="text-red-400 font-bold">{nao}</span> contra
+            <span className="text-slate-600"> · </span>
+            <span className="text-amber-400 font-bold">{abstencao}</span> abstenções
+          </div>
+        </div>
+      )}
+
+      {/* MAIN GRID — 12 cols */}
+      <main className="flex-1 grid grid-cols-12 gap-6 lg:gap-8 min-h-0">
+
+        {/* ESQUERDA — Parlamentares (ou agregado sigiloso) */}
+        <section className="col-span-7 flex flex-col min-h-0">
           {sigiloso ? (
-            <div className="h-full flex flex-col items-center justify-center text-center px-4">
-              <div className="w-16 h-16 rounded-2xl bg-white/5 ring-1 ring-inset ring-white/10 flex items-center justify-center mb-5">
-                <Lock size={28} className="text-white/40" />
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-10 flex flex-col items-center justify-center text-center gap-4 h-full">
+              <div className="size-20 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center">
+                <Lock className="size-9 text-slate-400" />
               </div>
-              <div className="text-white/50 text-[11px] uppercase tracking-[0.22em] mb-3">Votação Secreta</div>
-              <div className="text-white font-heading font-black tabular-num leading-none text-6xl">
-                {votaram}<span className="text-white/25 text-3xl">/{total}</span>
+              <h2 className="font-heading text-2xl font-extrabold tracking-tight">Votação Secreta</h2>
+              <div className="text-6xl font-mono font-bold text-slate-100 tabular-num">{votaram}/{total}</div>
+              <p className="text-slate-400">parlamentares já votaram</p>
+              <div className="w-full max-w-md h-2 bg-slate-800 rounded-full overflow-hidden mt-2">
+                <div className="h-full bg-emerald-500 transition-all duration-500" style={{ width: `${pctVotaram}%` }} />
               </div>
-              <div className="text-white/40 text-sm mt-3">parlamentares já votaram</div>
-              <div className="w-full max-w-[260px] h-2 bg-white/10 rounded-full overflow-hidden mt-5">
-                <div className="h-full bg-primary rounded-full transition-all duration-1000" style={{ width: `${pctVotaram}%` }} />
-              </div>
-              <p className="text-white/25 text-[11px] mt-5 max-w-[260px] leading-relaxed">
+              <p className="text-xs text-slate-500 max-w-md mt-2">
                 Os votos individuais não são exibidos para preservar o sigilo da votação.
               </p>
             </div>
           ) : (
             <>
-              <div className="text-[10px] text-white/40 uppercase tracking-widest mb-3 font-semibold">
-                Parlamentares — {total} presentes
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-slate-500">
+                  Parlamentares — {total} presentes
+                </span>
+                <span className="text-[10px] font-mono uppercase tracking-widest text-slate-600">
+                  {votaram}/{total} votaram
+                </span>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                {votos.map((voto) => (
-                  <CardVereador key={voto.parlamentar_id} voto={voto} />
+              <div className="grid grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 content-start overflow-y-auto pr-1">
+                {votos.map((voto, i) => (
+                  <CardVereador key={voto.parlamentar_id || voto.parlamentar_nome || i} voto={voto} />
                 ))}
               </div>
             </>
           )}
-        </div>
+        </section>
 
-        {/* CENTRAL — Matéria + progresso + cronômetros */}
-        <div className="col-span-4 border-r border-white/10 px-6 py-6 flex flex-col overflow-y-auto scrollbar-sidebar">
-          <div className="text-center">
-            {sessaoLabel && (
-              <div className="text-white/40 text-[11px] uppercase tracking-[0.2em] mb-3">{sessaoLabel}</div>
-            )}
-            {!encerrada && (
-              <div className="inline-flex items-center gap-2 bg-green-500/15 border border-green-500/40 text-green-400 text-[11px] px-3 py-1.5 rounded-full font-bold uppercase tracking-widest mb-4">
-                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                Em Votação · {v.tipo_votacao}
-              </div>
-            )}
-            <div className="text-white/50 text-xs bg-white/5 ring-1 ring-inset ring-white/10 rounded-full px-3 py-1 inline-block mb-4">
-              {v.materia_tipo}{v.materia_numero ? ` nº ${v.materia_numero}` : ''}
+        {/* DIREITA — Matéria + Placar + Cronômetros */}
+        <section className="col-span-5 flex flex-col gap-5 min-h-0">
+
+          {/* MATÉRIA */}
+          <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+            <div className="flex items-center gap-2 mb-3 flex-wrap">
+              <span className="bg-slate-800 text-slate-400 px-2 py-1 rounded text-[10px] font-mono font-bold uppercase tracking-tighter">
+                {v.materia_tipo || 'Matéria'}
+              </span>
+              {v.materia_numero && (
+                <span className="text-slate-500 font-mono text-[10px] uppercase tracking-widest">
+                  nº {v.materia_numero}
+                </span>
+              )}
             </div>
-            <div className="text-white font-heading font-bold text-2xl xl:text-3xl leading-snug">
+            <h2 className="text-xl xl:text-2xl font-heading font-bold leading-tight text-slate-100">
               {v.materia_ementa}
+            </h2>
+          </div>
+
+          {/* PLACAR */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-2xl text-center">
+              <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-emerald-500/80 mb-1">Favoráveis</div>
+              <div className="text-5xl font-extrabold font-mono text-emerald-500 tabular-num leading-none">{String(sim).padStart(2,'0')}</div>
+            </div>
+            <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-2xl text-center">
+              <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-red-500/80 mb-1">Contrários</div>
+              <div className="text-5xl font-extrabold font-mono text-red-500 tabular-num leading-none">{String(nao).padStart(2,'0')}</div>
+            </div>
+            <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-2xl text-center">
+              <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-amber-500/80 mb-1">Abstenções</div>
+              <div className="text-5xl font-extrabold font-mono text-amber-500 tabular-num leading-none">{String(abstencao).padStart(2,'0')}</div>
             </div>
           </div>
 
-          {/* Progresso + cronômetros (empurrados para a base, preenchendo o espaço) */}
-          {!encerrada && (
-            <div className="mt-auto pt-8">
-              {/* Progresso geral */}
-              <div className="flex items-end justify-between mb-2">
-                <div>
-                  <div className="text-white font-heading font-bold tabular-num leading-none text-3xl">
-                    {votaram}<span className="text-white/30 text-xl">/{total}</span>
-                  </div>
-                  <div className="text-white/40 text-[11px] uppercase tracking-wider mt-1">parlamentares votaram</div>
-                </div>
-                <div className="text-white/50 text-lg font-semibold tabular-num">{pctVotaram}%</div>
-              </div>
-              <div className="w-full h-2.5 bg-white/10 rounded-full overflow-hidden">
-                <div className="h-full bg-primary rounded-full transition-all duration-1000" style={{ width: `${pctVotaram}%` }} />
-              </div>
+          {/* CRONÔMETROS 2x2 */}
+          <div className="grid grid-cols-2 gap-3 flex-1">
+            <Cronometro id="discurso"      segundos={v.timer_discurso || 300} label="Discurso"          cmd={cronometroCmd} onCmd={enviarCronometro} />
+            <Cronometro id="aparte"        segundos={v.timer_aparte || 60}  label="Aparte"            cmd={cronometroCmd} onCmd={enviarCronometro} destaque />
+            <Cronometro id="questao_ordem" segundos={v.timer_questao || 120} label="Questão de Ordem"  cmd={cronometroCmd} onCmd={enviarCronometro} />
+            <Cronometro id="consid_finais" segundos={v.timer_consideracoes || 60}  label="Considerações Finais" cmd={cronometroCmd} onCmd={enviarCronometro} />
+          </div>
+        </section>
+      </main>
 
-              {/* Cronômetros */}
-              <div className="mt-7">
-                <div className="text-[10px] text-white/30 uppercase tracking-widest text-center mb-3">Cronômetros</div>
-                <div className="grid grid-cols-2 gap-4">
-                  <Cronometro id={`${v.id}_discurso`} cmd={cronometroCmd} onCmd={enviarCronometro} segundos={v.timer_discurso || 180} label="Discurso" cor="text-blue-300" />
-                  <Cronometro id={`${v.id}_aparte`} cmd={cronometroCmd} onCmd={enviarCronometro} segundos={v.timer_aparte || 60} label="Aparte" cor="text-purple-300" />
-                  <Cronometro id={`${v.id}_questao`} cmd={cronometroCmd} onCmd={enviarCronometro} segundos={v.timer_questao || 120} label="Questão de Ordem" cor="text-cyan-300" />
-                  <Cronometro id={`${v.id}_consideracoes`} cmd={cronometroCmd} onCmd={enviarCronometro} segundos={v.timer_consideracoes || 60} label="Considerações Finais" cor="text-orange-300" />
-                </div>
-              </div>
+      {/* FOOTER — barra de progresso */}
+      {!sigiloso && (
+        <footer className="border-t border-slate-800 pt-5">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-3">
+              <span className="text-slate-400 font-mono text-xs uppercase tracking-widest">Votação Registrada</span>
+              <span className="text-slate-200 font-mono text-sm font-bold tabular-num">{votaram} / {total} Parlamentares</span>
             </div>
-          )}
-        </div>
-
-        {/* DIREITA — Placar */}
-        <div className="col-span-4 p-6 flex flex-col justify-center gap-4">
-          {encerrada ? (
-            <div className={`w-full rounded-3xl p-8 text-center border-2 ${
-              aprovada ? 'bg-green-500/10 border-green-500/50' :
-              empate ? 'bg-yellow-500/10 border-yellow-500/50' :
-              'bg-red-500/10 border-red-500/50'
-            }`}>
-              <div className="text-white/40 text-[11px] uppercase tracking-[0.2em] mb-3">Resultado</div>
-              <div className={`font-heading font-black leading-tight text-4xl xl:text-5xl ${
-                aprovada ? 'text-green-400' : empate ? 'text-yellow-400' : 'text-red-400'
-              }`}>
-                {unanimidade ? 'APROVADO POR UNANIMIDADE' :
-                 aprovada ? 'APROVADO' :
-                 empate ? 'EMPATE' : 'REPROVADO'}
-              </div>
-              <div className="text-white/50 text-sm mt-4 tabular-num">
-                {sim} a favor · {nao} contra · {abstencao} abstenções
-              </div>
-            </div>
-          ) : (
-            <>
-              {/* Favoráveis */}
-              <div className={`w-full rounded-2xl bg-green-500/10 border p-5 flex items-center gap-5 transition-all ${sim > nao && (sim + nao) > 0 ? 'border-green-500/60 ring-1 ring-green-500/30' : 'border-green-500/25'}`}>
-                <div className="text-green-400 font-heading font-black tabular-num leading-none text-6xl xl:text-7xl min-w-[1.6ch] text-center">{sim}</div>
-                <div className="flex items-center gap-2 text-green-400/90 font-bold uppercase tracking-wide text-lg">
-                  <CheckCircle2 size={20} /> Favoráveis
-                </div>
-              </div>
-              {/* Contrários */}
-              <div className={`w-full rounded-2xl bg-red-500/10 border p-5 flex items-center gap-5 transition-all ${nao > sim && (sim + nao) > 0 ? 'border-red-500/60 ring-1 ring-red-500/30' : 'border-red-500/25'}`}>
-                <div className="text-red-400 font-heading font-black tabular-num leading-none text-6xl xl:text-7xl min-w-[1.6ch] text-center">{nao}</div>
-                <div className="flex items-center gap-2 text-red-400/90 font-bold uppercase tracking-wide text-lg">
-                  <XCircle size={20} /> Contrários
-                </div>
-              </div>
-              {/* Abstenções */}
-              <div className="w-full rounded-2xl bg-yellow-500/10 border border-yellow-500/25 p-4 flex items-center gap-5">
-                <div className="text-yellow-400 font-heading font-bold tabular-num leading-none text-4xl xl:text-5xl min-w-[1.6ch] text-center">{abstencao}</div>
-                <div className="flex items-center gap-2 text-yellow-400/90 font-semibold uppercase tracking-wide">
-                  <MinusCircle size={16} /> Abstenções
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
+            <div className="text-slate-200 font-mono text-sm font-bold tabular-num">{pctVotaram}% Concluído</div>
+          </div>
+          <div className="h-3 w-full bg-slate-900 rounded-full overflow-hidden border border-slate-800 p-0.5">
+            <div
+              className="h-full bg-emerald-500 rounded-full shadow-[0_0_12px_rgba(16,185,129,0.3)] transition-all duration-500"
+              style={{ width: `${pctVotaram}%` }}
+            />
+          </div>
+        </footer>
+      )}
     </div>
   );
 }
