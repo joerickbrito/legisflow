@@ -12,6 +12,7 @@ import { useTenant, ROLE_LABELS } from '@/lib/TenantContext';
 import { useAuth } from '@/lib/AuthContext';
 import { canShowMenuItem } from '@/lib/perfis';
 import { cn } from '@/lib/utils';
+import TemaSwitch from '@/components/TemaSwitch';
 
 const getNavGroups = (user, isInChamberContext) => {
   if (!user) return [];
@@ -281,7 +282,8 @@ export default function Layout() {
           ))}
         </nav>
 
-        <div className="px-2 py-2 border-t border-sidebar-border/70 flex-shrink-0">
+        <div className="px-2 py-2 border-t border-sidebar-border/70 flex-shrink-0 space-y-1">
+          <TemaSwitch collapsed={collapsed} />
           <button
             onClick={() => logout(true)}
             className={cn(
