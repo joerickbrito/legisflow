@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useTenant } from "@/lib/TenantContext";
 import { useAuth } from "@/lib/AuthContext";
 import { sislegisEntities, abrirJanelaComSessao } from "@/lib/sislegisApi";
+import { painelEscuro } from "@/lib/theme";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -235,13 +236,15 @@ export default function PainelEletronico() {
   // Interface Vereador / Presidente
   if (isVereador || isPresidente) {
     return (
-      <InterfaceVereador
-        votacaoAtiva={votacaoAtiva}
-        user={user}
-        tenantId={tenantId}
-        onRefresh={loadVotacaoAtiva}
-        isPresidente={isPresidente}
-      />
+      <div className={painelEscuro() ? 'dark' : ''}>
+        <InterfaceVereador
+          votacaoAtiva={votacaoAtiva}
+          user={user}
+          tenantId={tenantId}
+          onRefresh={loadVotacaoAtiva}
+          isPresidente={isPresidente}
+        />
+      </div>
     );
   }
 
@@ -285,7 +288,7 @@ export default function PainelEletronico() {
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
             Votação em andamento · {votacaoAtiva.tipo_votacao} · Modo preview
           </div>
-          <div style={{ height: '75vh' }}>
+          <div style={{ height: '75vh' }} className={painelEscuro() ? 'dark' : ''}>
             <TelaoVotacao
               votacaoAtiva={votacaoAtiva}
               camara={camara}

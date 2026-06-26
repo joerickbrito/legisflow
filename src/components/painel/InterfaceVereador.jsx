@@ -131,7 +131,7 @@ export default function InterfaceVereador({ votacaoAtiva, user, onRefresh, isPre
               className="size-9 rounded-full object-cover ring-1 ring-accent/50 shrink-0"
             />
           ) : (
-            <div className="size-9 rounded-full bg-secondary ring-1 ring-accent/50 flex items-center justify-center text-foreground font-serif font-semibold text-sm shrink-0">
+            <div className="size-9 rounded-full bg-secondary ring-1 ring-accent/50 flex items-center justify-center text-foreground font-heading font-semibold text-sm shrink-0">
               {inicialVotante}
             </div>
           )}
@@ -149,7 +149,7 @@ export default function InterfaceVereador({ votacaoAtiva, user, onRefresh, isPre
           <div className="size-20 rounded-2xl bg-card border border-border flex items-center justify-center">
             <Clock className="size-9 text-muted-foreground" />
           </div>
-          <h2 className="font-serif text-2xl font-bold tracking-tight">Nenhuma votação em andamento</h2>
+          <h2 className="font-heading text-2xl font-bold tracking-tight">Nenhuma votação em andamento</h2>
           <p className="text-sm text-muted-foreground max-w-md">
             Aguarde o operador iniciar uma votação. Esta tela atualiza automaticamente.
           </p>
@@ -167,7 +167,7 @@ export default function InterfaceVereador({ votacaoAtiva, user, onRefresh, isPre
           <div className="size-20 rounded-2xl bg-card border border-accent/40 flex items-center justify-center">
             <Vote className="size-9 text-accent" />
           </div>
-          <h2 className="font-serif text-2xl font-bold tracking-tight">Votação em andamento</h2>
+          <h2 className="font-heading text-2xl font-bold tracking-tight">Votação em andamento</h2>
           <p className="text-sm text-muted-foreground max-w-md">
             Seu voto será solicitado apenas em caso de empate.
           </p>
@@ -176,7 +176,7 @@ export default function InterfaceVereador({ votacaoAtiva, user, onRefresh, isPre
             <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground">
               Em votação
             </span>
-            <p className="mt-2 text-base font-serif text-foreground leading-snug">
+            <p className="mt-2 text-base font-heading text-foreground leading-snug">
               {votacao.materia_ementa}
             </p>
             <div className="mt-4 grid grid-cols-2 gap-3">
@@ -230,7 +230,7 @@ export default function InterfaceVereador({ votacaoAtiva, user, onRefresh, isPre
               Seu voto
             </p>
             <h2
-              className="font-serif text-4xl sm:text-5xl font-bold tracking-tight"
+              className="font-heading text-4xl sm:text-5xl font-bold tracking-tight"
               style={{ color: `var(--${conf.color})` }}
             >
               {conf.label}
@@ -258,7 +258,7 @@ export default function InterfaceVereador({ votacaoAtiva, user, onRefresh, isPre
             <div className="rounded-xl border border-[var(--abstain)]/40 bg-[var(--abstain-soft)] px-4 py-3 flex items-start gap-3">
               <Scale className="size-5 text-[var(--abstain)] shrink-0 mt-0.5" />
               <div>
-                <p className="text-[var(--abstain)] font-serif font-bold text-sm">Empate detectado</p>
+                <p className="text-[var(--abstain)] font-heading font-bold text-sm">Empate detectado</p>
                 <p className="text-muted-foreground text-xs mt-0.5">
                   Seu voto de desempate é necessário.
                 </p>
@@ -278,7 +278,7 @@ export default function InterfaceVereador({ votacaoAtiva, user, onRefresh, isPre
                 {votacao.materia_tipo}
               </span>
             </div>
-            <h2 className="font-serif text-xl sm:text-[26px] font-semibold leading-tight tracking-tight text-foreground pl-1">
+            <h2 className="font-heading text-xl sm:text-[26px] font-semibold leading-tight tracking-tight text-foreground pl-1">
               {votacao.materia_ementa}
             </h2>
           </div>
@@ -332,7 +332,7 @@ export default function InterfaceVereador({ votacaoAtiva, user, onRefresh, isPre
           <button
             onClick={() => votar("Sim")}
             disabled={votando || !podeVotar}
-            className="w-full min-w-0 px-4 min-h-[120px] sm:min-h-[160px] rounded-2xl bg-[var(--favor)] hover:opacity-90 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed text-white font-serif font-bold tracking-tight transition-all shadow-xl flex items-center justify-center gap-3 select-none"
+            className="w-full min-w-0 px-4 min-h-[120px] sm:min-h-[160px] rounded-2xl bg-[var(--favor)] hover:opacity-90 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed text-white font-heading font-bold tracking-tight transition-all shadow-xl flex items-center justify-center gap-3 select-none"
           >
             <CheckCircle2 className="size-8 sm:size-10 shrink-0" strokeWidth={2.5} />
             <span className="text-2xl sm:text-3xl lg:text-4xl truncate min-w-0">FAVORÁVEL</span>
@@ -342,7 +342,7 @@ export default function InterfaceVereador({ votacaoAtiva, user, onRefresh, isPre
           <button
             onClick={() => votar("Não")}
             disabled={votando || !podeVotar}
-            className="w-full min-w-0 px-4 min-h-[68px] sm:min-h-[80px] rounded-2xl bg-[var(--against)] hover:opacity-90 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed text-white font-serif font-bold tracking-tight transition-all shadow-lg flex items-center justify-center gap-3 select-none"
+            className="w-full min-w-0 px-4 min-h-[68px] sm:min-h-[80px] rounded-2xl bg-[var(--against)] hover:opacity-90 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed text-white font-heading font-bold tracking-tight transition-all shadow-lg flex items-center justify-center gap-3 select-none"
           >
             <XCircle className="size-6 sm:size-7 shrink-0" strokeWidth={2.5} />
             <span className="text-lg sm:text-xl lg:text-2xl truncate min-w-0">CONTRÁRIO</span>

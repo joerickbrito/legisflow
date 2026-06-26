@@ -129,7 +129,7 @@ function CardVereador({ voto }) {
           className="size-12 rounded-lg object-cover bg-muted shrink-0 ring-1 ring-border"
         />
       ) : (
-        <div className="size-12 rounded-lg bg-muted shrink-0 flex items-center justify-center text-muted-foreground font-serif font-semibold text-lg">
+        <div className="size-12 rounded-lg bg-muted shrink-0 flex items-center justify-center text-muted-foreground font-heading font-semibold text-lg">
           {voto.parlamentar_nome?.[0]}
         </div>
       )}
@@ -234,7 +234,7 @@ export default function TelaoVotacao({ votacaoAtiva, camara, onRefresh, embedded
             </div>
           )}
           <div className="min-w-0">
-            <h1 className="text-2xl font-serif font-bold tracking-tight truncate">
+            <h1 className="text-2xl font-heading font-bold tracking-tight truncate">
               {camara?.nome || "Câmara Municipal"}
             </h1>
             <p className="text-muted-foreground font-mono text-xs uppercase tracking-[0.2em] truncate mt-1">
@@ -274,7 +274,7 @@ export default function TelaoVotacao({ votacaoAtiva, camara, onRefresh, embedded
             <Scale className="size-5" />
           </div>
           <div>
-            <p className="font-serif font-bold text-[var(--abstain)] text-lg">Empate detectado</p>
+            <p className="font-heading font-bold text-[var(--abstain)] text-lg">Empate detectado</p>
             <p className="text-muted-foreground text-sm">
               Aguardando voto de desempate do Presidente.
             </p>
@@ -297,7 +297,7 @@ export default function TelaoVotacao({ votacaoAtiva, camara, onRefresh, embedded
             </div>
             <div className="min-w-0">
               <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-muted-foreground">Resultado</p>
-              <h2 className={`font-serif font-bold tracking-tight leading-tight text-3xl xl:text-4xl ${
+              <h2 className={`font-heading font-bold tracking-tight leading-tight text-3xl xl:text-4xl ${
                 aprovada ? "text-[var(--favor)]" : empate ? "text-[var(--abstain)]" : "text-[var(--against)]"
               }`}>
                 {unanimidade ? "Aprovado por unanimidade" : aprovada ? "Aprovado" : empate ? "Empate" : "Reprovado"}
@@ -323,7 +323,7 @@ export default function TelaoVotacao({ votacaoAtiva, camara, onRefresh, embedded
               <div className="size-20 rounded-2xl bg-secondary border border-border flex items-center justify-center">
                 <Lock className="size-9 text-accent" />
               </div>
-              <h2 className="font-serif text-2xl font-bold tracking-tight">Votação Secreta</h2>
+              <h2 className="font-heading text-2xl font-bold tracking-tight">Votação Secreta</h2>
               <div className="text-6xl font-mono font-semibold text-foreground tabular-nums">
                 {votaram}/{total}
               </div>
@@ -372,7 +372,7 @@ export default function TelaoVotacao({ votacaoAtiva, camara, onRefresh, embedded
                 </span>
               )}
             </div>
-            <h2 className="text-xl xl:text-[26px] font-serif font-semibold leading-tight text-foreground">
+            <h2 className="text-xl xl:text-[26px] font-heading font-semibold leading-tight text-foreground">
               {v.materia_ementa}
             </h2>
           </div>

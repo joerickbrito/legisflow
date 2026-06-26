@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useTenant } from '@/lib/TenantContext';
 import PageHeader from '@/components/PageHeader';
-import { SlidersHorizontal, ChevronDown, ChevronRight } from 'lucide-react';
+import { SlidersHorizontal, ChevronDown, ChevronRight, Sun, Moon, LayoutDashboard } from 'lucide-react';
 import TabelaAuxiliarEditor from '@/components/configuracoes/TabelaAuxiliarEditor';
 import { cn } from '@/lib/utils';
+import { useTema, setTema } from '@/lib/theme';
 
 // Definição centralizada de todas as tabelas auxiliares agrupadas por módulo
 const GRUPOS = [
@@ -247,6 +248,7 @@ export default function Configuracoes() {
   const { isAdminCamara } = useTenant();
   const [grupoAberto, setGrupoAberto] = useState(0);
   const [tabelaAtiva, setTabelaAtiva] = useState(GRUPOS[0].tabelas[0]);
+  const tema = useTema();
 
   if (!isAdminCamara) {
     return (
@@ -264,6 +266,33 @@ export default function Configuracoes() {
         title="Tabelas Auxiliares"
         subtitle="Configure os parâmetros do sistema sem necessidade de alterações no código."
       />
+
+      {/* Aparência / Tema */}
+      <div className="bg-card border border-border rounded-2xl p-5 mt-4">
+        <h3 className="font-heading font-semibold text-foreground mb-1">Aparência</h3>
+        <p className="text-sm text-muted-foreground mb-4">Escolha o tema do sistema. A preferência vale para este dispositivo (navegador).</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {[
+            { v: 'claro', label: 'Claro', desc: 'Site e painel claros', Icon: Sun },
+            { v: 'escuro', label: 'Escuro', desc: 'Site e painel escuros', Icon: Moon },
+            { v: 'mesclado', label: 'Mesclado', desc: 'Site claro, painel escuro', Icon: LayoutDashboard },
+          ].map((o) => (
+            <button
+              key={o.v}
+              type="button"
+              onClick={() => setTema(o.v)}
+              className={cn(
+                'text-left rounded-xl border p-4 transition-colors',
+                tema === o.v ? 'border-primary ring-2 ring-primary/30 bg-primary/5' : 'border-border hover:bg-muted'
+              )}
+            >
+              <o.Icon size={20} className={tema === o.v ? 'text-primary' : 'text-muted-foreground'} />
+              <div className="font-medium text-sm mt-2 text-foreground">{o.label}</div>
+              <div className="text-xs text-muted-foreground">{o.desc}</div>
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div className="flex gap-6 mt-4" style={{ minHeight: 'calc(100vh - 200px)' }}>
         {/* Sidebar de navegação */}

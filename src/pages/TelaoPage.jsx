@@ -7,6 +7,7 @@ import { base44 } from '@/api/base44Client';
 import { useTenant } from '@/lib/TenantContext';
 import { sislegisEntities } from '@/lib/sislegisApi';
 import TelaoVotacao from '@/components/painel/TelaoVotacao';
+import { painelEscuro } from '@/lib/theme';
 import { Monitor } from 'lucide-react';
 
 export default function TelaoPage() {
@@ -67,7 +68,7 @@ export default function TelaoPage() {
   }
 
   return (
-    <div className="h-screen w-screen overflow-hidden">
+    <div className={`h-screen w-screen overflow-hidden ${painelEscuro() ? 'dark' : ''}`}>
       <TelaoVotacao
         votacaoAtiva={votacaoAtiva}
         camara={camara}
