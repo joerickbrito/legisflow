@@ -7,11 +7,12 @@ import { base44 } from '@/api/base44Client';
 import { useTenant } from '@/lib/TenantContext';
 import { sislegisEntities } from '@/lib/sislegisApi';
 import TelaoVotacao from '@/components/painel/TelaoVotacao';
-import { painelEscuro } from '@/lib/theme';
+import { painelEscuro, useTema } from '@/lib/theme';
 import { Monitor } from 'lucide-react';
 
 export default function TelaoPage() {
   const { tenantId, withTenant, canQuery, camara } = useTenant();
+  const tema = useTema();
   const [votacaoAtiva, setVotacaoAtiva] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -68,7 +69,7 @@ export default function TelaoPage() {
   }
 
   return (
-    <div className={`h-screen w-screen overflow-hidden ${painelEscuro() ? 'dark' : ''}`}>
+    <div className={`h-screen w-screen overflow-hidden ${painelEscuro(tema) ? 'dark' : ''}`}>
       <TelaoVotacao
         votacaoAtiva={votacaoAtiva}
         camara={camara}

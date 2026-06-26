@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useTenant } from "@/lib/TenantContext";
 import { useAuth } from "@/lib/AuthContext";
 import { sislegisEntities, abrirJanelaComSessao } from "@/lib/sislegisApi";
-import { painelEscuro } from "@/lib/theme";
+import { painelEscuro, useTema } from "@/lib/theme";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -16,6 +16,7 @@ import { useExclusaoSegura } from "@/components/ExclusaoSegura";
 export default function PainelEletronico() {
   const { tenantId, withTenant, canQuery, userRole, camara, isOperadorGeral } = useTenant();
   const { user } = useAuth();
+  const tema = useTema();
   const [votacaoAtiva, setVotacaoAtiva] = useState(null);
   const [historico, setHistorico] = useState([]);
   const [sessoes, setSessoes] = useState([]);
@@ -236,7 +237,7 @@ export default function PainelEletronico() {
   // Interface Vereador / Presidente
   if (isVereador || isPresidente) {
     return (
-      <div className={painelEscuro() ? 'dark' : ''}>
+      <div className={painelEscuro(tema) ? 'dark' : ''}>
         <InterfaceVereador
           votacaoAtiva={votacaoAtiva}
           user={user}
@@ -288,7 +289,7 @@ export default function PainelEletronico() {
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
             Votação em andamento · {votacaoAtiva.tipo_votacao} · Modo preview
           </div>
-          <div style={{ height: '75vh' }} className={painelEscuro() ? 'dark' : ''}>
+          <div style={{ height: '75vh' }} className={painelEscuro(tema) ? 'dark' : ''}>
             <TelaoVotacao
               votacaoAtiva={votacaoAtiva}
               camara={camara}

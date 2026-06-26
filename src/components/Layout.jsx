@@ -13,6 +13,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { canShowMenuItem } from '@/lib/perfis';
 import { cn } from '@/lib/utils';
 import TemaSwitch from '@/components/TemaSwitch';
+import { useTema } from '@/lib/theme';
 
 const getNavGroups = (user, isInChamberContext) => {
   if (!user) return [];
@@ -134,6 +135,7 @@ export default function Layout() {
   const location = useLocation();
   const { isSuperAdmin, isAdminCamara, userRole, camara, activeCamara, exitCamara, isInChamberContext } = useTenant();
   const { user, logout } = useAuth();
+  const tema = useTema();
 
   const navGroups = getNavGroups(user, isInChamberContext);
   const [expandedGroups, setExpandedGroups] = useState(navGroups.map(() => true));
@@ -156,6 +158,7 @@ export default function Layout() {
       <aside className={cn(
         "fixed md:relative z-50 flex flex-col h-full transition-all duration-300 ease-in-out",
         "sidebar-surface text-sidebar-foreground shadow-2xl border-r border-sidebar-border",
+        tema !== 'claro' && 'dark',
         collapsed ? "w-16" : "w-64",
         mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
       )}>
