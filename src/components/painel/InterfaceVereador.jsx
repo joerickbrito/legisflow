@@ -280,30 +280,30 @@ export default function InterfaceVereador({ votacaoAtiva, user, onRefresh, isPre
           <button
             onClick={() => votar('Sim')}
             disabled={votando || !podeVotar}
-            className="w-full min-h-[120px] sm:min-h-[160px] rounded-2xl bg-emerald-500 hover:bg-emerald-400 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 font-heading font-black tracking-tight transition-all shadow-2xl shadow-emerald-500/25 flex items-center justify-center gap-4 select-none"
+            className="w-full min-w-0 px-4 min-h-[120px] sm:min-h-[160px] rounded-2xl bg-emerald-500 hover:bg-emerald-400 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 font-heading font-black tracking-tight transition-all shadow-2xl shadow-emerald-500/25 flex items-center justify-center gap-3 select-none"
           >
-            <CheckCircle2 className="size-9 sm:size-12" strokeWidth={2.5} />
-            <span className="text-3xl sm:text-5xl">FAVORÁVEL</span>
+            <CheckCircle2 className="size-8 sm:size-10 shrink-0" strokeWidth={2.5} />
+            <span className="text-2xl sm:text-3xl lg:text-4xl truncate min-w-0">FAVORÁVEL</span>
           </button>
 
           {/* CONTRÁRIO — secundário (menor) */}
           <button
             onClick={() => votar('Não')}
             disabled={votando || !podeVotar}
-            className="w-full min-h-[68px] sm:min-h-[80px] rounded-2xl bg-red-500 hover:bg-red-400 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed text-white font-heading font-extrabold tracking-tight transition-all shadow-lg shadow-red-500/20 flex items-center justify-center gap-3 select-none"
+            className="w-full min-w-0 px-4 min-h-[68px] sm:min-h-[80px] rounded-2xl bg-red-500 hover:bg-red-400 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed text-white font-heading font-extrabold tracking-tight transition-all shadow-lg shadow-red-500/20 flex items-center justify-center gap-3 select-none"
           >
-            <XCircle className="size-6 sm:size-7" strokeWidth={2.5} />
-            <span className="text-xl sm:text-2xl">CONTRÁRIO</span>
+            <XCircle className="size-6 sm:size-7 shrink-0" strokeWidth={2.5} />
+            <span className="text-lg sm:text-xl lg:text-2xl truncate min-w-0">CONTRÁRIO</span>
           </button>
 
           {/* ABSTENÇÃO — discreta */}
           <button
             onClick={() => votar('Abstenção')}
             disabled={votando || !podeVotar}
-            className="w-full min-h-[52px] sm:min-h-[60px] rounded-2xl bg-slate-900 hover:bg-slate-800 border border-slate-700 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed text-slate-300 font-bold transition-all flex items-center justify-center gap-2 select-none"
+            className="w-full min-w-0 px-4 min-h-[52px] sm:min-h-[60px] rounded-2xl bg-slate-900 hover:bg-slate-800 border border-slate-700 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed text-slate-300 font-bold transition-all flex items-center justify-center gap-2 select-none"
           >
-            <MinusCircle className="size-5" />
-            <span className="text-base sm:text-lg uppercase tracking-wider">Abstenção</span>
+            <MinusCircle className="size-5 shrink-0" />
+            <span className="text-base sm:text-lg uppercase tracking-wider truncate min-w-0">Abstenção</span>
           </button>
 
           <p className="text-[10px] font-mono text-slate-600 text-center mt-2 uppercase tracking-widest">

@@ -117,9 +117,9 @@ function CardVereador({ voto }) {
         </div>
       )}
       <div className="flex-1 min-w-0">
-        <div className="text-xs font-semibold text-slate-100 truncate">
-          {nomeCurto}
-          {voto.partido_sigla && <span className="text-slate-500 font-normal"> · {voto.partido_sigla}</span>}
+        <div className="text-xs font-semibold text-slate-100 flex items-baseline gap-1 min-w-0">
+          <span className="truncate min-w-0">{nomeCurto}</span>
+          {voto.partido_sigla && <span className="text-slate-500 font-normal shrink-0">· {voto.partido_sigla}</span>}
         </div>
         <div className="flex items-center gap-1.5 mt-1">
           <div className={`size-1.5 rounded-full ${e.dot}`} />
@@ -187,9 +187,9 @@ export default function TelaoVotacao({ votacaoAtiva, camara, onRefresh, embedded
   ].filter(Boolean).join(' · ');
 
   return (
-    <div className={`w-full ${embedded ? "h-full" : "min-h-screen"} bg-slate-950 text-slate-100 font-body p-6 lg:p-8 flex flex-col gap-6 overflow-hidden relative`}>
+    <div className={`w-full bg-slate-950 text-slate-100 font-body flex flex-col relative ${embedded ? "h-full overflow-y-auto p-4 gap-4" : "min-h-screen overflow-hidden p-6 lg:p-8 gap-6"}`}>
       {/* TOPO */}
-      <header className="flex items-center justify-between gap-6 border-b border-slate-800 pb-5">
+      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-5">
         <div className="flex items-center gap-4 min-w-0">
           {camara?.brasao_url ? (
             <div className="size-16 bg-slate-900 border border-slate-800 rounded-xl flex items-center justify-center shrink-0 overflow-hidden">
@@ -277,10 +277,10 @@ export default function TelaoVotacao({ votacaoAtiva, camara, onRefresh, embedded
       )}
 
       {/* MAIN GRID — 12 cols */}
-      <main className="flex-1 grid grid-cols-12 gap-6 lg:gap-8 min-h-0">
+      <main className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 min-h-0">
 
         {/* ESQUERDA — Parlamentares (ou agregado sigiloso) */}
-        <section className="col-span-7 flex flex-col min-h-0">
+        <section className="lg:col-span-7 flex flex-col min-h-0">
           {sigiloso ? (
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-10 flex flex-col items-center justify-center text-center gap-4 h-full">
               <div className="size-20 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center">
@@ -316,7 +316,7 @@ export default function TelaoVotacao({ votacaoAtiva, camara, onRefresh, embedded
         </section>
 
         {/* DIREITA — Matéria + Placar + Cronômetros */}
-        <section className="col-span-5 flex flex-col gap-5 min-h-0">
+        <section className="lg:col-span-5 flex flex-col gap-5 min-h-0">
 
           {/* MATÉRIA */}
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
