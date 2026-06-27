@@ -76,7 +76,7 @@ function Cronometro({ id, segundos, label, cmd, onCmd, destaque = false }) {
     : "text-foreground";
 
   return (
-    <div className={`relative bg-card border border-border rounded-2xl p-3 flex flex-col gap-2 ${destaque ? "ring-1 ring-accent/40" : ""}`}>
+    <div className={`relative bg-card border border-border rounded-xl p-2.5 flex flex-col gap-1.5 ${destaque ? "ring-1 ring-accent/40" : ""}`}>
       {destaque && <span className="absolute top-0 left-3 right-3 h-px bg-accent/60" />}
       <div className="flex items-center justify-between">
         <span className={`text-[10px] font-mono uppercase tracking-[0.18em] ${destaque ? "text-accent" : "text-muted-foreground"}`}>
@@ -89,7 +89,7 @@ function Cronometro({ id, segundos, label, cmd, onCmd, destaque = false }) {
           {ativo ? "Pausar" : restante === 0 ? "Reiniciar" : "Iniciar"}
         </button>
       </div>
-      <div className={`text-3xl font-mono font-semibold tabular-nums leading-none ${numCor}`}>
+      <div className={`text-2xl font-mono font-semibold tabular-nums leading-none ${numCor}`}>
         {String(mins).padStart(2, "0")}:{String(secs).padStart(2, "0")}
       </div>
       <div className="h-1 w-full bg-muted rounded-full overflow-hidden">
@@ -107,44 +107,45 @@ function Cronometro({ id, segundos, label, cmd, onCmd, destaque = false }) {
 /* ─── Paleta semântica do voto ─── */
 function votoEstilo(status) {
   if (status === "Sim")
-    return { dot: "bg-[var(--favor)]", text: "text-[var(--favor)]", label: "Favorável", soft: "bg-[var(--favor-soft)]" };
+    return { dot: "bg-[var(--favor)]", text: "text-[var(--favor)]", label: "Favorável", soft: "bg-[var(--favor-soft)]", border: "border-[var(--favor)]/55", ring: "ring-[var(--favor)]/70" };
   if (status === "Não")
-    return { dot: "bg-[var(--against)]", text: "text-[var(--against)]", label: "Contrário", soft: "bg-[var(--against-soft)]" };
+    return { dot: "bg-[var(--against)]", text: "text-[var(--against)]", label: "Contrário", soft: "bg-[var(--against-soft)]", border: "border-[var(--against)]/55", ring: "ring-[var(--against)]/70" };
   if (status === "Abstenção")
-    return { dot: "bg-[var(--abstain)]", text: "text-[var(--abstain)]", label: "Abstenção", soft: "bg-[var(--abstain-soft)]" };
-  return { dot: "bg-muted-foreground/50 animate-pulse", text: "text-muted-foreground", label: "Aguardando", soft: "" };
+    return { dot: "bg-[var(--abstain)]", text: "text-[var(--abstain)]", label: "Abstenção", soft: "bg-[var(--abstain-soft)]", border: "border-[var(--abstain)]/55", ring: "ring-[var(--abstain)]/70" };
+  return { dot: "bg-muted-foreground/50 animate-pulse", text: "text-muted-foreground", label: "Aguardando", soft: "", border: "border-border", ring: "ring-border" };
 }
 
 /* ─── Card do vereador ─── */
 function CardVereador({ voto }) {
   const e = votoEstilo(voto.voto);
+  const votou = !!voto.voto;
   const nomeCurto = voto.parlamentar_nome?.split(" ").slice(0, 2).join(" ");
 
   return (
-    <div className={`bg-card border border-border rounded-xl p-3 flex items-center gap-3 ${!voto.voto ? "opacity-70" : ""}`}>
+    <div className={`border rounded-xl p-4 flex items-center gap-4 transition-colors duration-300 ${votou ? `${e.soft} ${e.border}` : "bg-card border-border opacity-80"}`}>
       {voto.foto_url ? (
         <img
           src={voto.foto_url}
           alt={voto.parlamentar_nome}
-          className="size-12 rounded-lg object-cover bg-muted shrink-0 ring-1 ring-border"
+          className={`size-16 rounded-xl object-cover bg-muted shrink-0 ring-2 transition-all duration-300 ${votou ? e.ring : "ring-border"} ${votou ? "" : "grayscale"}`}
         />
       ) : (
-        <div className="size-12 rounded-lg bg-muted shrink-0 flex items-center justify-center text-muted-foreground font-heading font-semibold text-lg">
+        <div className={`size-16 rounded-xl bg-muted shrink-0 flex items-center justify-center text-muted-foreground font-heading font-bold text-2xl ring-2 transition-all duration-300 ${votou ? e.ring : "ring-border"}`}>
           {voto.parlamentar_nome?.[0]}
         </div>
       )}
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-semibold text-foreground truncate leading-tight">
+        <div className="text-base font-semibold text-foreground truncate leading-tight">
           {nomeCurto}
         </div>
         {voto.partido_sigla && (
-          <div className="text-[10px] font-mono uppercase tracking-[0.14em] text-muted-foreground mt-0.5">
+          <div className="text-[11px] font-mono uppercase tracking-[0.14em] text-muted-foreground mt-0.5">
             {voto.partido_sigla}
           </div>
         )}
-        <div className="flex items-center gap-1.5 mt-1.5">
-          <div className={`size-1.5 rounded-full ${e.dot}`} />
-          <span className={`text-[10px] font-mono uppercase tracking-[0.14em] ${e.text}`}>
+        <div className="flex items-center gap-1.5 mt-2">
+          <div className={`size-2 rounded-full ${e.dot}`} />
+          <span className={`text-[11px] font-mono font-bold uppercase tracking-[0.12em] ${e.text}`}>
             {e.label}
           </span>
         </div>
@@ -317,7 +318,7 @@ export default function TelaoVotacao({ votacaoAtiva, camara, onRefresh, embedded
       {/* MAIN GRID — 12 cols */}
       <main className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 min-h-0">
         {/* ESQUERDA — Parlamentares */}
-        <section className="lg:col-span-7 flex flex-col min-h-0">
+        <section className="lg:col-span-5 flex flex-col min-h-0">
           {sigiloso ? (
             <div className="bg-card border border-border rounded-2xl p-10 flex flex-col items-center justify-center text-center gap-4 h-full">
               <div className="size-20 rounded-2xl bg-secondary border border-border flex items-center justify-center">
@@ -348,7 +349,7 @@ export default function TelaoVotacao({ votacaoAtiva, camara, onRefresh, embedded
                   {votaram}/{total} votaram
                 </span>
               </div>
-              <div className="grid grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 content-start overflow-y-auto pr-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 content-start overflow-y-auto pr-1">
                 {votos.map((voto, i) => (
                   <CardVereador key={voto.parlamentar_id || voto.parlamentar_nome || i} voto={voto} />
                 ))}
@@ -358,7 +359,7 @@ export default function TelaoVotacao({ votacaoAtiva, camara, onRefresh, embedded
         </section>
 
         {/* DIREITA — Matéria + Placar + Cronômetros */}
-        <section className="lg:col-span-5 flex flex-col gap-5 min-h-0">
+        <section className="lg:col-span-7 flex flex-col gap-5 min-h-0">
           {/* MATÉRIA */}
           <div className="bg-card border border-border p-6 rounded-2xl relative overflow-hidden">
             <span className="absolute left-0 top-6 bottom-6 w-1 bg-accent rounded-r" />
@@ -377,36 +378,36 @@ export default function TelaoVotacao({ votacaoAtiva, camara, onRefresh, embedded
             </h2>
           </div>
 
-          {/* PLACAR */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="bg-[var(--favor-soft)] border border-[var(--favor)]/30 p-4 rounded-2xl text-center">
-              <div className="text-[10px] font-mono uppercase tracking-[0.22em] text-[var(--favor)] mb-1">
+          {/* PLACAR — preenche o espaço, números grandes */}
+          <div className="grid grid-cols-3 gap-4 flex-1 min-h-0">
+            <div className="bg-[var(--favor-soft)] border border-[var(--favor)]/30 rounded-2xl flex flex-col items-center justify-center text-center p-4">
+              <div className="text-xs xl:text-sm font-mono uppercase tracking-[0.22em] text-[var(--favor)] mb-4">
                 Favoráveis
               </div>
-              <div className="text-5xl font-semibold font-mono text-[var(--favor)] tabular-nums leading-none">
+              <div className="text-7xl xl:text-8xl 2xl:text-9xl font-bold font-mono text-[var(--favor)] tabular-nums leading-none">
                 {String(sim).padStart(2, "0")}
               </div>
             </div>
-            <div className="bg-[var(--against-soft)] border border-[var(--against)]/30 p-4 rounded-2xl text-center">
-              <div className="text-[10px] font-mono uppercase tracking-[0.22em] text-[var(--against)] mb-1">
+            <div className="bg-[var(--against-soft)] border border-[var(--against)]/30 rounded-2xl flex flex-col items-center justify-center text-center p-4">
+              <div className="text-xs xl:text-sm font-mono uppercase tracking-[0.22em] text-[var(--against)] mb-4">
                 Contrários
               </div>
-              <div className="text-5xl font-semibold font-mono text-[var(--against)] tabular-nums leading-none">
+              <div className="text-7xl xl:text-8xl 2xl:text-9xl font-bold font-mono text-[var(--against)] tabular-nums leading-none">
                 {String(nao).padStart(2, "0")}
               </div>
             </div>
-            <div className="bg-[var(--abstain-soft)] border border-[var(--abstain)]/30 p-4 rounded-2xl text-center">
-              <div className="text-[10px] font-mono uppercase tracking-[0.22em] text-[var(--abstain)] mb-1">
+            <div className="bg-[var(--abstain-soft)] border border-[var(--abstain)]/30 rounded-2xl flex flex-col items-center justify-center text-center p-4">
+              <div className="text-xs xl:text-sm font-mono uppercase tracking-[0.22em] text-[var(--abstain)] mb-4">
                 Abstenções
               </div>
-              <div className="text-5xl font-semibold font-mono text-[var(--abstain)] tabular-nums leading-none">
+              <div className="text-7xl xl:text-8xl 2xl:text-9xl font-bold font-mono text-[var(--abstain)] tabular-nums leading-none">
                 {String(abstencao).padStart(2, "0")}
               </div>
             </div>
           </div>
 
-          {/* CRONÔMETROS 2x2 */}
-          <div className="grid grid-cols-2 gap-3 flex-1">
+          {/* CRONÔMETROS — linha compacta */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 flex-shrink-0">
             <Cronometro id="discurso" segundos={v.timer_discurso || 300} label="Discurso" cmd={cronometroCmd} onCmd={enviarCronometro} />
             <Cronometro id="aparte" segundos={v.timer_aparte || 60} label="Aparte" cmd={cronometroCmd} onCmd={enviarCronometro} destaque />
             <Cronometro id="questao_ordem" segundos={v.timer_questao || 120} label="Questão de Ordem" cmd={cronometroCmd} onCmd={enviarCronometro} />
