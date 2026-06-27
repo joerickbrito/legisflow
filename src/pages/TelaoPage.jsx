@@ -46,8 +46,10 @@ export default function TelaoPage() {
 
   if (loading) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-gray-950">
-        <div className="w-8 h-8 border-4 border-white/20 border-t-white rounded-full animate-spin" />
+      <div className={painelEscuro(tema) ? 'dark' : ''}>
+        <div className="h-screen w-screen flex items-center justify-center bg-background">
+          <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
+        </div>
       </div>
     );
   }
@@ -55,15 +57,17 @@ export default function TelaoPage() {
   // Sem votação ativa — tela de espera (já vale como "fundo" pra projetar na TV)
   if (!votacaoAtiva) {
     return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center text-center p-8 bg-gradient-to-b from-slate-950 to-slate-900">
-        {camara?.brasao_url && (
-          <img src={camara.brasao_url} alt="Brasão" className="w-24 h-24 object-contain mb-6 opacity-90" />
-        )}
-        <h2 className="text-white font-heading font-bold text-2xl mb-3">{camara?.nome || 'Câmara Municipal'}</h2>
-        <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mb-3">
-          <Monitor size={30} className="text-white/30" />
+      <div className={painelEscuro(tema) ? 'dark' : ''}>
+        <div className="h-screen w-screen flex flex-col items-center justify-center text-center p-8 bg-background text-foreground">
+          {camara?.brasao_url && (
+            <img src={camara.brasao_url} alt="Brasão" className="w-24 h-24 object-contain mb-6 opacity-90" />
+          )}
+          <h2 className="font-heading font-bold text-2xl mb-3 text-foreground">{camara?.nome || 'Câmara Municipal'}</h2>
+          <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mb-3">
+            <Monitor size={30} className="text-muted-foreground" />
+          </div>
+          <p className="text-muted-foreground text-sm">Aguardando o início de uma votação...</p>
         </div>
-        <p className="text-white/40 text-sm">Aguardando o início de uma votação...</p>
       </div>
     );
   }

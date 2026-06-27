@@ -6,25 +6,25 @@
 
 @layer base {
   :root {
-    /* === Base institucional (bege + off-white) — paleta padrão: AZUL === */
-    --background: 40 30% 96%;
+    /* === Base institucional (branco/off-white neutro) — paleta padrão: AZUL === */
+    --background: 210 20% 98%;
     --foreground: 213 41% 16%;
-    --card: 40 33% 99%;
+    --card: 0 0% 100%;
     --card-foreground: 213 41% 16%;
-    --popover: 40 33% 99%;
+    --popover: 0 0% 100%;
     --popover-foreground: 213 41% 16%;
     --primary: 214 80% 24%;
-    --primary-foreground: 40 33% 97%;
-    --secondary: 40 30% 89%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 16% 95%;
     --secondary-foreground: 213 40% 22%;
-    --muted: 40 26% 92%;
+    --muted: 210 16% 95%;
     --muted-foreground: 214 16% 42%;
     --accent: 212 76% 44%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 70% 45%;
-    --destructive-foreground: 40 33% 97%;
-    --border: 40 22% 85%;
-    --input: 40 22% 85%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 20% 91%;
+    --input: 214 20% 91%;
     --ring: 212 76% 44%;
     --radius: 0.75rem;
 
@@ -38,13 +38,13 @@
     --font-display: 'Plus Jakarta Sans', sans-serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
-    --sidebar-background: 40 33% 98%;
+    --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 213 38% 22%;
     --sidebar-primary: 214 80% 24%;
-    --sidebar-primary-foreground: 40 33% 97%;
-    --sidebar-accent: 40 30% 90%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 16% 95%;
     --sidebar-accent-foreground: 213 40% 18%;
-    --sidebar-border: 40 22% 86%;
+    --sidebar-border: 214 20% 92%;
     --sidebar-ring: 212 76% 44%;
 
     --chart-1: 213 73% 30%;
