@@ -39,13 +39,25 @@ export function clearSession() {
 const HANDOFF_KEY = 'sislegis_handoff';
 
 export function abrirJanelaComSessao(url, nome, features) {
+  // Monta no hash: sessão + aparência (tema/paleta). A janela do telão pode abrir
+  // em outro subdomínio (preview-sandbox), onde localStorage NÃO é compartilhado,
+  // então o tema/paleta precisam viajar pela URL — senão o telão cai no padrão escuro.
+  const params = [];
   const raw = sessionStorage.getItem(SESSION_KEY) || '';
-  let full = url;
   if (raw) {
     const token = btoa(unescape(encodeURIComponent(raw)));
-    const sep = url.includes('#') ? '&' : '#';
-    full = `${url}${sep}${HANDOFF_KEY}=${encodeURIComponent(token)}`;
+    params.push(`${HANDOFF_KEY}=${encodeURIComponent(token)}`);
   }
+  try {
+    const tema = localStorage.getItem('sislegis_tema');
+    if (tema) params.push(`tema=${encodeURIComponent(tema)}`);
+  } catch { /* ignore */ }
+  try {
+    const paleta = (typeof document !== 'undefined' && document.documentElement.dataset.paleta) || '';
+    if (paleta) params.push(`paleta=${encodeURIComponent(paleta)}`);
+  } catch { /* ignore */ }
+  const sep = url.includes('#') ? '&' : '#';
+  const full = params.length ? `${url}${sep}${params.join('&')}` : url;
   return window.open(full, nome, features);
 }
 

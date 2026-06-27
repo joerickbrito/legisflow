@@ -57,6 +57,30 @@ export function aplicarPaleta(p) {
   document.documentElement.dataset.paleta = val;
 }
 
+export function getPaletaAtual() {
+  if (typeof document === 'undefined') return 'azul';
+  return document.documentElement.dataset.paleta || 'azul';
+}
+
+// Consome tema/paleta vindos do hash da URL (ex.: janela do telão aberta em
+// outro subdomínio, onde o localStorage não é compartilhado). Deve rodar ANTES
+// de limpar o hash. Persiste o tema neste dispositivo e aplica tudo na hora.
+export function consumirHandoffAparencia() {
+  try {
+    const h = window.location.hash || '';
+    const mt = h.match(/[#&]tema=([^&]+)/);
+    if (mt) {
+      const t = decodeURIComponent(mt[1]);
+      if (VALIDOS.includes(t)) {
+        try { localStorage.setItem(KEY, t); } catch { /* ignore */ }
+        aplicarTema(t);
+      }
+    }
+    const mp = h.match(/[#&]paleta=([^&]+)/);
+    if (mp) aplicarPaleta(decodeURIComponent(mp[1]));
+  } catch { /* ignore */ }
+}
+
 // Hook reativo: re-renderiza quando o tema muda (inclusive em outra aba/janela).
 export function useTema() {
   const [tema, set] = useState(getTema());
