@@ -156,6 +156,14 @@ export default function PainelEletronico() {
       timer_questao: config.timer_questao,
       timer_consideracoes: config.timer_consideracoes,
     });
+
+    // Marca a sessão vinculada como "Em Andamento" ao iniciar a votação
+    // (apenas se ainda estava "Agendada"). Não encerra a sessão ao fim de uma
+    // votação — uma sessão pode ter várias votações; o encerramento é manual.
+    if (sessao && sessao.status === 'Agendada') {
+      try { await sislegisEntities.Sessao.update(sessao.id, { status: 'Em Andamento' }); } catch { /* não bloqueia a votação */ }
+    }
+
     setShowConfig(false);
     loadVotacaoAtiva();
     } catch (e) {

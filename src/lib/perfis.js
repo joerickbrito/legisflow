@@ -323,6 +323,7 @@ export const MENU_PERMISSION_MAP = {
   // Outros
   '/audiencias': 'audiencias_visualizar',
   '/protocolo': 'documentos_visualizar',
+  '/protocolos-publicos': 'documentos_visualizar',
   '/documentos': 'documentos_visualizar',
   '/oficios': 'documentos_visualizar',
   '/transparencia': 'estrutura_visualizar',

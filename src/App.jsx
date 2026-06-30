@@ -28,6 +28,7 @@ import Normas from '@/pages/Normas';
 import Documentos from '@/pages/Documentos';
 import Transparencia from '@/pages/Transparencia';
 import ProtocolarPrefeitura from '@/pages/ProtocolarPrefeitura';
+import ProtocolosPublicos from '@/pages/ProtocolosPublicos';
 import Relatorios from '@/pages/Relatorios';
 import PainelEletronico from '@/pages/PainelEletronico.jsx';
 import TelaoPage from '@/pages/TelaoPage.jsx';
@@ -100,6 +101,7 @@ const AuthenticatedApp = () => {
           <Route path="/mesa-diretora" element={<MesaDiretora />} />
           <Route path="/comissoes" element={<Comissoes />} />
           <Route path="/protocolo" element={<Protocolo />} />
+          <Route path="/protocolos-publicos" element={<ProtocolosPublicos />} />
           <Route path="/protocolar" element={<ProtocolarPrefeitura />} />
           <Route path="/proposicoes" element={<Proposicoes />} />
           <Route path="/materias" element={<Materias />} />
