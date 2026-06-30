@@ -286,13 +286,21 @@ export default function Transparencia() {
   const autoresMateria = [...new Set(data.materias.map(m => m.autor_nome).filter(Boolean))].sort();
   const { camara } = data;
 
+  const totais = [
+    { icon: Users, label: 'Parlamentares', n: data.parlamentares.length },
+    { icon: FileText, label: 'Projetos de Lei', n: data.materias.filter(m => m.tipo === 'Projeto de Lei' || m.tipo === 'Projeto de Lei Complementar').length },
+    { icon: ScrollText, label: 'Leis e Normas', n: data.normas.length },
+    { icon: Calendar, label: 'Sessões', n: data.sessoes.length },
+  ];
+
   return (
     <div className="min-h-screen bg-background">
       {/* Hero */}
-      <div className="bg-primary text-primary-foreground py-10 px-6 relative">
-        <div className="max-w-5xl mx-auto text-center">
+      <div className="bg-primary text-primary-foreground pt-12 pb-24 px-6 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-[0.07] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)', backgroundSize: '22px 22px' }} />
+        <div className="max-w-5xl mx-auto text-center relative z-10">
           {camara?.brasao_url && (
-            <img src={camara.brasao_url} alt="Brasão" className="h-16 w-16 object-contain mx-auto mb-4 rounded-xl" />
+            <img src={camara.brasao_url} alt="Brasão" className="h-20 w-20 object-contain mx-auto mb-4 rounded-xl bg-white/95 p-1.5 shadow-lg" />
           )}
           <h1 className="text-3xl md:text-4xl font-heading font-bold mb-2">Portal da Transparência</h1>
           <p className="text-primary-foreground/70 text-base">
@@ -308,7 +316,7 @@ export default function Transparencia() {
             Trocar câmara
           </button>
         </div>
-        <div className="absolute top-4 right-4 flex gap-2">
+        <div className="absolute top-4 right-4 flex gap-2 z-10">
           <Link to="/login">
             <button className="flex items-center gap-2 py-2 px-4 rounded-xl bg-white/10 hover:bg-white/20 text-white/80 hover:text-white text-xs font-medium transition-all border border-white/20">
               <LogIn size={13} /> Área Restrita
@@ -317,7 +325,22 @@ export default function Transparencia() {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-8 space-y-5">
+      <div className="max-w-6xl mx-auto px-4 pb-8 space-y-5">
+        {/* Resumo (cards sobrepostos ao hero) */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 -mt-16 relative z-10">
+          {totais.map((t) => (
+            <div key={t.label} className="bg-card border border-border rounded-2xl p-4 shadow-sm flex items-center gap-3">
+              <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <t.icon size={18} className="text-primary" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-2xl font-heading font-bold text-foreground tabular-nums leading-none">{t.n}</div>
+                <div className="text-xs text-muted-foreground mt-1 truncate">{t.label}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
         {/* Filtros globais */}
         <div className="bg-card border border-border rounded-2xl p-4 shadow-sm">
           <div className="flex flex-col md:flex-row gap-3 flex-wrap">

@@ -223,22 +223,23 @@ export default function TelaoVotacao({ votacaoAtiva, camara, onRefresh, embedded
       <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-transparent via-accent to-transparent opacity-80" />
 
       {/* TOPO */}
-      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-border pb-5">
-        <div className="flex items-center gap-4 min-w-0">
+      <header className="flex flex-wrap items-center gap-x-8 gap-y-4 border-b border-border pb-5">
+        {/* Identidade da câmara (logo maior) */}
+        <div className="flex items-center gap-5 min-w-0 flex-1">
           {camara?.brasao_url ? (
-            <div className="size-16 bg-card border border-border rounded-xl flex items-center justify-center shrink-0 overflow-hidden">
-              <img src={camara.brasao_url} alt="Brasão" className="size-12 object-contain" />
+            <div className="size-20 lg:size-24 bg-card border border-border rounded-2xl flex items-center justify-center shrink-0 overflow-hidden p-1.5">
+              <img src={camara.brasao_url} alt="Brasão" className="size-full object-contain" />
             </div>
           ) : (
-            <div className="size-16 bg-card border border-border rounded-xl shrink-0 flex items-center justify-center">
-              <div className="size-8 rounded-full border-2 border-accent/60" />
+            <div className="size-20 lg:size-24 bg-card border border-border rounded-2xl shrink-0 flex items-center justify-center">
+              <div className="size-10 rounded-full border-2 border-accent/60" />
             </div>
           )}
           <div className="min-w-0">
-            <h1 className="text-2xl font-heading font-bold tracking-tight truncate">
+            <h1 className="text-2xl xl:text-3xl font-heading font-bold tracking-tight truncate">
               {camara?.nome || "Câmara Municipal"}
             </h1>
-            <p className="text-muted-foreground font-mono text-xs uppercase tracking-[0.2em] truncate mt-1">
+            <p className="text-muted-foreground font-mono text-xs uppercase tracking-[0.2em] truncate mt-1.5">
               {camara?.municipio}
               {camara?.estado ? ` — ${camara.estado}` : ""}
               {sessaoLabel && ` · ${sessaoLabel}`}
@@ -246,24 +247,27 @@ export default function TelaoVotacao({ votacaoAtiva, camara, onRefresh, embedded
           </div>
         </div>
 
-        {!encerrada && (
-          <div className="flex items-center bg-[var(--favor-soft)] border border-[var(--favor)]/30 px-5 py-2 rounded-full gap-3 shrink-0">
-            <span className="relative flex size-2">
-              <span className="animate-ping absolute inline-flex size-full rounded-full bg-[var(--favor)] opacity-60" />
-              <span className="relative inline-flex rounded-full size-2 bg-[var(--favor)]" />
-            </span>
-            <span className="font-mono text-sm font-semibold text-[var(--favor)] uppercase tracking-[0.18em]">
-              Em Votação · {v.tipo_votacao}
-            </span>
-          </div>
-        )}
+        {/* Estado + relógio — agrupados à direita, com respiro */}
+        <div className="flex items-center gap-6 shrink-0 ml-auto">
+          {!encerrada && (
+            <div className="flex items-center bg-[var(--favor-soft)] border border-[var(--favor)]/30 px-5 py-2 rounded-full gap-3">
+              <span className="relative flex size-2">
+                <span className="animate-ping absolute inline-flex size-full rounded-full bg-[var(--favor)] opacity-60" />
+                <span className="relative inline-flex rounded-full size-2 bg-[var(--favor)]" />
+              </span>
+              <span className="font-mono text-sm font-semibold text-[var(--favor)] uppercase tracking-[0.18em]">
+                Em Votação · {v.tipo_votacao}
+              </span>
+            </div>
+          )}
 
-        <div className="text-right shrink-0">
-          <div className="text-3xl font-mono font-medium tabular-nums">
-            {agora ? format(agora, "HH:mm:ss") : "--:--:--"}
-          </div>
-          <div className="text-muted-foreground font-mono text-xs uppercase tracking-[0.18em] mt-1">
-            {agora ? format(agora, "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : ""}
+          <div className="text-right">
+            <div className="text-3xl xl:text-4xl font-mono font-medium tabular-nums leading-none">
+              {agora ? format(agora, "HH:mm:ss") : "--:--:--"}
+            </div>
+            <div className="text-muted-foreground font-mono text-xs uppercase tracking-[0.18em] mt-1.5">
+              {agora ? format(agora, "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : ""}
+            </div>
           </div>
         </div>
       </header>
@@ -359,7 +363,7 @@ export default function TelaoVotacao({ votacaoAtiva, camara, onRefresh, embedded
         </section>
 
         {/* DIREITA — Matéria + Placar + Cronômetros */}
-        <section className="lg:col-span-7 flex flex-col gap-5 min-h-0">
+        <section className="lg:col-span-7 flex flex-col gap-6 min-h-0">
           {/* MATÉRIA */}
           <div className="bg-card border border-border p-6 rounded-2xl relative overflow-hidden">
             <span className="absolute left-0 top-6 bottom-6 w-1 bg-accent rounded-r" />
@@ -379,28 +383,28 @@ export default function TelaoVotacao({ votacaoAtiva, camara, onRefresh, embedded
           </div>
 
           {/* PLACAR — preenche o espaço, números grandes */}
-          <div className="grid grid-cols-3 gap-4 flex-1 min-h-0">
-            <div className="bg-[var(--favor-soft)] border border-[var(--favor)]/30 rounded-2xl flex flex-col items-center justify-center text-center p-4">
-              <div className="text-xs xl:text-sm font-mono uppercase tracking-[0.22em] text-[var(--favor)] mb-4">
+          <div className="grid grid-cols-3 gap-5 xl:gap-6 flex-1 min-h-0">
+            <div className="bg-[var(--favor-soft)] border border-[var(--favor)]/30 rounded-2xl flex flex-col items-center justify-center text-center p-5 xl:p-6">
+              <div className="text-xs xl:text-sm font-mono uppercase tracking-[0.22em] text-[var(--favor)] mb-3">
                 Favoráveis
               </div>
-              <div className="text-7xl xl:text-8xl 2xl:text-9xl font-bold font-mono text-[var(--favor)] tabular-nums leading-none">
+              <div className="text-7xl xl:text-8xl font-bold font-mono text-[var(--favor)] tabular-nums leading-none">
                 {String(sim).padStart(2, "0")}
               </div>
             </div>
-            <div className="bg-[var(--against-soft)] border border-[var(--against)]/30 rounded-2xl flex flex-col items-center justify-center text-center p-4">
-              <div className="text-xs xl:text-sm font-mono uppercase tracking-[0.22em] text-[var(--against)] mb-4">
+            <div className="bg-[var(--against-soft)] border border-[var(--against)]/30 rounded-2xl flex flex-col items-center justify-center text-center p-5 xl:p-6">
+              <div className="text-xs xl:text-sm font-mono uppercase tracking-[0.22em] text-[var(--against)] mb-3">
                 Contrários
               </div>
-              <div className="text-7xl xl:text-8xl 2xl:text-9xl font-bold font-mono text-[var(--against)] tabular-nums leading-none">
+              <div className="text-7xl xl:text-8xl font-bold font-mono text-[var(--against)] tabular-nums leading-none">
                 {String(nao).padStart(2, "0")}
               </div>
             </div>
-            <div className="bg-[var(--abstain-soft)] border border-[var(--abstain)]/30 rounded-2xl flex flex-col items-center justify-center text-center p-4">
-              <div className="text-xs xl:text-sm font-mono uppercase tracking-[0.22em] text-[var(--abstain)] mb-4">
+            <div className="bg-[var(--abstain-soft)] border border-[var(--abstain)]/30 rounded-2xl flex flex-col items-center justify-center text-center p-5 xl:p-6">
+              <div className="text-xs xl:text-sm font-mono uppercase tracking-[0.22em] text-[var(--abstain)] mb-3">
                 Abstenções
               </div>
-              <div className="text-7xl xl:text-8xl 2xl:text-9xl font-bold font-mono text-[var(--abstain)] tabular-nums leading-none">
+              <div className="text-7xl xl:text-8xl font-bold font-mono text-[var(--abstain)] tabular-nums leading-none">
                 {String(abstencao).padStart(2, "0")}
               </div>
             </div>
