@@ -29,7 +29,8 @@
         "PRESIDENTE",
         "VEREADOR",
         "ASSESSOR",
-        "SECRETARIO_LEGISLATIVO"
+        "SECRETARIO_LEGISLATIVO",
+        "PROTOCOLO_PREFEITURA"
       ],
       "default": "VEREADOR"
     },

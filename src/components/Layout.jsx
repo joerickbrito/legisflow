@@ -22,6 +22,18 @@ const getNavGroups = (user, isInChamberContext) => {
   const isAdminCamaraProfile = user.role === 'ADMIN_CAMARA';
   const seesAll = isSuperAdmin || isAdminCamaraProfile;
 
+  // ─── CONTEXTO: LOGIN DA PREFEITURA (menu dedicado: só protocolar) ───
+  if (user.role === 'PROTOCOLO_PREFEITURA') {
+    return [
+      {
+        label: 'Protocolo',
+        items: [
+          { path: '/protocolar', icon: Inbox, label: 'Protocolar Documento', highlight: true },
+        ],
+      },
+    ];
+  }
+
   // Admin (Master ou Câmara) vê tudo; demais perfis são filtrados por permissão
   const filterItems = (items) => seesAll
     ? items
@@ -142,6 +154,11 @@ export default function Layout() {
   // SUPER_ADMIN sem câmara ativa → redirecionar da home para painel master
   if (isSuperAdmin && !isInChamberContext && location.pathname === '/') {
     return <Navigate to="/painel-master" replace />;
+  }
+
+  // Login da Prefeitura → home vai direto para a tela de protocolar
+  if (user?.role === 'PROTOCOLO_PREFEITURA' && location.pathname === '/') {
+    return <Navigate to="/protocolar" replace />;
   }
 
   function toggleGroup(i) {

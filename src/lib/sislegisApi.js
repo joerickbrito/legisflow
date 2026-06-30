@@ -200,6 +200,23 @@ export async function sincronizarCronometro(votacaoId, cmd) {
   }
 }
 
+// ===== Protocolo =====
+// Cria um protocolo (numeração sequencial + código de rastreio, no backend).
+// Quando há sessão (login da prefeitura/interno), o token vai junto e o servidor
+// define a origem; sem sessão (portal público) a origem vira "Público".
+export async function protocolar(dados) {
+  const response = await base44.functions.invoke('protocolar', withAuth(dados));
+  if (response.data?.error) throw new Error(response.data.error);
+  return response.data?.data;
+}
+
+// Consulta pública de protocolo pelo código de rastreio (sem login).
+export async function consultarProtocolo(camara_id, codigo) {
+  const response = await base44.functions.invoke('consultarProtocolo', { camara_id, codigo });
+  if (response.data?.error) throw new Error(response.data.error);
+  return response.data?.data;
+}
+
 export async function listarUsuariosSislegis(query = {}, sort, limit) {
   return operarEntidade('UsuarioSislegis', 'filter', { query, sort, limit });
 }

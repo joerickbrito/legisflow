@@ -9,6 +9,7 @@ export const PERFIS = {
   VEREADOR: 'VEREADOR',
   ASSESSOR: 'ASSESSOR',
   SECRETARIO_LEGISLATIVO: 'SECRETARIO_LEGISLATIVO',
+  PROTOCOLO_PREFEITURA: 'PROTOCOLO_PREFEITURA',
   SUPER_ADMIN: 'SUPER_ADMIN',
 };
 
@@ -19,6 +20,7 @@ export const PERFIL_LABELS = {
   VEREADOR: 'Vereador',
   ASSESSOR: 'Assessor',
   SECRETARIO_LEGISLATIVO: 'Secretário Legislativo',
+  PROTOCOLO_PREFEITURA: 'Protocolo — Prefeitura',
   SUPER_ADMIN: 'Master Admin',
 };
 
@@ -29,6 +31,7 @@ export const PERFIL_DESCRIPTIONS = {
   VEREADOR: 'Acessa pautas, projetos, participa de votações e consulta seu histórico.',
   ASSESSOR: 'Acesso de consulta e apoio documental conforme permissões atribuídas, não vota.',
   SECRETARIO_LEGISLATIVO: 'Responsável por registros formais, atas, protocolos e publicações oficiais.',
+  PROTOCOLO_PREFEITURA: 'Login da Prefeitura. Acessa apenas a tela de protocolar documentos (ofícios, requerimentos, projetos de lei, etc.) à câmara.',
   SUPER_ADMIN: 'Administrador global da plataforma — acesso total a todas as câmaras.',
 };
 
@@ -243,6 +246,9 @@ SECRETARIO_PERMS.painel_votar = false;
 // SUPER_ADMIN: tudo
 const SUPER_PERMS = todas(true);
 
+// PROTOCOLO_PREFEITURA: nada do sistema, apenas protocolar documentos à câmara.
+const PREFEITURA_PERMS = { ...todas(false), protocolar_prefeitura: true };
+
 export const DEFAULT_PERMISSIONS = {
   ADMIN_CAMARA: ADMIN,
   OPERADOR_GERAL: OPERADOR,
@@ -250,6 +256,7 @@ export const DEFAULT_PERMISSIONS = {
   VEREADOR: VEREADOR_PERMS,
   ASSESSOR: ASSESSOR_PERMS,
   SECRETARIO_LEGISLATIVO: SECRETARIO_PERMS,
+  PROTOCOLO_PREFEITURA: PREFEITURA_PERMS,
   SUPER_ADMIN: SUPER_PERMS,
 };
 
@@ -261,6 +268,7 @@ export const PERFIS_ORDER = [
   'VEREADOR',
   'ASSESSOR',
   'SECRETARIO_LEGISLATIVO',
+  'PROTOCOLO_PREFEITURA',
 ];
 
 // Perfis que exigem partido
