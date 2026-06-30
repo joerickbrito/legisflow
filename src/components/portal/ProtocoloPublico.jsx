@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import StatusBadge from '@/components/StatusBadge';
+import FileUpload from '@/components/FileUpload';
 
 const TIPOS = ['Ofício', 'Requerimento', 'Projeto de Lei', 'Petição', 'Memorando', 'Relatório', 'Outros'];
 
@@ -15,7 +16,7 @@ const TIPOS = ['Ofício', 'Requerimento', 'Projeto de Lei', 'Petição', 'Memora
 function CriarProtocolo({ camaraId }) {
   const [form, setForm] = useState({
     tipo_documento: 'Ofício', interessado: '', email_interessado: '',
-    telefone_interessado: '', assunto: '', observacoes: '',
+    telefone_interessado: '', assunto: '', observacoes: '', arquivo_url: '',
   });
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState('');
@@ -74,7 +75,7 @@ function CriarProtocolo({ camaraId }) {
           </div>
         </div>
         <button
-          onClick={() => { setResultado(null); setForm({ tipo_documento: 'Ofício', interessado: '', email_interessado: '', telefone_interessado: '', assunto: '', observacoes: '' }); }}
+          onClick={() => { setResultado(null); setForm({ tipo_documento: 'Ofício', interessado: '', email_interessado: '', telefone_interessado: '', assunto: '', observacoes: '', arquivo_url: '' }); }}
           className="text-sm text-primary hover:underline font-medium"
         >
           Registrar outro protocolo
@@ -121,6 +122,10 @@ function CriarProtocolo({ camaraId }) {
       <div>
         <label className="text-xs font-semibold text-foreground mb-1 block">Detalhes / observações</label>
         <Textarea value={form.observacoes} onChange={e => set('observacoes', e.target.value)} placeholder="Descreva o pedido ou conteúdo..." rows={4} />
+      </div>
+      <div>
+        <label className="text-xs font-semibold text-foreground mb-1 block">Anexar documento</label>
+        <FileUpload value={form.arquivo_url} onUploaded={(url) => set('arquivo_url', url)} label="" />
       </div>
       <button
         type="submit" disabled={enviando}

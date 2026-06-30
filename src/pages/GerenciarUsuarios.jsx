@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { criarUsuario, listarUsuariosSislegis, atualizarUsuarioSislegis, sislegisEntities, validarSenhaForte } from "@/lib/sislegisApi";
 import { useTenant } from "@/lib/TenantContext";
-import { PERFIS_ORDER, PERFIL_LABELS, PERFIL_DESCRIPTIONS, DEFAULT_PERMISSIONS, PERMISSION_GROUPS, PERFIS_PARTIDO_OBRIGATORIO, PERFIS_FOTO_OBRIGATORIA } from "@/lib/perfis";
+import { PERFIS_ORDER, PERFIL_LABELS, PERFIL_DESCRIPTIONS, DEFAULT_PERMISSIONS, PERMISSION_SECTIONS, ACAO_LABEL, ALL_PERM_KEYS, PERFIS_PARTIDO_OBRIGATORIO, PERFIS_FOTO_OBRIGATORIA } from "@/lib/perfis";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -183,7 +183,9 @@ export default function GerenciarUsuarios() {
       camara_id: u.camara_id || '',
       camara_nome: u.camara_nome || '',
       parlamentar_id: u.parlamentar_id || '',
-      permissoes: u.permissoes || DEFAULT_PERMISSIONS[u.role] || { ...DEFAULT_PERMISSIONS.VEREADOR },
+      // Mescla o padrão do perfil com o que estiver salvo, garantindo que chaves
+      // novas (introduzidas depois) apareçam corretas e preservando ajustes manuais.
+      permissoes: { ...(DEFAULT_PERMISSIONS[u.role] || {}), ...(u.permissoes || {}) },
     });
     setOpen(true);
   };
@@ -214,6 +216,30 @@ export default function GerenciarUsuarios() {
       ...f,
       permissoes: { ...f.permissoes, [key]: !f.permissoes[key] },
     }));
+  };
+
+  // Marca/desmarca TODAS as ações de uma seção inteira da sidebar.
+  const toggleSecao = (secao, ligar) => {
+    setForm(f => {
+      const novo = { ...f.permissoes };
+      secao.itens.forEach(it => it.acoes.forEach(a => { novo[`${it.id}_${a}`] = ligar; }));
+      return { ...f, permissoes: novo };
+    });
+  };
+
+  // Marca/desmarca todas as ações de um item.
+  const toggleItem = (item, ligar) => {
+    setForm(f => {
+      const novo = { ...f.permissoes };
+      item.acoes.forEach(a => { novo[`${item.id}_${a}`] = ligar; });
+      return { ...f, permissoes: novo };
+    });
+  };
+
+  const secaoEstado = (secao) => {
+    const keys = secao.itens.flatMap(it => it.acoes.map(a => `${it.id}_${a}`));
+    const on = keys.filter(k => form.permissoes?.[k]).length;
+    return { todas: on === keys.length, algumas: on > 0 && on < keys.length };
   };
 
   const handleSave = async () => {
@@ -313,7 +339,7 @@ export default function GerenciarUsuarios() {
   const camaraMap = {};
   camaras.forEach(c => { camaraMap[c.id] = c.nome; });
 
-  const todasPermKeys = PERMISSION_GROUPS.flatMap(g => g.keys.map(k => k.key));
+  const todasPermKeys = ALL_PERM_KEYS;
 
   return (
     <div className="p-6 space-y-6">
@@ -666,25 +692,58 @@ export default function GerenciarUsuarios() {
                   </span>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="px-4 pb-4 pt-0 space-y-4">
-                {PERMISSION_GROUPS.map(group => (
-                  <div key={group.label} className="space-y-1.5">
-                    <h4 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground border-b pb-1">
-                      {group.label}
-                    </h4>
-                    <div className="space-y-0.5">
-                      {group.keys.map(pk => (
-                        <label key={pk.key} className="flex items-center gap-2.5 py-1 px-1.5 rounded hover:bg-muted/50 cursor-pointer transition-colors">
-                          <Checkbox
-                            checked={form.permissoes?.[pk.key] || false}
-                            onCheckedChange={() => togglePermissao(pk.key)}
-                          />
-                          <span className="text-xs text-foreground select-none">{pk.label}</span>
-                        </label>
-                      ))}
+              <CardContent className="px-4 pb-4 pt-0 space-y-5">
+                {PERMISSION_SECTIONS.map(secao => {
+                  const est = secaoEstado(secao);
+                  return (
+                    <div key={secao.label} className="space-y-2">
+                      {/* Cabeçalho da seção — marca a seção inteira */}
+                      <label className="flex items-center gap-2.5 border-b pb-1.5 cursor-pointer">
+                        <Checkbox
+                          checked={est.todas ? true : est.algumas ? 'indeterminate' : false}
+                          onCheckedChange={() => toggleSecao(secao, !est.todas)}
+                        />
+                        <span className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground select-none">
+                          {secao.label}
+                        </span>
+                      </label>
+
+                      {/* Itens da seção */}
+                      <div className="space-y-2 pl-1">
+                        {secao.itens.map(item => {
+                          const itemKeys = item.acoes.map(a => `${item.id}_${a}`);
+                          const itemOn = itemKeys.filter(k => form.permissoes?.[k]).length;
+                          const itemTodas = itemOn === itemKeys.length;
+                          return (
+                            <div key={item.id} className="rounded-lg bg-muted/30 px-2.5 py-2">
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <Checkbox
+                                  checked={itemTodas ? true : itemOn > 0 ? 'indeterminate' : false}
+                                  onCheckedChange={() => toggleItem(item, !itemTodas)}
+                                />
+                                <span className="text-xs font-semibold text-foreground select-none">{item.label}</span>
+                              </label>
+                              <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-2 pl-6">
+                                {item.acoes.map(a => {
+                                  const k = `${item.id}_${a}`;
+                                  return (
+                                    <label key={k} className="flex items-center gap-1.5 cursor-pointer">
+                                      <Checkbox
+                                        checked={form.permissoes?.[k] || false}
+                                        onCheckedChange={() => togglePermissao(k)}
+                                      />
+                                      <span className="text-[11px] text-muted-foreground select-none">{ACAO_LABEL[a] || a}</span>
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </CardContent>
             </Card>
           </div>

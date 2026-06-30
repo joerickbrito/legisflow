@@ -35,160 +35,132 @@ export const PERFIL_DESCRIPTIONS = {
   SUPER_ADMIN: 'Administrador global da plataforma — acesso total a todas as câmaras.',
 };
 
-// Grupos de permissão para renderização no formulário
-export const PERMISSION_GROUPS = [
+// Ações possíveis por item (rótulos para a UI)
+export const ACAO_LABEL = {
+  visualizar: 'Visualizar',
+  criar: 'Criar',
+  editar: 'Editar',
+  excluir: 'Excluir',
+  tramitar: 'Atualizar tramitação',
+  encerrar: 'Encerrar',
+  presenca: 'Controlar presença',
+  operar: 'Operar votação',
+  votar: 'Votar',
+  desempate: 'Voto de desempate',
+  gerenciar_permissoes: 'Gerenciar permissões',
+};
+
+// ============================================================
+// PERMISSÕES organizadas EXATAMENTE como as seções da sidebar:
+//   Seção → itens (cada rota) → ações disponíveis naquele item.
+// A chave de cada permissão é `${item.id}_${acao}` (ex.: parlamentares_criar).
+// No formulário dá pra marcar a seção inteira, itens isolados, ou ações por item.
+// ============================================================
+export const PERMISSION_SECTIONS = [
   {
-    label: 'PROJETOS DE LEI',
-    keys: [
-      { key: 'projetos_lei_visualizar', label: 'Visualizar projetos de lei' },
-      { key: 'projetos_lei_criar', label: 'Criar projetos de lei' },
-      { key: 'projetos_lei_editar', label: 'Editar projetos de lei' },
-      { key: 'projetos_lei_excluir', label: 'Excluir projetos de lei' },
-      { key: 'projetos_lei_tramitar', label: 'Atualizar situação de tramitação' },
+    label: 'Principal',
+    itens: [
+      { id: 'dashboard', label: 'Dashboard da Câmara', path: '/', acoes: ['visualizar'] },
     ],
   },
   {
-    label: 'LEIS',
-    keys: [
-      { key: 'leis_visualizar', label: 'Visualizar leis' },
-      { key: 'leis_criar', label: 'Criar leis' },
-      { key: 'leis_editar', label: 'Editar leis' },
-      { key: 'leis_excluir', label: 'Excluir leis' },
+    label: 'Estrutura',
+    itens: [
+      { id: 'legislaturas', label: 'Legislaturas', path: '/legislaturas', acoes: ['visualizar', 'criar', 'editar', 'excluir'] },
+      { id: 'parlamentares', label: 'Parlamentares', path: '/parlamentares', acoes: ['visualizar', 'criar', 'editar', 'excluir'] },
+      { id: 'partidos', label: 'Partidos', path: '/partidos', acoes: ['visualizar', 'criar', 'editar', 'excluir'] },
+      { id: 'mesa_diretora', label: 'Mesa Diretora', path: '/mesa-diretora', acoes: ['visualizar', 'criar', 'editar', 'excluir'] },
+      { id: 'comissoes', label: 'Comissões', path: '/comissoes', acoes: ['visualizar', 'criar', 'editar', 'excluir'] },
     ],
   },
   {
-    label: 'RESOLUÇÕES',
-    keys: [
-      { key: 'resolucoes_visualizar', label: 'Visualizar resoluções' },
-      { key: 'resolucoes_criar', label: 'Criar resoluções' },
-      { key: 'resolucoes_editar', label: 'Editar resoluções' },
-      { key: 'resolucoes_excluir', label: 'Excluir resoluções' },
+    label: 'Processo Legislativo',
+    itens: [
+      { id: 'projetos_lei', label: 'Projetos de Lei', path: '/projetos-lei', acoes: ['visualizar', 'criar', 'editar', 'excluir', 'tramitar'] },
+      { id: 'leis', label: 'Leis', path: '/leis', acoes: ['visualizar', 'criar', 'editar', 'excluir'] },
+      { id: 'resolucoes', label: 'Resoluções', path: '/resolucoes', acoes: ['visualizar', 'criar', 'editar', 'excluir'] },
+      { id: 'decretos', label: 'Decretos', path: '/decretos', acoes: ['visualizar', 'criar', 'editar', 'excluir'] },
+      { id: 'portarias', label: 'Portarias', path: '/portarias', acoes: ['visualizar', 'criar', 'editar', 'excluir'] },
+      { id: 'emendas_impositivas', label: 'Emendas Impositivas', path: '/emendas-impositivas', acoes: ['visualizar', 'criar', 'editar', 'excluir'] },
+      { id: 'proposicoes', label: 'Proposições', path: '/proposicoes', acoes: ['visualizar', 'criar', 'editar', 'excluir'] },
+      { id: 'materias', label: 'Matérias Legislativas', path: '/materias', acoes: ['visualizar', 'criar', 'editar', 'excluir'] },
+      { id: 'tramitacoes', label: 'Tramitações', path: '/tramitacoes', acoes: ['visualizar', 'criar', 'editar'] },
+      { id: 'pareceres', label: 'Pareceres', path: '/pareceres', acoes: ['visualizar', 'criar', 'editar', 'excluir'] },
+      { id: 'emendas', label: 'Emendas', path: '/emendas', acoes: ['visualizar', 'criar', 'editar', 'excluir'] },
     ],
   },
   {
-    label: 'DECRETOS',
-    keys: [
-      { key: 'decretos_visualizar', label: 'Visualizar decretos' },
-      { key: 'decretos_criar', label: 'Criar decretos' },
-      { key: 'decretos_editar', label: 'Editar decretos' },
-      { key: 'decretos_excluir', label: 'Excluir decretos' },
+    label: 'Sessões e Votação',
+    itens: [
+      { id: 'sessoes', label: 'Sessões Plenárias', path: '/sessoes', acoes: ['visualizar', 'criar', 'editar', 'excluir', 'encerrar'] },
+      { id: 'painel', label: 'Painel Eletrônico', path: '/painel-eletronico', acoes: ['votar', 'operar', 'desempate'] },
+      { id: 'quorum', label: 'Controle de Presença', path: '/quorum', acoes: ['visualizar', 'presenca'] },
+      { id: 'reuniao_comissao', label: 'Reuniões de Comissão', path: '/reuniao-comissao', acoes: ['visualizar', 'criar', 'editar'] },
+      { id: 'pautas', label: 'Pautas das Sessões', path: '/pautas-sessoes', acoes: ['visualizar', 'criar', 'editar', 'excluir'] },
+      { id: 'atas', label: 'Atas das Sessões', path: '/atas-sessoes', acoes: ['visualizar', 'criar', 'editar', 'excluir'] },
     ],
   },
   {
-    label: 'PORTARIAS',
-    keys: [
-      { key: 'portarias_visualizar', label: 'Visualizar portarias' },
-      { key: 'portarias_criar', label: 'Criar portarias' },
-      { key: 'portarias_editar', label: 'Editar portarias' },
-      { key: 'portarias_excluir', label: 'Excluir portarias' },
+    label: 'Documentos',
+    itens: [
+      { id: 'audiencias', label: 'Audiências Públicas', path: '/audiencias', acoes: ['visualizar', 'criar', 'editar', 'excluir'] },
+      { id: 'protocolo', label: 'Protocolo', path: '/protocolo', acoes: ['visualizar', 'editar'] },
+      { id: 'protocolos_publicos', label: 'Protocolos Públicos', path: '/protocolos-publicos', acoes: ['visualizar', 'editar'] },
+      { id: 'documentos', label: 'Documentos Administrativos', path: '/documentos', acoes: ['visualizar', 'criar', 'editar', 'excluir'] },
+      { id: 'oficios', label: 'Ofícios', path: '/oficios', acoes: ['visualizar', 'criar', 'editar', 'excluir'] },
     ],
   },
   {
-    label: 'EMENDAS IMPOSITIVAS',
-    keys: [
-      { key: 'emendas_visualizar', label: 'Visualizar emendas' },
-      { key: 'emendas_criar', label: 'Criar emendas' },
-      { key: 'emendas_editar', label: 'Editar emendas' },
-      { key: 'emendas_excluir', label: 'Excluir emendas' },
+    label: 'Administração',
+    itens: [
+      { id: 'usuarios', label: 'Usuários da Câmara', path: '/gerenciar-usuarios', acoes: ['visualizar', 'criar', 'editar', 'gerenciar_permissoes'] },
+      { id: 'casa_legislativa', label: 'Casa Legislativa', path: '/casa-legislativa', acoes: ['visualizar', 'editar'] },
+      { id: 'relatorios', label: 'Relatórios', path: '/relatorios', acoes: ['visualizar'] },
+      { id: 'auditoria', label: 'Auditoria da Câmara', path: '/auditoria', acoes: ['visualizar'] },
     ],
   },
   {
-    label: 'SESSÕES PLENÁRIAS',
-    keys: [
-      { key: 'sessoes_visualizar', label: 'Visualizar sessões' },
-      { key: 'sessoes_criar', label: 'Criar sessões' },
-      { key: 'sessoes_editar', label: 'Editar sessões' },
-      { key: 'sessoes_encerrar', label: 'Encerrar sessões' },
-      { key: 'sessoes_presenca', label: 'Controlar presença em sessões' },
-    ],
-  },
-  {
-    label: 'PAINEL ELETRÔNICO',
-    keys: [
-      { key: 'painel_operar', label: 'Operar painel — abrir e encerrar votações' },
-      { key: 'painel_votar', label: 'Participar como votante' },
-      { key: 'painel_desempate', label: 'Votar em desempate — exclusivo do Presidente' },
-    ],
-  },
-  {
-    label: 'PAUTAS',
-    keys: [
-      { key: 'pautas_visualizar', label: 'Visualizar pautas' },
-      { key: 'pautas_criar', label: 'Criar pautas' },
-      { key: 'pautas_editar', label: 'Editar pautas' },
-      { key: 'pautas_excluir', label: 'Excluir pautas' },
-    ],
-  },
-  {
-    label: 'ATAS',
-    keys: [
-      { key: 'atas_visualizar', label: 'Visualizar atas' },
-      { key: 'atas_criar', label: 'Criar atas' },
-      { key: 'atas_editar', label: 'Editar atas' },
-      { key: 'atas_excluir', label: 'Excluir atas' },
-    ],
-  },
-  {
-    label: 'AUDIÊNCIAS PÚBLICAS',
-    keys: [
-      { key: 'audiencias_visualizar', label: 'Visualizar audiências' },
-      { key: 'audiencias_criar', label: 'Criar audiências' },
-      { key: 'audiencias_editar', label: 'Editar audiências' },
-    ],
-  },
-  {
-    label: 'DOCUMENTOS ADMINISTRATIVOS',
-    keys: [
-      { key: 'documentos_visualizar', label: 'Visualizar documentos' },
-      { key: 'documentos_criar', label: 'Criar documentos' },
-      { key: 'documentos_editar', label: 'Editar documentos' },
-      { key: 'documentos_excluir', label: 'Excluir documentos' },
-    ],
-  },
-  {
-    label: 'ESTRUTURA DA CÂMARA',
-    keys: [
-      { key: 'estrutura_visualizar', label: 'Visualizar estrutura da câmara' },
-    ],
-  },
-  {
-    label: 'TRANSPARÊNCIA',
-    keys: [
-      { key: 'transparencia_visualizar', label: 'Visualizar portal de transparência' },
-    ],
-  },
-  {
-    label: 'USUÁRIOS E PERMISSÕES',
-    keys: [
-      { key: 'usuarios_visualizar', label: 'Visualizar usuários' },
-      { key: 'usuarios_criar', label: 'Criar usuários' },
-      { key: 'usuarios_editar', label: 'Editar usuários' },
-      { key: 'usuarios_gerenciar_permissoes', label: 'Gerenciar permissões de usuários' },
-    ],
-  },
-  {
-    label: 'RELATÓRIOS E AUDITORIA',
-    keys: [
-      { key: 'relatorios_acessar', label: 'Acessar relatórios internos' },
-      { key: 'auditoria_logs', label: 'Visualizar logs de auditoria' },
+    label: 'Outros',
+    itens: [
+      { id: 'transparencia', label: 'Portal de Transparência', path: '/transparencia', acoes: ['visualizar'] },
     ],
   },
 ];
 
-// Conjunto padrão de permissões por perfil
-// true = concedido por padrão, false = não concedido
+// Lista achatada de todas as chaves (`item_acao`).
+export const ALL_PERM_KEYS = PERMISSION_SECTIONS.flatMap(
+  (s) => s.itens.flatMap((it) => it.acoes.map((a) => `${it.id}_${a}`))
+);
+
+// Compatibilidade: alguns lugares ainda importam PERMISSION_GROUPS (label/keys).
+export const PERMISSION_GROUPS = PERMISSION_SECTIONS.map((s) => ({
+  label: s.label.toUpperCase(),
+  keys: s.itens.flatMap((it) => it.acoes.map((a) => ({
+    key: `${it.id}_${a}`,
+    label: `${ACAO_LABEL[a] || a} — ${it.label}`,
+  }))),
+}));
+
+// ============================================================
+// Conjuntos padrão de permissões por perfil
+// ============================================================
 function todas(on) {
   const obj = {};
-  PERMISSION_GROUPS.forEach(g => g.keys.forEach(k => { obj[k.key] = on; }));
+  ALL_PERM_KEYS.forEach((k) => { obj[k] = on; });
   return obj;
 }
 
+// Consulta ampla: todas as ações "visualizar" (exceto auditoria) + votar.
 const VISUALIZAR_TUDO = {};
-PERMISSION_GROUPS.forEach(g => {
-  g.keys.forEach(k => {
-    VISUALIZAR_TUDO[k.key] = k.key.endsWith('_visualizar') || k.key === 'painel_votar' || k.key === 'relatorios_acessar';
-  });
+ALL_PERM_KEYS.forEach((k) => {
+  VISUALIZAR_TUDO[k] = (k.endsWith('_visualizar') && k !== 'auditoria_visualizar') || k === 'painel_votar';
 });
+
+function comAcoes(base, chaves) {
+  const o = { ...base };
+  chaves.forEach((k) => { o[k] = true; });
+  return o;
+}
 
 // ADMIN_CAMARA: tudo
 const ADMIN = todas(true);
@@ -196,51 +168,38 @@ const ADMIN = todas(true);
 // OPERADOR_GERAL: tudo exceto gerenciar permissões e auditoria
 const OPERADOR = { ...todas(true) };
 OPERADOR.usuarios_gerenciar_permissoes = false;
-OPERADOR.auditoria_logs = false;
+OPERADOR.auditoria_visualizar = false;
 
-// PRESIDENTE: vereador base + sessoes_encerrar + sessoes_presenca + painel_operar + painel_desempate
-const PRESIDENTE_PERMS = { ...VISUALIZAR_TUDO };
-PRESIDENTE_PERMS.projetos_lei_criar = true;
-PRESIDENTE_PERMS.projetos_lei_editar = true;
-PRESIDENTE_PERMS.emendas_criar = true;
-PRESIDENTE_PERMS.emendas_editar = true;
-PRESIDENTE_PERMS.sessoes_encerrar = true;
-PRESIDENTE_PERMS.sessoes_presenca = true;
-PRESIDENTE_PERMS.painel_operar = true;
-PRESIDENTE_PERMS.painel_votar = true;
-PRESIDENTE_PERMS.painel_desempate = true;
-PRESIDENTE_PERMS.documentos_criar = true;
-PRESIDENTE_PERMS.documentos_editar = true;
+// PRESIDENTE: consulta ampla + criação legislativa + operação de sessão/painel
+const PRESIDENTE_PERMS = comAcoes(VISUALIZAR_TUDO, [
+  'projetos_lei_criar', 'projetos_lei_editar',
+  'emendas_criar', 'emendas_editar',
+  'emendas_impositivas_criar', 'emendas_impositivas_editar',
+  'sessoes_encerrar', 'quorum_presenca',
+  'painel_operar', 'painel_votar', 'painel_desempate',
+  'documentos_criar', 'documentos_editar',
+]);
 
-// VEREADOR: visualizar + criar projetos e emendas + votar
-const VEREADOR_PERMS = { ...VISUALIZAR_TUDO };
-VEREADOR_PERMS.projetos_lei_criar = true;
-VEREADOR_PERMS.projetos_lei_editar = true;
-VEREADOR_PERMS.emendas_criar = true;
-VEREADOR_PERMS.emendas_editar = true;
-VEREADOR_PERMS.painel_votar = true;
-VEREADOR_PERMS.documentos_criar = true;
+// VEREADOR: consulta + criar projetos/emendas + votar
+const VEREADOR_PERMS = comAcoes(VISUALIZAR_TUDO, [
+  'projetos_lei_criar', 'projetos_lei_editar',
+  'emendas_criar', 'emendas_editar',
+  'emendas_impositivas_criar', 'emendas_impositivas_editar',
+  'painel_votar', 'documentos_criar',
+]);
 
-// ASSESSOR: apenas visualizar
+// ASSESSOR: apenas visualizar (não vota)
 const ASSESSOR_PERMS = { ...VISUALIZAR_TUDO };
 ASSESSOR_PERMS.painel_votar = false;
 
-// SECRETARIO_LEGISLATIVO: visualizar + atas, documentos, pautas, protocolos
-const SECRETARIO_PERMS = { ...VISUALIZAR_TUDO };
-SECRETARIO_PERMS.atas_criar = true;
-SECRETARIO_PERMS.atas_editar = true;
-SECRETARIO_PERMS.atas_excluir = true;
-SECRETARIO_PERMS.documentos_criar = true;
-SECRETARIO_PERMS.documentos_editar = true;
-SECRETARIO_PERMS.documentos_excluir = true;
-SECRETARIO_PERMS.pautas_criar = true;
-SECRETARIO_PERMS.pautas_editar = true;
-SECRETARIO_PERMS.pautas_excluir = true;
-SECRETARIO_PERMS.audiencias_criar = true;
-SECRETARIO_PERMS.audiencias_editar = true;
-SECRETARIO_PERMS.audiencias_visualizar = true;
-SECRETARIO_PERMS.relatorios_acessar = true;
-SECRETARIO_PERMS.auditoria_logs = false;
+// SECRETARIO_LEGISLATIVO: consulta + atas, documentos, pautas, audiências, protocolos
+const SECRETARIO_PERMS = comAcoes(VISUALIZAR_TUDO, [
+  'atas_criar', 'atas_editar', 'atas_excluir',
+  'documentos_criar', 'documentos_editar', 'documentos_excluir',
+  'pautas_criar', 'pautas_editar', 'pautas_excluir',
+  'audiencias_criar', 'audiencias_editar',
+  'protocolo_editar', 'protocolos_publicos_editar',
+]);
 SECRETARIO_PERMS.painel_votar = false;
 
 // SUPER_ADMIN: tudo
@@ -278,59 +237,20 @@ export const PERFIS_PARTIDO_OBRIGATORIO = ['VEREADOR', 'PRESIDENTE'];
 export const PERFIS_FOTO_OBRIGATORIA = ['VEREADOR', 'PRESIDENTE'];
 
 // ============================================================
-// MAPEAMENTO MENU → PERMISSÃO
-// Cada rota do menu lateral mapeia para a chave de permissão
-// necessária para exibi-la. Rotas sem mapeamento = sempre visíveis.
-// SUPER_ADMIN ignora este filtro e vê tudo.
+// MAPEAMENTO MENU → PERMISSÃO (gerado a partir das seções acima)
+// Cada rota usa a ação "visualizar" do seu item (ou a 1ª ação, ex.: painel→votar).
+// Dashboard ('/') fica sempre visível. SUPER_ADMIN/ADMIN_CAMARA ignoram o filtro.
 // ============================================================
-export const MENU_PERMISSION_MAP = {
-  // Estrutura
-  '/legislaturas': 'estrutura_visualizar',
-  '/parlamentares': 'estrutura_visualizar',
-  '/partidos': 'estrutura_visualizar',
-  '/mesa-diretora': 'estrutura_visualizar',
-  '/comissoes': 'estrutura_visualizar',
-
-  // Administração
-  '/gerenciar-usuarios': 'usuarios_visualizar',
-  '/casa-legislativa': 'estrutura_visualizar',
-  '/configuracoes': 'usuarios_gerenciar_permissoes',
-  '/auditoria': 'auditoria_logs',
-
-  // Processo Legislativo
-  '/proposicoes': 'projetos_lei_visualizar',
-  '/materias': 'projetos_lei_visualizar',
-  '/tramitacoes': 'projetos_lei_visualizar',
-  '/pareceres': 'projetos_lei_visualizar',
-  '/projetos-lei': 'projetos_lei_visualizar',
-  '/leis': 'leis_visualizar',
-  '/resolucoes': 'resolucoes_visualizar',
-  '/decretos': 'decretos_visualizar',
-  '/portarias': 'portarias_visualizar',
-  '/emendas-impositivas': 'emendas_visualizar',
-  '/emendas': 'emendas_visualizar',
-
-  // Documentos
-  '/atas-sessoes': 'atas_visualizar',
-  '/pautas-sessoes': 'pautas_visualizar',
-
-  // Sessões e Votação
-  '/sessoes': 'sessoes_visualizar',
-  '/quorum': 'sessoes_presenca',
-  '/painel-eletronico': 'painel_votar',
-  '/reuniao-comissao': 'sessoes_visualizar',
-
-  // Outros
-  '/audiencias': 'audiencias_visualizar',
-  '/protocolo': 'documentos_visualizar',
-  '/protocolos-publicos': 'documentos_visualizar',
-  '/documentos': 'documentos_visualizar',
-  '/oficios': 'documentos_visualizar',
-  '/transparencia': 'estrutura_visualizar',
-
-  '/normas': 'leis_visualizar',
-  '/relatorios': 'relatorios_acessar',
-};
+export const MENU_PERMISSION_MAP = {};
+PERMISSION_SECTIONS.forEach((s) => {
+  s.itens.forEach((it) => {
+    if (!it.path || it.path === '/') return;
+    const acao = it.acoes.includes('visualizar') ? 'visualizar' : it.acoes[0];
+    MENU_PERMISSION_MAP[it.path] = `${it.id}_${acao}`;
+  });
+});
+// Configurações usa a permissão de gerenciar permissões de usuários.
+MENU_PERMISSION_MAP['/configuracoes'] = 'usuarios_gerenciar_permissoes';
 
 /**
  * Verifica se um item do menu deve ser exibido.
@@ -346,7 +266,11 @@ export function canShowMenuItem(user, path) {
   const permKey = MENU_PERMISSION_MAP[path];
   if (!permKey) return true; // sem mapeamento = sempre visível
 
-  // Usa permissoes do usuário; se não definidas, fallback para o padrão do perfil
-  const permissoes = user.permissoes || DEFAULT_PERMISSIONS[user.role] || {};
-  return !!permissoes[permKey];
+  // Usa a permissão explícita do usuário; se aquela chave não existir no registro
+  // (ex.: usuários antigos, criados antes desta chave), cai no padrão do perfil.
+  // Isso garante compatibilidade ao introduzir/renomear permissões.
+  const permissoes = user.permissoes || {};
+  const val = permissoes[permKey];
+  if (val !== undefined) return !!val;
+  return !!(DEFAULT_PERMISSIONS[user.role] || {})[permKey];
 }

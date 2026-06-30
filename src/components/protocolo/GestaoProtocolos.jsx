@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { sislegisEntities } from '@/lib/sislegisApi';
-import { Inbox, Search, Mail, Phone, Clock, Lock } from 'lucide-react';
+import { Inbox, Search, Mail, Phone, Clock, Lock, FileText } from 'lucide-react';
 import { useTenant } from '@/lib/TenantContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -173,6 +173,11 @@ export default function GestaoProtocolos({ origens, titulo, descricao, vazioLabe
                 {sel.telefone_interessado && <div className="text-muted-foreground text-xs flex items-center gap-1"><Phone size={11} /> {sel.telefone_interessado}</div>}
                 {sel.data_protocolo && <div className="text-muted-foreground text-xs">Protocolado em {sel.data_protocolo}{sel.hora_protocolo ? ` às ${sel.hora_protocolo}` : ''}</div>}
                 <div className="text-muted-foreground text-xs">Origem: {origemDe(sel)}</div>
+                {sel.arquivo_url && (
+                  <a href={sel.arquivo_url} target="_blank" rel="noreferrer" className="text-primary text-xs inline-flex items-center gap-1 hover:underline mt-1">
+                    <FileText size={12} /> Abrir documento anexado
+                  </a>
+                )}
               </div>
 
               {/* Edição permitida */}

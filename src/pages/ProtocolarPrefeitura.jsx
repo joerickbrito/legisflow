@@ -7,12 +7,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import FileUpload from '@/components/FileUpload';
 
 const TIPOS = ['Ofício', 'Requerimento', 'Projeto de Lei', 'Petição', 'Memorando', 'Relatório', 'Outros'];
 
 const FORM_VAZIO = {
   tipo_documento: 'Ofício', interessado: '', email_interessado: '',
-  telefone_interessado: '', assunto: '', observacoes: '',
+  telefone_interessado: '', assunto: '', observacoes: '', arquivo_url: '',
 };
 
 export default function ProtocolarPrefeitura() {
@@ -130,6 +131,10 @@ export default function ProtocolarPrefeitura() {
           <div>
             <label className="text-xs font-semibold text-foreground mb-1 block">Detalhes / observações</label>
             <Textarea value={form.observacoes} onChange={e => set('observacoes', e.target.value)} placeholder="Descreva o conteúdo do documento..." rows={5} />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-foreground mb-1 block">Anexar documento</label>
+            <FileUpload value={form.arquivo_url} onUploaded={(url) => set('arquivo_url', url)} label="" />
           </div>
           <button
             type="submit" disabled={enviando}
