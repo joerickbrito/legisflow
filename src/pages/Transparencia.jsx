@@ -4,12 +4,13 @@ import { Link } from 'react-router-dom';
 import {
   Globe, Search, FileText, ScrollText, Users, Calendar,
   Download, BookOpen, ClipboardList, DollarSign, Scale,
-  Stamp, BookMarked, LogIn, ChevronDown, Building2
+  Stamp, BookMarked, LogIn, ChevronDown, Building2, Inbox, ArrowLeft
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import StatusBadge from '@/components/StatusBadge';
+import ProtocoloPublico from '@/components/portal/ProtocoloPublico';
 
 const ANOS = ['todos', ...Array.from({ length: 12 }, (_, i) => String(new Date().getFullYear() - i))];
 
@@ -194,6 +195,7 @@ export default function Transparencia() {
   const [filtroTipo, setFiltroTipo] = useState('todos');
   const [filtroStatus, setFiltroStatus] = useState('todos');
   const [filtroAutor, setFiltroAutor] = useState('todos');
+  const [emendaVereador, setEmendaVereador] = useState(null);
 
   const { data, loading } = usePublicData(camaraId);
 
@@ -257,6 +259,29 @@ export default function Transparencia() {
     data.emendas,
     { ...f, searchFields: ['numero', 'objeto', 'vereador_nome'], tipoField: '', statusField: '', anoField: 'ano', autorField: 'vereador_nome' }
   );
+
+  // Emendas impositivas agrupadas por vereador (portal mostra vereador → emendas dele)
+  const emendasPorVereador = (() => {
+    const map = new Map();
+    data.emendas.forEach(e => {
+      const key = e.vereador_id || e.vereador_nome || 'sem-autor';
+      if (!map.has(key)) {
+        const parl = data.parlamentares.find(p => p.id === e.vereador_id || (p.nome_parlamentar || p.nome) === e.vereador_nome);
+        map.set(key, {
+          key,
+          nome: e.vereador_nome || 'Não informado',
+          partido: e.vereador_partido || parl?.partido_sigla || '',
+          foto: parl?.foto_url || '',
+          emendas: [],
+        });
+      }
+      map.get(key).emendas.push(e);
+    });
+    return Array.from(map.values())
+      .filter(g => !busca || g.nome.toLowerCase().includes(busca.toLowerCase()))
+      .sort((a, b) => a.nome.localeCompare(b.nome));
+  })();
+  const grupoSelecionado = emendaVereador ? emendasPorVereador.find(g => g.key === emendaVereador) : null;
 
   const autoresMateria = [...new Set(data.materias.map(m => m.autor_nome).filter(Boolean))].sort();
   const { camara } = data;
@@ -362,7 +387,10 @@ export default function Transparencia() {
               <ClipboardList size={13} /> Pautas <CountBadge n={pautasFiltradas.length} />
             </TabsTrigger>
             <TabsTrigger value="emendas" className="gap-1 rounded-lg text-xs whitespace-nowrap">
-              <DollarSign size={13} /> Emendas Imp. <CountBadge n={emendasFiltradas.length} />
+              <DollarSign size={13} /> Emendas Imp. <CountBadge n={emendasPorVereador.length} />
+            </TabsTrigger>
+            <TabsTrigger value="protocolo" className="gap-1 rounded-lg text-xs whitespace-nowrap">
+              <Inbox size={13} /> Protocolo
             </TabsTrigger>
           </TabsList>
 
@@ -514,39 +542,83 @@ export default function Transparencia() {
             )}
           </TabsContent>
 
-          {/* EMENDAS IMPOSITIVAS */}
+          {/* EMENDAS IMPOSITIVAS — por vereador */}
           <TabsContent value="emendas" className="mt-4">
-            {loading ? <LoadingMsg /> : emendasFiltradas.length === 0 ? <EmptyMsg label="emendas impositivas" /> : (
-              <div className="bg-card border border-border rounded-xl overflow-hidden">
-                <div className="divide-y divide-border">
-                  {emendasFiltradas.map(e => (
-                    <div key={e.id} className="flex items-start gap-4 px-5 py-4 hover:bg-muted/20 transition-colors">
-                      <div className="w-9 h-9 rounded-lg bg-accent flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <DollarSign size={15} className="text-primary" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-xs text-muted-foreground font-semibold mb-0.5">
-                          Emenda Impositiva nº {e.numero}{e.ano ? `/${e.ano}` : ''}
-                          {e.valor ? ` · R$ ${Number(e.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : ''}
+            {loading ? <LoadingMsg /> : grupoSelecionado ? (
+              <div>
+                <button
+                  onClick={() => setEmendaVereador(null)}
+                  className="flex items-center gap-1.5 text-sm text-primary hover:underline font-medium mb-4"
+                >
+                  <ArrowLeft size={15} /> Voltar aos vereadores
+                </button>
+                <div className="flex items-center gap-4 mb-4 bg-card border border-border rounded-xl p-4">
+                  {grupoSelecionado.foto
+                    ? <img src={grupoSelecionado.foto} alt={grupoSelecionado.nome} className="w-16 h-16 rounded-xl object-cover" />
+                    : <div className="w-16 h-16 bg-accent rounded-xl flex items-center justify-center font-heading font-bold text-primary text-2xl">{grupoSelecionado.nome.charAt(0)}</div>}
+                  <div>
+                    <div className="font-heading font-bold text-lg text-foreground">{grupoSelecionado.nome}</div>
+                    {grupoSelecionado.partido && <div className="text-sm text-primary font-semibold">{grupoSelecionado.partido}</div>}
+                    <div className="text-xs text-muted-foreground mt-0.5">{grupoSelecionado.emendas.length} emenda{grupoSelecionado.emendas.length !== 1 ? 's' : ''} impositiva{grupoSelecionado.emendas.length !== 1 ? 's' : ''}</div>
+                  </div>
+                </div>
+                <div className="bg-card border border-border rounded-xl overflow-hidden">
+                  <div className="divide-y divide-border">
+                    {grupoSelecionado.emendas.map(e => (
+                      <div key={e.id} className="flex items-start gap-4 px-5 py-4 hover:bg-muted/20 transition-colors">
+                        <div className="w-9 h-9 rounded-lg bg-accent flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <DollarSign size={15} className="text-primary" />
                         </div>
-                        <div className="text-sm font-medium text-foreground leading-snug">{e.objeto}</div>
-                        {e.vereador_nome && (
-                          <div className="text-xs text-muted-foreground mt-1">
-                            Vereador: {e.vereador_nome}{e.vereador_partido ? ` — ${e.vereador_partido}` : ''}
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs text-muted-foreground font-semibold mb-0.5">
+                            Emenda Impositiva nº {e.numero}{e.ano ? `/${e.ano}` : ''}
+                            {e.valor ? ` · R$ ${Number(e.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : ''}
                           </div>
+                          <div className="text-sm font-medium text-foreground leading-snug">{e.objeto}</div>
+                        </div>
+                        {e.arquivo_url && (
+                          <a href={e.arquivo_url} target="_blank" rel="noreferrer"
+                            className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground flex-shrink-0">
+                            <Download size={14} />
+                          </a>
                         )}
                       </div>
-                      {e.arquivo_url && (
-                        <a href={e.arquivo_url} target="_blank" rel="noreferrer"
-                          className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground flex-shrink-0">
-                          <Download size={14} />
-                        </a>
-                      )}
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </div>
+            ) : emendasPorVereador.length === 0 ? <EmptyMsg label="emendas impositivas" /> : (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {emendasPorVereador.map(g => {
+                  const total = g.emendas.reduce((s, e) => s + (Number(e.valor) || 0), 0);
+                  return (
+                    <button
+                      key={g.key}
+                      onClick={() => setEmendaVereador(g.key)}
+                      className="bg-card border border-border rounded-xl p-4 flex items-center gap-3 hover:shadow-md hover:border-primary/30 transition-all text-left"
+                    >
+                      {g.foto
+                        ? <img src={g.foto} alt={g.nome} className="w-14 h-14 rounded-xl object-cover flex-shrink-0" />
+                        : <div className="w-14 h-14 bg-accent rounded-xl flex items-center justify-center font-heading font-bold text-primary text-xl flex-shrink-0">{g.nome.charAt(0)}</div>}
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold text-sm text-foreground truncate">{g.nome}</div>
+                        {g.partido && <div className="text-xs text-primary font-semibold">{g.partido}</div>}
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {g.emendas.length} emenda{g.emendas.length !== 1 ? 's' : ''}
+                          {total > 0 ? ` · R$ ${total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : ''}
+                        </div>
+                      </div>
+                      <ChevronDown size={14} className="text-muted-foreground -rotate-90 flex-shrink-0" />
+                    </button>
+                  );
+                })}
+              </div>
             )}
+          </TabsContent>
+
+          {/* PROTOCOLO — criar / consultar */}
+          <TabsContent value="protocolo" className="mt-4">
+            <ProtocoloPublico camaraId={camaraId} />
           </TabsContent>
         </Tabs>
 

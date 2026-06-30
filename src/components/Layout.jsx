@@ -85,7 +85,6 @@ const getNavGroups = (user, isInChamberContext) => {
         { path: '/materias', icon: ScrollText, label: 'Matérias Legislativas' },
         { path: '/tramitacoes', icon: ArrowLeftRight, label: 'Tramitações' },
         { path: '/pareceres', icon: MessageSquare, label: 'Pareceres' },
-        { path: '/normas', icon: Scale, label: 'Normas Jurídicas' },
         { path: '/emendas', icon: FileDiff, label: 'Emendas' },
       ]),
     },
@@ -96,13 +95,13 @@ const getNavGroups = (user, isInChamberContext) => {
         { path: '/painel-eletronico', icon: Monitor, label: 'Painel Eletrônico', highlight: true },
         { path: '/quorum', icon: UserCheck, label: 'Controle de Presença' },
         { path: '/reuniao-comissao', icon: UsersRound, label: 'Reuniões de Comissão' },
+        { path: '/pautas-sessoes', icon: ClipboardList, label: 'Pautas das Sessões' },
+        { path: '/atas-sessoes', icon: BookOpen, label: 'Atas das Sessões' },
       ]),
     },
     {
       label: 'Documentos',
       items: filterItems([
-        { path: '/atas-sessoes', icon: BookOpen, label: 'Atas das Sessões' },
-        { path: '/pautas-sessoes', icon: ClipboardList, label: 'Pautas' },
         { path: '/audiencias', icon: Users, label: 'Audiências Públicas' },
         { path: '/protocolo', icon: Inbox, label: 'Protocolo' },
         { path: '/documentos', icon: FolderOpen, label: 'Documentos Administrativos' },

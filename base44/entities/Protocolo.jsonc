@@ -24,6 +24,7 @@
       "enum": [
         "Of\u00edcio",
         "Requerimento",
+        "Projeto de Lei",
         "Peti\u00e7\u00e3o",
         "Memorando",
         "Relat\u00f3rio",
@@ -32,6 +33,33 @@
         "Outros"
       ],
       "default": "Of\u00edcio"
+    },
+    "origem": {
+      "type": "string",
+      "enum": [
+        "P\u00fablico",
+        "Prefeitura",
+        "Interno"
+      ],
+      "default": "Interno"
+    },
+    "numero_sequencial": {
+      "type": "number"
+    },
+    "codigo_consulta": {
+      "type": "string"
+    },
+    "email_interessado": {
+      "type": "string"
+    },
+    "telefone_interessado": {
+      "type": "string"
+    },
+    "historico_tramitacao": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
     },
     "assunto": {
       "type": "string"
