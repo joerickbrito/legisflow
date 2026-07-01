@@ -6,6 +6,7 @@ import { FolderOpen, Plus, Search, ArrowRight, CheckCircle2, XCircle, Clock, Sen
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import FileUpload from '@/components/FileUpload';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -309,6 +310,11 @@ export default function Proposicoes() {
               <Input type="date" value={form.data_apresentacao} onChange={e => setForm(f => ({ ...f, data_apresentacao: e.target.value }))} />
             </div>
           </div>
+          <FileUpload value={form.arquivo_url} onUploaded={url => setForm(f => ({ ...f, arquivo_url: url }))} label="Anexar arquivo" />
+          <label className="flex items-center gap-2 text-sm cursor-pointer select-none mt-2">
+            <input type="checkbox" checked={!!form.vai_votacao} onChange={e => setForm(f => ({ ...f, vai_votacao: e.target.checked }))} className="w-4 h-4 rounded border-border accent-primary" />
+            Enviar para votação no painel eletrônico
+          </label>
           {errorMsg && <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">{errorMsg}</p>}
           <DialogFooter>
             <Button variant="outline" onClick={() => { setShowForm(false); setErrorMsg(''); }}>Cancelar</Button>

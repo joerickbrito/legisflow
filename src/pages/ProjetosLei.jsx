@@ -221,6 +221,12 @@ export default function ProjetosLei() {
               <FileUpload value={form.arquivo_url} onUploaded={url => set('arquivo_url', url)} label="Arquivo (PDF, DOC...)" />
             </div>
             <div className="col-span-2">
+              <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+                <input type="checkbox" checked={!!form.vai_votacao} onChange={e => set('vai_votacao', e.target.checked)} className="w-4 h-4 rounded border-border accent-primary" />
+                Enviar para votação no painel eletrônico
+              </label>
+            </div>
+            <div className="col-span-2">
               <label className="text-sm font-medium">Observações</label>
               <textarea className="w-full border rounded-md px-3 py-2 text-sm min-h-[60px] bg-background" value={form.observacoes} onChange={e => set('observacoes', e.target.value)} />
             </div>

@@ -272,6 +272,12 @@ export default function Materias() {
               <Textarea value={form.texto_integral} onChange={e => setForm(f => ({ ...f, texto_integral: e.target.value }))} placeholder="Texto completo da matéria..." rows={4} />
             </div>
             <div>
+              <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+                <input type="checkbox" checked={!!form.vai_votacao} onChange={e => setForm(f => ({ ...f, vai_votacao: e.target.checked }))} className="w-4 h-4 rounded border-border accent-primary" />
+                Enviar para votação no painel eletrônico
+              </label>
+            </div>
+            <div>
               <label className="text-sm font-medium mb-1.5 block">Observações</label>
               <Textarea value={form.observacoes} onChange={e => setForm(f => ({ ...f, observacoes: e.target.value }))} rows={2} />
             </div>

@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import StatusBadge from '@/components/StatusBadge';
+import { fmtData, fmtDataHora } from '@/lib/datas';
 import FileUpload from '@/components/FileUpload';
 
 const TIPOS = ['Ofício', 'Requerimento', 'Projeto de Lei', 'Petição', 'Memorando', 'Relatório', 'Outros'];
@@ -195,7 +196,7 @@ function ConsultarProtocolo({ camaraId }) {
             <StatusBadge status={proto.status} />
           </div>
           <div className="text-xs text-muted-foreground mb-4">
-            Protocolado em {proto.data_protocolo}{proto.hora_protocolo ? ` às ${proto.hora_protocolo}` : ''} · Interessado: {proto.interessado}
+            Protocolado em {fmtData(proto.data_protocolo)}{proto.hora_protocolo ? ` às ${proto.hora_protocolo}` : ''} · Interessado: {proto.interessado}
           </div>
 
           <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">Andamento</div>
@@ -212,7 +213,7 @@ function ConsultarProtocolo({ camaraId }) {
                   <div className="pb-2">
                     <div className="text-sm font-medium text-foreground">{h.status}</div>
                     {h.observacao && <div className="text-xs text-muted-foreground mt-0.5">{h.observacao}</div>}
-                    {h.data && <div className="text-[11px] text-muted-foreground/70 mt-0.5">{new Date(h.data).toLocaleString('pt-BR')}</div>}
+                    {h.data && <div className="text-[11px] text-muted-foreground/70 mt-0.5">{fmtDataHora(h.data)}</div>}
                   </div>
                 </div>
               ))}

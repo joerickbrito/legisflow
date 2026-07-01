@@ -127,6 +127,10 @@
     },
     "arquivo_url": {
       "type": "string"
+    },
+    "vai_votacao": {
+      "type": "boolean",
+      "default": false
     }
   },
   "required": [

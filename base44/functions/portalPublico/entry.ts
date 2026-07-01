@@ -77,7 +77,7 @@ Deno.serve(async (req) => {
 
     const filter = { tenant_id: camara_id };
 
-    const [parlamentares, materias, normas, sessoes, atas, pautas, emendas, camaras] = await Promise.all([
+    const [parlamentares, materias, normas, sessoes, atas, pautas, emendas, proposicoes, camaras] = await Promise.all([
       base44.asServiceRole.entities.Parlamentar.filter({ ...filter, ativo: true }, 'nome', 200).catch(() => []),
       base44.asServiceRole.entities.Materia.filter(filter, '-created_date', 500).catch(() => []),
       base44.asServiceRole.entities.NormaJuridica.filter(filter, '-data_publicacao', 500).catch(() => []),
@@ -85,6 +85,7 @@ Deno.serve(async (req) => {
       base44.asServiceRole.entities.AtaSessao.filter(filter, '-data', 200).catch(() => []),
       base44.asServiceRole.entities.PautaSessao.filter(filter, '-created_date', 200).catch(() => []),
       base44.asServiceRole.entities.EmendaImpositiva.filter(filter, '-created_date', 500).catch(() => []),
+      base44.asServiceRole.entities.Proposicao.filter(filter, '-created_date', 500).catch(() => []),
       base44.asServiceRole.entities.Camara.filter({ id: camara_id }, '-created_date', 1).catch(() => []),
     ]);
 
@@ -97,6 +98,8 @@ Deno.serve(async (req) => {
         atas: (atas || []).map(stripDeny),
         pautas: (pautas || []).map(stripDeny),
         emendas: (emendas || []).map(stripDeny),
+        // Proposições públicas — não expõe rascunhos.
+        proposicoes: (proposicoes || []).filter((p) => p.status && p.status !== 'Rascunho').map(stripDeny),
         camara: camaras && camaras[0] ? pick(camaras[0], CAMARA_PUBLIC) : null,
       },
     });

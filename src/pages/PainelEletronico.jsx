@@ -60,14 +60,16 @@ export default function PainelEletronico() {
 
   async function loadData() {
     const filter = withTenant({});
-    const [sess, mat, normasList, parl] = await Promise.all([
+    const [sess, mat, prop, normasList, parl] = await Promise.all([
       sislegisEntities.Sessao.filter({ ...filter, status: 'Em Andamento' }, '-data', 20),
-      sislegisEntities.Materia.filter({ ...filter, status: 'Em tramitação' }, '-created_date', 100),
+      sislegisEntities.Materia.filter({ ...filter, vai_votacao: true }, '-created_date', 100),
+      sislegisEntities.Proposicao.filter({ ...filter, vai_votacao: true }, '-created_date', 100).catch(() => []),
       sislegisEntities.NormaJuridica.filter({ ...filter, situacao: 'Vigente' }, '-created_date', 50).catch(() => []),
       sislegisEntities.Parlamentar.filter({ ...filter, ativo: true }, 'nome', 100),
     ]);
     setSessoes(sess);
-    setMaterias(mat);
+    // Matérias e Proposições marcadas para votação aparecem no seletor do painel.
+    setMaterias([...(mat || []), ...((prop || []).map(p => ({ ...p, _origemProposicao: true })))]);
     setNormas(normasList);
     setParlamentares(parl);
     await loadVotacaoAtiva();

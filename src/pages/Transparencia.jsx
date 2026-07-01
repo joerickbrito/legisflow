@@ -5,13 +5,14 @@ import {
   Globe, Search, FileText, ScrollText, Users, Calendar,
   Download, BookOpen, ClipboardList, DollarSign, Scale,
   Stamp, BookMarked, LogIn, ChevronDown, Building2, Inbox, ArrowLeft,
-  Sparkles, Link2, Check
+  Sparkles, Link2, Check, FolderOpen
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import StatusBadge from '@/components/StatusBadge';
 import ProtocoloPublico from '@/components/portal/ProtocoloPublico';
+import { fmtData } from '@/lib/datas';
 
 const ANOS = ['todos', ...Array.from({ length: 12 }, (_, i) => String(new Date().getFullYear() - i))];
 
@@ -122,7 +123,7 @@ function CamaraSelector({ onChange, aviso }) {
 function usePublicData(camaraId) {
   const [data, setData] = useState({
     parlamentares: [], materias: [], normas: [],
-    sessoes: [], atas: [], pautas: [], emendas: [], camara: null,
+    sessoes: [], atas: [], pautas: [], emendas: [], proposicoes: [], camara: null,
   });
   const [loading, setLoading] = useState(true);
 
@@ -140,6 +141,7 @@ function usePublicData(camaraId) {
           atas: d.atas || [],
           pautas: d.pautas || [],
           emendas: d.emendas || [],
+          proposicoes: d.proposicoes || [],
           camara: d.camara || null,
         });
         setLoading(false);
@@ -266,7 +268,10 @@ export default function Transparencia() {
 
   const [busca, setBusca] = useState('');
   const [filtroAno, setFiltroAno] = useState('todos');
-  const [filtroTipo, setFiltroTipo] = useState('todos');
+  const [filtroTipo, setFiltroTipo] = useState(() => {
+    try { return new URLSearchParams(window.location.search).get('tipo') || 'todos'; }
+    catch { return 'todos'; }
+  });
   const [filtroStatus, setFiltroStatus] = useState('todos');
   const [filtroAutor, setFiltroAutor] = useState('todos');
   const [emendaVereador, setEmendaVereador] = useState(null);
@@ -288,6 +293,19 @@ export default function Transparencia() {
       const url = new URL(window.location.href);
       url.searchParams.set('aba', nova);
       url.searchParams.delete('item');
+      url.searchParams.delete('tipo');
+      window.history.replaceState(null, '', url);
+    } catch { /* ignore */ }
+    setFiltroTipo('todos');
+  }
+
+  // Aplica o filtro de tipo e reflete na URL (?tipo=Indicação) — link por tipo.
+  function aplicarTipo(v) {
+    setFiltroTipo(v);
+    try {
+      const url = new URL(window.location.href);
+      if (!v || v === 'todos') url.searchParams.delete('tipo');
+      else url.searchParams.set('tipo', v);
       window.history.replaceState(null, '', url);
     } catch { /* ignore */ }
   }
@@ -329,6 +347,11 @@ export default function Transparencia() {
 
   const parlFiltrados = data.parlamentares.filter(p =>
     !busca || [p.nome, p.nome_parlamentar, p.partido_sigla].some(v => v?.toLowerCase().includes(busca.toLowerCase()))
+  );
+
+  const proposicoesFiltradas = filterItems(
+    data.proposicoes,
+    { ...f, searchFields: ['ementa', 'autor_nome', 'numero_protocolo'], tipoField: 'tipo', statusField: 'status', anoField: 'data_apresentacao', autorField: 'autor_nome' }
   );
 
   const projetosFiltrados = filterItems(
@@ -408,6 +431,7 @@ export default function Transparencia() {
   const abasCfg = [
     { key: 'parlamentares', label: 'Parlamentares', icon: Users, n: parlFiltrados.length },
     { key: 'projetos',      label: 'Projetos de Lei', icon: FileText, n: projetosFiltrados.length },
+    { key: 'proposicoes',   label: 'Proposições', icon: FolderOpen, n: proposicoesFiltradas.length },
     { key: 'leis',          label: 'Leis', icon: ScrollText, n: leisFiltradas.length },
     { key: 'resolucoes',    label: 'Resoluções', icon: Scale, n: resolucoesFiltradas.length },
     { key: 'decretos',      label: 'Decretos', icon: Stamp, n: decretosFiltrados.length },
@@ -599,14 +623,28 @@ export default function Transparencia() {
 
           {/* PROJETOS DE LEI */}
           <TabsContent value="projetos" className="mt-5">
-            <TipoFilter tipos={['Projeto de Lei', 'Projeto de Lei Complementar']} filtroTipo={filtroTipo} setFiltroTipo={setFiltroTipo} />
+            <TipoFilter tipos={['Projeto de Lei', 'Projeto de Lei Complementar']} filtroTipo={filtroTipo} setFiltroTipo={aplicarTipo} />
             {loading ? <LoadingMsg /> : projetosFiltrados.length === 0 ? <EmptyMsg label="projetos de lei" /> : (
               <NormaList items={projetosFiltrados.map(m => ({
                 id: m.id, icon: FileText,
                 label: `${m.tipo}${m.numero ? ` nº ${m.numero}` : ''}${m.ano ? `/${m.ano}` : ''}`,
                 ementa: m.ementa, status: m.status, arquivo_url: m.arquivo_url,
-                data: m.data_apresentacao ? `Apresentado em ${m.data_apresentacao}` : null,
+                data: m.data_apresentacao ? `Apresentado em ${fmtData(m.data_apresentacao)}` : null,
                 extra: m.autor_nome ? `Autor: ${m.autor_nome}` : null,
+              }))} itemAlvo={itemAlvo} linkBase={linkBase} />
+            )}
+          </TabsContent>
+
+          {/* PROPOSIÇÕES — filtro e URL por tipo */}
+          <TabsContent value="proposicoes" className="mt-5">
+            <TipoFilter tipos={['Projeto de Lei', 'Projeto de Lei Complementar', 'Projeto de Resolução', 'Projeto de Decreto Legislativo', 'Indicação', 'Requerimento', 'Moção', 'Emenda', 'Substitutivo']} filtroTipo={filtroTipo} setFiltroTipo={aplicarTipo} label="Tipo de proposição" />
+            {loading ? <LoadingMsg /> : proposicoesFiltradas.length === 0 ? <EmptyMsg label="proposições" /> : (
+              <NormaList items={proposicoesFiltradas.map(p => ({
+                id: p.id, icon: FolderOpen,
+                label: `${p.tipo}${p.numero_protocolo ? ` nº ${p.numero_protocolo}` : ''}`,
+                ementa: p.ementa, status: p.status, arquivo_url: p.arquivo_url,
+                data: p.data_apresentacao ? `Apresentada em ${fmtData(p.data_apresentacao)}` : null,
+                extra: p.autor_nome ? `Autor: ${p.autor_nome}` : null,
               }))} itemAlvo={itemAlvo} linkBase={linkBase} />
             )}
           </TabsContent>
@@ -619,7 +657,7 @@ export default function Transparencia() {
                 id: n.id, icon: ScrollText,
                 label: `${n.tipo}${n.numero ? ` nº ${n.numero}` : ''}${n.ano ? `/${n.ano}` : ''}`,
                 ementa: n.ementa, status: n.situacao, arquivo_url: n.arquivo_url,
-                data: n.data_publicacao ? `Publicada em ${n.data_publicacao}` : null,
+                data: n.data_publicacao ? `Publicada em ${fmtData(n.data_publicacao)}` : null,
               }))} itemAlvo={itemAlvo} linkBase={linkBase} />
             )}
           </TabsContent>
@@ -631,7 +669,7 @@ export default function Transparencia() {
                 id: n.id, icon: Scale,
                 label: `Resolução${n.numero ? ` nº ${n.numero}` : ''}${n.ano ? `/${n.ano}` : ''}`,
                 ementa: n.ementa, status: n.situacao, arquivo_url: n.arquivo_url,
-                data: n.data_publicacao ? `Publicada em ${n.data_publicacao}` : null,
+                data: n.data_publicacao ? `Publicada em ${fmtData(n.data_publicacao)}` : null,
               }))} itemAlvo={itemAlvo} linkBase={linkBase} />
             )}
           </TabsContent>
@@ -643,7 +681,7 @@ export default function Transparencia() {
                 id: n.id, icon: Stamp,
                 label: `Decreto Legislativo${n.numero ? ` nº ${n.numero}` : ''}${n.ano ? `/${n.ano}` : ''}`,
                 ementa: n.ementa, status: n.situacao, arquivo_url: n.arquivo_url,
-                data: n.data_publicacao ? `Publicada em ${n.data_publicacao}` : null,
+                data: n.data_publicacao ? `Publicada em ${fmtData(n.data_publicacao)}` : null,
               }))} itemAlvo={itemAlvo} linkBase={linkBase} />
             )}
           </TabsContent>
@@ -655,7 +693,7 @@ export default function Transparencia() {
                 id: n.id, icon: BookMarked,
                 label: `Portaria${n.numero ? ` nº ${n.numero}` : ''}${n.ano ? `/${n.ano}` : ''}`,
                 ementa: n.ementa, status: n.situacao, arquivo_url: n.arquivo_url,
-                data: n.data_publicacao ? `Publicada em ${n.data_publicacao}` : null,
+                data: n.data_publicacao ? `Publicada em ${fmtData(n.data_publicacao)}` : null,
               }))} itemAlvo={itemAlvo} linkBase={linkBase} />
             )}
           </TabsContent>
@@ -668,7 +706,7 @@ export default function Transparencia() {
                 label: a.numero || 'Ata',
                 ementa: a.observacoes || 'Ata da sessão',
                 arquivo_url: a.arquivo_url,
-                data: a.data,
+                data: fmtData(a.data),
                 extra: a.sessao_numero ? `Sessão ${a.sessao_numero}` : null,
               }))} itemAlvo={itemAlvo} linkBase={linkBase} />
             )}
