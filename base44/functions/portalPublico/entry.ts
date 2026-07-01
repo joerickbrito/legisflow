@@ -53,16 +53,22 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json().catch(() => ({}));
-    const { camara_id, listar } = body || {};
+    const { camara_id, buscar } = body || {};
 
-    // Modo "listar": devolve as câmaras ativas (campos públicos) para o seletor do portal.
-    if (listar) {
+    // Modo "buscar": só retorna câmaras que casam com o termo digitado (mín. 2 caracteres).
+    // NÃO devolvemos a lista completa — assim a carteira de câmaras não fica exposta.
+    if (typeof buscar === 'string') {
+      const q = buscar.trim().toLowerCase();
+      if (q.length < 2) return Response.json({ data: [] });
       const camaras = await base44.asServiceRole.entities.Camara
-        .filter({ status: 'Ativa' }, 'nome', 100)
+        .filter({ status: 'Ativa' }, 'nome', 300)
         .catch(() => []);
-      return Response.json({
-        data: (camaras || []).map((c) => pick(c, CAMARA_PUBLIC)),
-      });
+      const matches = (camaras || [])
+        .filter((c) => `${c.nome || ''} ${c.municipio || ''} ${c.sigla || ''} ${c.estado || ''}`
+          .toLowerCase().includes(q))
+        .slice(0, 20)
+        .map((c) => pick(c, CAMARA_PUBLIC));
+      return Response.json({ data: matches });
     }
 
     if (!camara_id) {

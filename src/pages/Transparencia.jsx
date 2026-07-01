@@ -14,13 +14,25 @@ import ProtocoloPublico from '@/components/portal/ProtocoloPublico';
 
 const ANOS = ['todos', ...Array.from({ length: 12 }, (_, i) => String(new Date().getFullYear() - i))];
 
-/* ─── Seletor de câmara ─── */
-function CamaraSelector({ camaras, camaraId, onChange, loading }) {
-  if (loading) return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center p-4">
-      <div className="text-white/60 text-sm animate-pulse">Carregando câmaras...</div>
-    </div>
-  );
+/* ─── Seletor de câmara (por busca — não expõe a lista completa) ─── */
+function CamaraSelector({ onChange, aviso }) {
+  const [q, setQ] = useState('');
+  const [resultados, setResultados] = useState([]);
+  const [buscando, setBuscando] = useState(false);
+  const [buscou, setBuscou] = useState(false);
+
+  useEffect(() => {
+    const termo = q.trim();
+    if (termo.length < 2) { setResultados([]); setBuscou(false); setBuscando(false); return; }
+    setBuscando(true);
+    const t = setTimeout(() => {
+      base44.functions.invoke('portalPublico', { buscar: termo })
+        .then((resp) => { setResultados(resp?.data?.data || []); setBuscou(true); })
+        .catch(() => { setResultados([]); setBuscou(true); })
+        .finally(() => setBuscando(false));
+    }, 350);
+    return () => clearTimeout(t);
+  }, [q]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center p-4">
@@ -34,25 +46,42 @@ function CamaraSelector({ camaras, camaraId, onChange, loading }) {
         </div>
 
         <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 shadow-2xl">
-          <h2 className="text-lg font-semibold text-white mb-1">Selecione a Câmara Municipal</h2>
-          <p className="text-slate-400 text-sm mb-6">Escolha a câmara que deseja consultar</p>
+          <h2 className="text-lg font-semibold text-white mb-1">Encontre sua Câmara</h2>
+          <p className="text-slate-400 text-sm mb-4">Digite o nome do município ou da câmara que deseja consultar.</p>
 
-          {camaras.length === 0 ? (
-            <div className="text-center py-8 text-slate-400 text-sm">
-              Nenhuma câmara disponível no momento.
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {camaras.map(c => (
+          {aviso && (
+            <div className="mb-4 text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">{aviso}</div>
+          )}
+
+          <div className="relative">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              autoFocus
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Ex.: Piraí do Norte"
+              className="w-full h-11 pl-9 pr-3 rounded-xl bg-white/5 border border-white/15 text-white placeholder:text-slate-500 text-sm outline-none focus:border-blue-500/60"
+            />
+          </div>
+
+          <div className="mt-3 space-y-2 max-h-72 overflow-y-auto">
+            {q.trim().length < 2 ? (
+              <p className="text-slate-500 text-xs text-center py-4">Digite ao menos 2 letras para buscar.</p>
+            ) : buscando ? (
+              <p className="text-slate-400 text-xs text-center py-4 animate-pulse">Buscando...</p>
+            ) : resultados.length === 0 && buscou ? (
+              <p className="text-slate-400 text-xs text-center py-4">Nenhuma câmara encontrada para “{q.trim()}”.</p>
+            ) : (
+              resultados.map((c) => (
                 <button
                   key={c.id}
                   onClick={() => onChange(c.id)}
-                  className="w-full flex items-center gap-3 p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 text-left transition-all group"
+                  className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 text-left transition-all group"
                 >
-                  <div className="w-10 h-10 rounded-lg bg-blue-600/30 border border-blue-500/30 flex items-center justify-center flex-shrink-0">
+                  <div className="w-9 h-9 rounded-lg bg-blue-600/30 border border-blue-500/30 flex items-center justify-center flex-shrink-0">
                     {c.brasao_url
-                      ? <img src={c.brasao_url} alt="" className="w-8 h-8 object-contain rounded" />
-                      : <Building2 size={18} className="text-blue-400" />}
+                      ? <img src={c.brasao_url} alt="" className="w-7 h-7 object-contain rounded" />
+                      : <Building2 size={16} className="text-blue-400" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-white text-sm font-medium leading-tight truncate">{c.nome}</div>
@@ -62,9 +91,9 @@ function CamaraSelector({ camaras, camaraId, onChange, loading }) {
                   </div>
                   <ChevronDown size={14} className="text-slate-500 group-hover:text-white -rotate-90 transition-colors flex-shrink-0" />
                 </button>
-              ))}
-            </div>
-          )}
+              ))
+            )}
+          </div>
 
           <div className="mt-6 pt-5 border-t border-white/10">
             <Link to="/login">
@@ -186,9 +215,16 @@ function TipoFilter({ tipos, filtroTipo, setFiltroTipo, label = 'Tipo' }) {
 }
 
 export default function Transparencia() {
-  const [camaras, setCamaras] = useState([]);
-  const [loadingCamaras, setLoadingCamaras] = useState(true);
-  const [camaraId, setCamaraId] = useState(() => localStorage.getItem('portal_camara_id') || null);
+  // A câmara vem do link direto (?c=ID) OU da última escolhida (localStorage).
+  // Não carregamos a lista de câmaras — a seleção é por busca (não expõe a carteira).
+  const [camaraId, setCamaraId] = useState(() => {
+    try {
+      const url = new URLSearchParams(window.location.search);
+      return url.get('c') || localStorage.getItem('portal_camara_id') || null;
+    } catch {
+      return localStorage.getItem('portal_camara_id') || null;
+    }
+  });
 
   const [busca, setBusca] = useState('');
   const [filtroAno, setFiltroAno] = useState('todos');
@@ -196,25 +232,41 @@ export default function Transparencia() {
   const [filtroStatus, setFiltroStatus] = useState('todos');
   const [filtroAutor, setFiltroAutor] = useState('todos');
   const [emendaVereador, setEmendaVereador] = useState(null);
+  const [aba, setAba] = useState('parlamentares');
 
   const { data, loading } = usePublicData(camaraId);
 
-  useEffect(() => {
-    base44.functions.invoke('portalPublico', { listar: true })
-      .then((resp) => { setCamaras(resp?.data?.data || []); setLoadingCamaras(false); })
-      .catch(() => setLoadingCamaras(false));
-  }, []);
-
   function selectCamara(id) {
-    localStorage.setItem('portal_camara_id', id);
+    try {
+      localStorage.setItem('portal_camara_id', id);
+      const url = new URL(window.location.href);
+      url.searchParams.set('c', id);
+      window.history.replaceState(null, '', url);
+    } catch { /* ignore */ }
     setCamaraId(id);
     setBusca(''); setFiltroAno('todos'); setFiltroTipo('todos'); setFiltroStatus('todos'); setFiltroAutor('todos');
   }
 
-  // Se não selecionou câmara ou câmara inválida, mostrar seletor
-  const camaraValida = camaraId && (camaras.length === 0 || camaras.find(c => c.id === camaraId));
-  if (!camaraValida) {
-    return <CamaraSelector camaras={camaras} camaraId={camaraId} onChange={selectCamara} loading={loadingCamaras} />;
+  function trocarCamara(aviso) {
+    try {
+      localStorage.removeItem('portal_camara_id');
+      const url = new URL(window.location.href);
+      url.searchParams.delete('c');
+      window.history.replaceState(null, '', url);
+    } catch { /* ignore */ }
+    setCamaraId(null);
+    if (aviso) setCamaraInvalida(aviso);
+  }
+
+  const [camaraInvalida, setCamaraInvalida] = useState('');
+
+  // Sem câmara escolhida → tela de busca.
+  if (!camaraId) {
+    return <CamaraSelector onChange={selectCamara} aviso={camaraInvalida} />;
+  }
+  // Câmara do link não existe / inativa → volta pra busca com aviso.
+  if (!loading && !data.camara) {
+    return <CamaraSelector onChange={selectCamara} aviso="Não encontramos essa câmara. Verifique o link ou busque abaixo." />;
   }
 
   const f = { busca, filtroAno, filtroTipo, filtroStatus, filtroAutor };
@@ -310,7 +362,7 @@ export default function Transparencia() {
             <p className="text-primary-foreground/50 text-sm mt-1">{camara.municipio}{camara.estado ? `, ${camara.estado}` : ''}</p>
           )}
           <button
-            onClick={() => { localStorage.removeItem('portal_camara_id'); setCamaraId(null); }}
+            onClick={() => trocarCamara()}
             className="mt-3 text-xs text-primary-foreground/50 hover:text-primary-foreground/80 underline transition-colors"
           >
             Trocar câmara
@@ -379,41 +431,59 @@ export default function Transparencia() {
           </div>
         </div>
 
-        {/* Abas */}
-        <Tabs defaultValue="parlamentares">
-          <TabsList className="w-full justify-start overflow-x-auto flex-nowrap gap-0.5 bg-muted p-1 rounded-xl h-auto">
-            <TabsTrigger value="parlamentares" className="gap-1 rounded-lg text-xs whitespace-nowrap">
+        {/* Ação em destaque: Protocolo (separado das abas de consulta) */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-primary/5 border border-primary/20 rounded-2xl px-4 py-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <Inbox size={18} className="text-primary" />
+            </div>
+            <div>
+              <div className="text-sm font-semibold text-foreground">Protocolar ou consultar documento</div>
+              <div className="text-xs text-muted-foreground">Envie um documento à câmara ou acompanhe pelo código.</div>
+            </div>
+          </div>
+          <button
+            onClick={() => setAba('protocolo')}
+            className={`inline-flex items-center justify-center gap-2 h-10 px-5 rounded-xl text-sm font-semibold transition-colors flex-shrink-0 ${
+              aba === 'protocolo' ? 'bg-primary text-primary-foreground' : 'bg-primary text-primary-foreground hover:opacity-90'
+            }`}
+          >
+            <Inbox size={16} /> Abrir Protocolo
+          </button>
+        </div>
+
+        {/* Abas de consulta (quebram linha — nada fica escondido) */}
+        <Tabs value={aba} onValueChange={setAba}>
+          <TabsList className="w-full flex-wrap justify-start gap-1 bg-muted p-1.5 rounded-xl h-auto">
+            <TabsTrigger value="parlamentares" className="gap-1 rounded-lg text-xs">
               <Users size={13} /> Parlamentares <CountBadge n={parlFiltrados.length} />
             </TabsTrigger>
-            <TabsTrigger value="projetos" className="gap-1 rounded-lg text-xs whitespace-nowrap">
+            <TabsTrigger value="projetos" className="gap-1 rounded-lg text-xs">
               <FileText size={13} /> Projetos de Lei <CountBadge n={projetosFiltrados.length} />
             </TabsTrigger>
-            <TabsTrigger value="leis" className="gap-1 rounded-lg text-xs whitespace-nowrap">
+            <TabsTrigger value="leis" className="gap-1 rounded-lg text-xs">
               <ScrollText size={13} /> Leis <CountBadge n={leisFiltradas.length} />
             </TabsTrigger>
-            <TabsTrigger value="resolucoes" className="gap-1 rounded-lg text-xs whitespace-nowrap">
+            <TabsTrigger value="resolucoes" className="gap-1 rounded-lg text-xs">
               <Scale size={13} /> Resoluções <CountBadge n={resolucoesFiltradas.length} />
             </TabsTrigger>
-            <TabsTrigger value="decretos" className="gap-1 rounded-lg text-xs whitespace-nowrap">
+            <TabsTrigger value="decretos" className="gap-1 rounded-lg text-xs">
               <Stamp size={13} /> Decretos <CountBadge n={decretosFiltrados.length} />
             </TabsTrigger>
-            <TabsTrigger value="portarias" className="gap-1 rounded-lg text-xs whitespace-nowrap">
+            <TabsTrigger value="portarias" className="gap-1 rounded-lg text-xs">
               <BookMarked size={13} /> Portarias <CountBadge n={portariasFiltradas.length} />
             </TabsTrigger>
-            <TabsTrigger value="sessoes" className="gap-1 rounded-lg text-xs whitespace-nowrap">
+            <TabsTrigger value="sessoes" className="gap-1 rounded-lg text-xs">
               <Calendar size={13} /> Sessões <CountBadge n={sessoesFiltradas.length} />
             </TabsTrigger>
-            <TabsTrigger value="atas" className="gap-1 rounded-lg text-xs whitespace-nowrap">
+            <TabsTrigger value="atas" className="gap-1 rounded-lg text-xs">
               <BookOpen size={13} /> Atas <CountBadge n={atasFiltradas.length} />
             </TabsTrigger>
-            <TabsTrigger value="pautas" className="gap-1 rounded-lg text-xs whitespace-nowrap">
+            <TabsTrigger value="pautas" className="gap-1 rounded-lg text-xs">
               <ClipboardList size={13} /> Pautas <CountBadge n={pautasFiltradas.length} />
             </TabsTrigger>
-            <TabsTrigger value="emendas" className="gap-1 rounded-lg text-xs whitespace-nowrap">
+            <TabsTrigger value="emendas" className="gap-1 rounded-lg text-xs">
               <DollarSign size={13} /> Emendas Imp. <CountBadge n={emendasPorVereador.length} />
-            </TabsTrigger>
-            <TabsTrigger value="protocolo" className="gap-1 rounded-lg text-xs whitespace-nowrap">
-              <Inbox size={13} /> Protocolo
             </TabsTrigger>
           </TabsList>
 
