@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
 import {
   Globe, Search, FileText, ScrollText, Users, Calendar,
   Download, BookOpen, ClipboardList, DollarSign, Scale,
-  Stamp, BookMarked, LogIn, ChevronDown, Building2, Inbox, ArrowLeft
+  Stamp, BookMarked, LogIn, ChevronDown, Building2, Inbox, ArrowLeft,
+  Link2, Check
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -152,9 +153,22 @@ function filterItems(items, { busca, filtroAno, filtroTipo, filtroStatus, filtro
   });
 }
 
-function ItemRow({ icon: Icon, label, ementa, status, arquivo_url, data, extra }) {
+function ItemRow({ icon: Icon, label, ementa, status, arquivo_url, data, extra, highlight, linkCopiar }) {
+  const ref = useRef(null);
+  const [copiado, setCopiado] = useState(false);
+
+  useEffect(() => {
+    if (highlight && ref.current) ref.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [highlight]);
+
+  function copiar() {
+    try { navigator.clipboard?.writeText(linkCopiar); } catch { /* ignore */ }
+    setCopiado(true);
+    setTimeout(() => setCopiado(false), 1500);
+  }
+
   return (
-    <div className="flex items-start gap-4 px-5 py-4 hover:bg-muted/20 transition-colors">
+    <div ref={ref} className={`flex items-start gap-4 px-5 py-4 transition-colors ${highlight ? 'bg-primary/5 ring-2 ring-inset ring-primary/50' : 'hover:bg-muted/20'}`}>
       <div className="w-9 h-9 rounded-lg bg-accent flex items-center justify-center flex-shrink-0 mt-0.5">
         <Icon size={15} className="text-primary" />
       </div>
@@ -167,6 +181,12 @@ function ItemRow({ icon: Icon, label, ementa, status, arquivo_url, data, extra }
       </div>
       <div className="flex items-center gap-2 flex-shrink-0">
         {status && <StatusBadge status={status} />}
+        {linkCopiar && (
+          <button onClick={copiar}
+            className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground" title="Copiar link deste item">
+            {copiado ? <Check size={14} className="text-emerald-500" /> : <Link2 size={14} />}
+          </button>
+        )}
         {arquivo_url && (
           <a href={arquivo_url} target="_blank" rel="noreferrer"
             className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground" title="Abrir PDF">
@@ -178,11 +198,18 @@ function ItemRow({ icon: Icon, label, ementa, status, arquivo_url, data, extra }
   );
 }
 
-function NormaList({ items }) {
+function NormaList({ items, itemAlvo, linkBase }) {
   return (
     <div className="bg-card border border-border rounded-xl overflow-hidden">
       <div className="divide-y divide-border">
-        {items.map(item => <ItemRow key={item.id} {...item} />)}
+        {items.map(item => (
+          <ItemRow
+            key={item.id}
+            {...item}
+            highlight={itemAlvo && item.id === itemAlvo}
+            linkCopiar={linkBase ? `${linkBase}&item=${item.id}` : null}
+          />
+        ))}
       </div>
     </div>
   );
@@ -232,7 +259,27 @@ export default function Transparencia() {
   const [filtroStatus, setFiltroStatus] = useState('todos');
   const [filtroAutor, setFiltroAutor] = useState('todos');
   const [emendaVereador, setEmendaVereador] = useState(null);
-  const [aba, setAba] = useState('parlamentares');
+  const [aba, setAba] = useState(() => {
+    try { return new URLSearchParams(window.location.search).get('aba') || 'parlamentares'; }
+    catch { return 'parlamentares'; }
+  });
+  // Item específico apontado pela URL (ex.: ?item=<id>) — destaca/rola até ele.
+  const [itemAlvo, setItemAlvo] = useState(() => {
+    try { return new URLSearchParams(window.location.search).get('item') || ''; }
+    catch { return ''; }
+  });
+
+  // Troca a aba e reflete na URL (para links diretos por seção).
+  function mudarAba(nova) {
+    setAba(nova);
+    setItemAlvo('');
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set('aba', nova);
+      url.searchParams.delete('item');
+      window.history.replaceState(null, '', url);
+    } catch { /* ignore */ }
+  }
 
   const { data, loading } = usePublicData(camaraId);
 
@@ -337,6 +384,11 @@ export default function Transparencia() {
 
   const autoresMateria = [...new Set(data.materias.map(m => m.autor_nome).filter(Boolean))].sort();
   const { camara } = data;
+
+  // Base para "copiar link" de um item — leva à mesma aba com o item destacado.
+  const linkBase = camaraId
+    ? `${window.location.origin}/transparencia?c=${camaraId}&aba=${aba}`
+    : null;
 
   const totais = [
     { icon: Users, label: 'Parlamentares', n: data.parlamentares.length },
@@ -443,17 +495,15 @@ export default function Transparencia() {
             </div>
           </div>
           <button
-            onClick={() => setAba('protocolo')}
-            className={`inline-flex items-center justify-center gap-2 h-10 px-5 rounded-xl text-sm font-semibold transition-colors flex-shrink-0 ${
-              aba === 'protocolo' ? 'bg-primary text-primary-foreground' : 'bg-primary text-primary-foreground hover:opacity-90'
-            }`}
+            onClick={() => mudarAba('protocolo')}
+            className="inline-flex items-center justify-center gap-2 h-10 px-5 rounded-xl text-sm font-semibold transition-opacity flex-shrink-0 bg-primary text-primary-foreground hover:opacity-90"
           >
             <Inbox size={16} /> Abrir Protocolo
           </button>
         </div>
 
         {/* Abas de consulta (quebram linha — nada fica escondido) */}
-        <Tabs value={aba} onValueChange={setAba}>
+        <Tabs value={aba} onValueChange={mudarAba}>
           <TabsList className="w-full flex-wrap justify-start gap-1 bg-muted p-1.5 rounded-xl h-auto">
             <TabsTrigger value="parlamentares" className="gap-1 rounded-lg text-xs">
               <Users size={13} /> Parlamentares <CountBadge n={parlFiltrados.length} />
@@ -528,7 +578,7 @@ export default function Transparencia() {
                 ementa: m.ementa, status: m.status, arquivo_url: m.arquivo_url,
                 data: m.data_apresentacao ? `Apresentado em ${m.data_apresentacao}` : null,
                 extra: m.autor_nome ? `Autor: ${m.autor_nome}` : null,
-              }))} />
+              }))} itemAlvo={itemAlvo} linkBase={linkBase} />
             )}
           </TabsContent>
 
@@ -541,7 +591,7 @@ export default function Transparencia() {
                 label: `${n.tipo}${n.numero ? ` nº ${n.numero}` : ''}${n.ano ? `/${n.ano}` : ''}`,
                 ementa: n.ementa, status: n.situacao, arquivo_url: n.arquivo_url,
                 data: n.data_publicacao ? `Publicada em ${n.data_publicacao}` : null,
-              }))} />
+              }))} itemAlvo={itemAlvo} linkBase={linkBase} />
             )}
           </TabsContent>
 
@@ -553,7 +603,7 @@ export default function Transparencia() {
                 label: `Resolução${n.numero ? ` nº ${n.numero}` : ''}${n.ano ? `/${n.ano}` : ''}`,
                 ementa: n.ementa, status: n.situacao, arquivo_url: n.arquivo_url,
                 data: n.data_publicacao ? `Publicada em ${n.data_publicacao}` : null,
-              }))} />
+              }))} itemAlvo={itemAlvo} linkBase={linkBase} />
             )}
           </TabsContent>
 
@@ -565,7 +615,7 @@ export default function Transparencia() {
                 label: `Decreto Legislativo${n.numero ? ` nº ${n.numero}` : ''}${n.ano ? `/${n.ano}` : ''}`,
                 ementa: n.ementa, status: n.situacao, arquivo_url: n.arquivo_url,
                 data: n.data_publicacao ? `Publicada em ${n.data_publicacao}` : null,
-              }))} />
+              }))} itemAlvo={itemAlvo} linkBase={linkBase} />
             )}
           </TabsContent>
 
@@ -577,7 +627,7 @@ export default function Transparencia() {
                 label: `Portaria${n.numero ? ` nº ${n.numero}` : ''}${n.ano ? `/${n.ano}` : ''}`,
                 ementa: n.ementa, status: n.situacao, arquivo_url: n.arquivo_url,
                 data: n.data_publicacao ? `Publicada em ${n.data_publicacao}` : null,
-              }))} />
+              }))} itemAlvo={itemAlvo} linkBase={linkBase} />
             )}
           </TabsContent>
 
@@ -618,7 +668,7 @@ export default function Transparencia() {
                 arquivo_url: a.arquivo_url,
                 data: a.data,
                 extra: a.sessao_numero ? `Sessão ${a.sessao_numero}` : null,
-              }))} />
+              }))} itemAlvo={itemAlvo} linkBase={linkBase} />
             )}
           </TabsContent>
 
@@ -631,7 +681,7 @@ export default function Transparencia() {
                 ementa: p.observacoes || 'Pauta da sessão',
                 arquivo_url: p.arquivo_url,
                 extra: p.sessao_numero ? `Sessão ${p.sessao_numero}` : null,
-              }))} />
+              }))} itemAlvo={itemAlvo} linkBase={linkBase} />
             )}
           </TabsContent>
 
