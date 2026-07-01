@@ -1,15 +1,18 @@
 import { useEffect, useState } from 'react';
-import { sislegisEntities } from '@/lib/sislegisApi';
-import { Inbox, Search, Mail, Phone, Clock, Lock, FileText } from 'lucide-react';
+import { sislegisEntities, protocolar } from '@/lib/sislegisApi';
+import { Inbox, Search, Mail, Phone, Clock, Lock, FileText, Plus } from 'lucide-react';
 import { useTenant } from '@/lib/TenantContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import FileUpload from '@/components/FileUpload';
 import LoadingState from '@/components/LoadingState';
 
 const STATUS_OPTS = ['Recebido', 'Em Análise', 'Encaminhado', 'Arquivado', 'Respondido', 'Aguardando'];
+const TIPOS_DOC = ['Ofício', 'Requerimento', 'Projeto de Lei', 'Petição', 'Memorando', 'Relatório', 'Outros'];
+const NOVO_VAZIO = { tipo_documento: 'Ofício', interessado: '', email_interessado: '', telefone_interessado: '', assunto: '', observacoes: '', arquivo_url: '' };
 
 const STATUS_COLOR = {
   'Recebido': 'bg-blue-100 text-blue-700',
@@ -29,7 +32,7 @@ const ORIGEM_COLOR = {
 // origemDe: protocolos antigos (sem origem) contam como "Interno".
 const origemDe = (p) => p.origem || 'Interno';
 
-export default function GestaoProtocolos({ origens, titulo, descricao, vazioLabel }) {
+export default function GestaoProtocolos({ origens, titulo, descricao, vazioLabel, permiteProtocolar = false }) {
   const { tenantId, withTenant, canQuery } = useTenant();
   const [protocolos, setProtocolos] = useState([]);
   const [busca, setBusca] = useState('');
@@ -39,6 +42,32 @@ export default function GestaoProtocolos({ origens, titulo, descricao, vazioLabe
   const [obs, setObs] = useState('');
   const [salvando, setSalvando] = useState(false);
   const [loading, setLoading] = useState(true);
+  // Registrar novo protocolo (interno), apenas com permissão.
+  const [novoOpen, setNovoOpen] = useState(false);
+  const [novo, setNovo] = useState(NOVO_VAZIO);
+  const [salvandoNovo, setSalvandoNovo] = useState(false);
+  const [novoErro, setNovoErro] = useState('');
+  const [novoResultado, setNovoResultado] = useState(null);
+
+  async function salvarNovo() {
+    setNovoErro('');
+    if (!novo.interessado.trim()) return setNovoErro('Informe o remetente/interessado.');
+    if (!novo.assunto.trim()) return setNovoErro('Informe o assunto.');
+    setSalvandoNovo(true);
+    try {
+      const data = await protocolar({ camara_id: tenantId, ...novo });
+      if (!data) setNovoErro('Erro ao registrar. Tente novamente.');
+      else { setNovoResultado(data); loadData(); }
+    } catch (e) {
+      setNovoErro(e?.message || 'Erro ao registrar. Tente novamente.');
+    } finally {
+      setSalvandoNovo(false);
+    }
+  }
+
+  function fecharNovo() {
+    setNovoOpen(false); setNovo(NOVO_VAZIO); setNovoErro(''); setNovoResultado(null);
+  }
 
   useEffect(() => { if (canQuery) loadData(); }, [tenantId, canQuery]);
 
@@ -97,9 +126,16 @@ export default function GestaoProtocolos({ origens, titulo, descricao, vazioLabe
 
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-3xl font-heading font-bold text-foreground">{titulo}</h1>
-        <p className="text-muted-foreground mt-1">{descricao} · {pendentes} pendente(s)</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-heading font-bold text-foreground">{titulo}</h1>
+          <p className="text-muted-foreground mt-1">{descricao} · {pendentes} pendente(s)</p>
+        </div>
+        {permiteProtocolar && (
+          <Button onClick={() => setNovoOpen(true)} className="gap-2 shadow-lg shadow-primary/20">
+            <Plus size={18} /> Novo Protocolo
+          </Button>
+        )}
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
@@ -216,6 +252,77 @@ export default function GestaoProtocolos({ origens, titulo, descricao, vazioLabe
           <DialogFooter>
             <Button variant="outline" onClick={() => setSel(null)}>Fechar</Button>
             <Button onClick={salvar} disabled={salvando}>{salvando ? 'Salvando...' : 'Salvar'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Registrar novo protocolo (interno) */}
+      <Dialog open={novoOpen} onOpenChange={(o) => !o && fecharNovo()}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-heading">Novo Protocolo</DialogTitle>
+          </DialogHeader>
+          {novoResultado ? (
+            <div className="py-2 text-center space-y-3">
+              <p className="text-sm text-muted-foreground">Protocolo registrado com sucesso.</p>
+              <div className="bg-muted/50 rounded-xl p-4">
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground font-semibold">Número</div>
+                <div className="font-mono font-bold text-2xl text-foreground tabular-nums">{novoResultado.numero}</div>
+              </div>
+              <div className="bg-primary/10 border border-primary/20 rounded-xl p-3">
+                <div className="text-[11px] uppercase tracking-wide text-primary font-semibold">Código de acompanhamento</div>
+                <div className="font-mono font-bold text-lg text-foreground tracking-wider">{novoResultado.codigo_consulta}</div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4 py-1">
+              {novoErro && <div className="text-sm text-red-600 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{novoErro}</div>}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium mb-1.5 block">Tipo *</label>
+                  <Select value={novo.tipo_documento} onValueChange={v => setNovo(n => ({ ...n, tipo_documento: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{TIPOS_DOC.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-1.5 block">Remetente / interessado *</label>
+                  <Input value={novo.interessado} onChange={e => setNovo(n => ({ ...n, interessado: e.target.value }))} placeholder="Quem enviou" />
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1.5 block">Assunto *</label>
+                <Input value={novo.assunto} onChange={e => setNovo(n => ({ ...n, assunto: e.target.value }))} placeholder="Assunto do documento" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium mb-1.5 block">E-mail (opcional)</label>
+                  <Input type="email" value={novo.email_interessado} onChange={e => setNovo(n => ({ ...n, email_interessado: e.target.value }))} placeholder="para enviar comprovante" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-1.5 block">Telefone</label>
+                  <Input value={novo.telefone_interessado} onChange={e => setNovo(n => ({ ...n, telefone_interessado: e.target.value }))} />
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1.5 block">Observações</label>
+                <Textarea value={novo.observacoes} onChange={e => setNovo(n => ({ ...n, observacoes: e.target.value }))} rows={3} />
+              </div>
+              <FileUpload value={novo.arquivo_url} onUploaded={(url) => setNovo(n => ({ ...n, arquivo_url: url }))} label="Anexar documento" />
+            </div>
+          )}
+          <DialogFooter>
+            {novoResultado ? (
+              <>
+                <Button variant="outline" onClick={() => { setNovoResultado(null); setNovo(NOVO_VAZIO); setNovoErro(''); }}>Novo</Button>
+                <Button onClick={fecharNovo}>Concluir</Button>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" onClick={fecharNovo}>Cancelar</Button>
+                <Button onClick={salvarNovo} disabled={salvandoNovo}>{salvandoNovo ? 'Registrando...' : 'Protocolar'}</Button>
+              </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

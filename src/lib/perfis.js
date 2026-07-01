@@ -42,6 +42,7 @@ export const ACAO_LABEL = {
   editar: 'Editar',
   excluir: 'Excluir',
   tramitar: 'Atualizar tramitação',
+  protocolar: 'Protocolar',
   encerrar: 'Encerrar',
   presenca: 'Controlar presença',
   operar: 'Operar votação',
@@ -104,8 +105,8 @@ export const PERMISSION_SECTIONS = [
     label: 'Documentos',
     itens: [
       { id: 'audiencias', label: 'Audiências Públicas', path: '/audiencias', acoes: ['visualizar', 'criar', 'editar', 'excluir'] },
-      { id: 'protocolo', label: 'Protocolo', path: '/protocolo', acoes: ['visualizar', 'editar'] },
-      { id: 'protocolos_publicos', label: 'Protocolos Públicos', path: '/protocolos-publicos', acoes: ['visualizar', 'editar'] },
+      { id: 'protocolo', label: 'Protocolo', path: '/protocolo', acoes: ['visualizar', 'protocolar', 'tramitar'] },
+      { id: 'protocolos_publicos', label: 'Protocolos Públicos', path: '/protocolos-publicos', acoes: ['visualizar', 'tramitar'] },
       { id: 'documentos', label: 'Documentos Administrativos', path: '/documentos', acoes: ['visualizar', 'criar', 'editar', 'excluir'] },
       { id: 'oficios', label: 'Ofícios', path: '/oficios', acoes: ['visualizar', 'criar', 'editar', 'excluir'] },
     ],
@@ -198,7 +199,7 @@ const SECRETARIO_PERMS = comAcoes(VISUALIZAR_TUDO, [
   'documentos_criar', 'documentos_editar', 'documentos_excluir',
   'pautas_criar', 'pautas_editar', 'pautas_excluir',
   'audiencias_criar', 'audiencias_editar',
-  'protocolo_editar', 'protocolos_publicos_editar',
+  'protocolo_protocolar', 'protocolo_tramitar', 'protocolos_publicos_tramitar',
 ]);
 SECRETARIO_PERMS.painel_votar = false;
 
@@ -273,4 +274,17 @@ export function canShowMenuItem(user, path) {
   const val = permissoes[permKey];
   if (val !== undefined) return !!val;
   return !!(DEFAULT_PERMISSIONS[user.role] || {})[permKey];
+}
+
+/**
+ * Verifica uma permissão de AÇÃO específica (ex.: 'protocolo_protocolar').
+ * Mesma lógica de fallback do canShowMenuItem: admin vê tudo; chave ausente
+ * herda o padrão do perfil.
+ */
+export function temPermissao(user, key) {
+  if (!user) return false;
+  if (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_CAMARA') return true;
+  const p = user.permissoes || {};
+  if (p[key] !== undefined) return !!p[key];
+  return !!(DEFAULT_PERMISSIONS[user.role] || {})[key];
 }

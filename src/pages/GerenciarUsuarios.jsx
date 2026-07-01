@@ -692,48 +692,61 @@ export default function GerenciarUsuarios() {
                   </span>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="px-4 pb-4 pt-0 space-y-5">
+              <CardContent className="px-4 pb-4 pt-0 space-y-4">
+                <p className="text-[11px] text-muted-foreground">
+                  Clique numa ação para liberá-la (fica azul). Clique no nome do item para marcar/limpar todas as ações dele, ou use “Selecionar tudo” na seção.
+                </p>
                 {PERMISSION_SECTIONS.map(secao => {
                   const est = secaoEstado(secao);
                   return (
-                    <div key={secao.label} className="space-y-2">
-                      {/* Cabeçalho da seção — marca a seção inteira */}
-                      <label className="flex items-center gap-2.5 border-b pb-1.5 cursor-pointer">
-                        <Checkbox
-                          checked={est.todas ? true : est.algumas ? 'indeterminate' : false}
-                          onCheckedChange={() => toggleSecao(secao, !est.todas)}
-                        />
-                        <span className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground select-none">
+                    <div key={secao.label} className="space-y-1.5">
+                      {/* Cabeçalho da seção */}
+                      <div className="flex items-center justify-between border-b pb-1.5">
+                        <span className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
                           {secao.label}
                         </span>
-                      </label>
+                        <button
+                          type="button"
+                          onClick={() => toggleSecao(secao, !est.todas)}
+                          className="text-[11px] font-medium text-primary hover:underline"
+                        >
+                          {est.todas ? 'Limpar seção' : 'Selecionar tudo'}
+                        </button>
+                      </div>
 
-                      {/* Itens da seção */}
-                      <div className="space-y-2 pl-1">
+                      {/* Itens — nome + chips de ação */}
+                      <div className="space-y-1.5">
                         {secao.itens.map(item => {
                           const itemKeys = item.acoes.map(a => `${item.id}_${a}`);
                           const itemOn = itemKeys.filter(k => form.permissoes?.[k]).length;
                           const itemTodas = itemOn === itemKeys.length;
                           return (
-                            <div key={item.id} className="rounded-lg bg-muted/30 px-2.5 py-2">
-                              <label className="flex items-center gap-2 cursor-pointer">
-                                <Checkbox
-                                  checked={itemTodas ? true : itemOn > 0 ? 'indeterminate' : false}
-                                  onCheckedChange={() => toggleItem(item, !itemTodas)}
-                                />
-                                <span className="text-xs font-semibold text-foreground select-none">{item.label}</span>
-                              </label>
-                              <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-2 pl-6">
+                            <div key={item.id} className="flex flex-col sm:flex-row sm:items-center gap-x-3 gap-y-1.5 rounded-lg bg-muted/30 px-3 py-2">
+                              <button
+                                type="button"
+                                onClick={() => toggleItem(item, !itemTodas)}
+                                className={`text-xs font-semibold text-left sm:w-40 shrink-0 transition-colors ${itemOn > 0 ? 'text-foreground' : 'text-muted-foreground'} hover:text-primary`}
+                                title="Marcar/limpar todas as ações deste item"
+                              >
+                                {item.label}
+                              </button>
+                              <div className="flex flex-wrap gap-1.5">
                                 {item.acoes.map(a => {
                                   const k = `${item.id}_${a}`;
+                                  const on = !!form.permissoes?.[k];
                                   return (
-                                    <label key={k} className="flex items-center gap-1.5 cursor-pointer">
-                                      <Checkbox
-                                        checked={form.permissoes?.[k] || false}
-                                        onCheckedChange={() => togglePermissao(k)}
-                                      />
-                                      <span className="text-[11px] text-muted-foreground select-none">{ACAO_LABEL[a] || a}</span>
-                                    </label>
+                                    <button
+                                      type="button"
+                                      key={k}
+                                      onClick={() => togglePermissao(k)}
+                                      className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors ${
+                                        on
+                                          ? 'bg-primary text-primary-foreground border-primary font-medium'
+                                          : 'bg-transparent text-muted-foreground border-border hover:border-primary/50 hover:text-foreground'
+                                      }`}
+                                    >
+                                      {ACAO_LABEL[a] || a}
+                                    </button>
                                   );
                                 })}
                               </div>
