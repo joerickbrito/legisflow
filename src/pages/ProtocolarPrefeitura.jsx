@@ -12,7 +12,7 @@ import FileUpload from '@/components/FileUpload';
 const TIPOS = ['Ofício', 'Requerimento', 'Projeto de Lei', 'Petição', 'Memorando', 'Relatório', 'Outros'];
 
 const FORM_VAZIO = {
-  tipo_documento: 'Ofício', interessado: '', email_interessado: '',
+  tipo_documento: 'Ofício', interessado: '', enviado_por: '', email_interessado: '',
   telefone_interessado: '', assunto: '', observacoes: '', arquivo_url: '',
 };
 
@@ -123,6 +123,10 @@ export default function ProtocolarPrefeitura() {
               <label className="text-xs font-semibold text-foreground mb-1 block">Telefone</label>
               <Input value={form.telefone_interessado} onChange={e => set('telefone_interessado', e.target.value)} placeholder="(00) 0000-0000" className="h-10" />
             </div>
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-foreground mb-1 block">Nome de quem está enviando</label>
+            <Input value={form.enviado_por} onChange={e => set('enviado_por', e.target.value)} placeholder="Servidor responsável pelo envio" className="h-10" />
           </div>
           <div>
             <label className="text-xs font-semibold text-foreground mb-1 block">Assunto *</label>

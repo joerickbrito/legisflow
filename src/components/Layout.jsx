@@ -117,8 +117,6 @@ const getNavGroups = (user, isInChamberContext) => {
         { path: '/audiencias', icon: Users, label: 'Audiências Públicas' },
         { path: '/protocolo', icon: Inbox, label: 'Protocolo' },
         { path: '/protocolos-publicos', icon: Globe, label: 'Protocolos Públicos' },
-        { path: '/documentos', icon: FolderOpen, label: 'Documentos Administrativos' },
-        { path: '/oficios', icon: Mail, label: 'Ofícios' },
       ]),
     },
     {

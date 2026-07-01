@@ -7,6 +7,7 @@ import FilterBar, { TODOS } from '@/components/FilterBar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import FileUpload from '@/components/FileUpload';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import PageHeader from '@/components/PageHeader';
@@ -158,6 +159,7 @@ export default function Pareceres() {
               <div><label className="text-sm font-medium mb-1.5 block">Data</label><Input type="date" value={form.data} onChange={e => setForm(f => ({ ...f, data: e.target.value }))} /></div>
             </div>
             <div><label className="text-sm font-medium mb-1.5 block">Texto do Parecer</label><Textarea value={form.texto} onChange={e => setForm(f => ({ ...f, texto: e.target.value }))} rows={5} /></div>
+            <FileUpload value={form.arquivo_url} onUploaded={url => setForm(f => ({ ...f, arquivo_url: url }))} label="Anexar arquivo" />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>

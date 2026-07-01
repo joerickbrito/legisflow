@@ -39,7 +39,7 @@ export default function GestaoProtocolos({ origens, titulo, descricao, vazioLabe
   const [filtroStatus, setFiltroStatus] = useState('todos');
   const [sel, setSel] = useState(null);
   const [status, setStatus] = useState('Recebido');
-  const [obs, setObs] = useState('');
+  const [atualizacoes, setAtualizacoes] = useState('');
   const [salvando, setSalvando] = useState(false);
   const [loading, setLoading] = useState(true);
   // Registrar novo protocolo (interno), apenas com permissão.
@@ -86,7 +86,7 @@ export default function GestaoProtocolos({ origens, titulo, descricao, vazioLabe
   function abrir(p) {
     setSel(p);
     setStatus(p.status || 'Recebido');
-    setObs(p.observacoes || '');
+    setAtualizacoes(p.atualizacoes || '');
   }
 
   const [excluindo, setExcluindo] = useState(false);
@@ -111,15 +111,15 @@ export default function GestaoProtocolos({ origens, titulo, descricao, vazioLabe
     try {
       const mudouStatus = status !== sel.status;
       const historico = Array.isArray(sel.historico_tramitacao) ? [...sel.historico_tramitacao] : [];
-      if (mudouStatus || (obs && obs !== (sel.observacoes || ''))) {
+      if (mudouStatus || (atualizacoes && atualizacoes !== (sel.atualizacoes || ''))) {
         historico.push({
           status,
           data: new Date().toISOString(),
-          observacao: mudouStatus ? `Status alterado para "${status}".` : 'Observação atualizada.',
+          observacao: mudouStatus ? `Status alterado para "${status}".` : 'Atualização registrada.',
           por: 'Câmara',
         });
       }
-      await sislegisEntities.Protocolo.update(sel.id, { status, observacoes: obs, historico_tramitacao: historico });
+      await sislegisEntities.Protocolo.update(sel.id, { status, atualizacoes, historico_tramitacao: historico });
       setSel(null);
       loadData();
     } finally {
@@ -221,10 +221,16 @@ export default function GestaoProtocolos({ origens, titulo, descricao, vazioLabe
                 </div>
                 <div className="font-medium text-foreground">{sel.assunto}</div>
                 <div className="text-muted-foreground text-xs">Interessado: {sel.interessado}</div>
+                {sel.enviado_por && <div className="text-muted-foreground text-xs">Enviado por: {sel.enviado_por}</div>}
                 {sel.email_interessado && <div className="text-muted-foreground text-xs flex items-center gap-1"><Mail size={11} /> {sel.email_interessado}</div>}
                 {sel.telefone_interessado && <div className="text-muted-foreground text-xs flex items-center gap-1"><Phone size={11} /> {sel.telefone_interessado}</div>}
                 {sel.data_protocolo && <div className="text-muted-foreground text-xs">Protocolado em {sel.data_protocolo}{sel.hora_protocolo ? ` às ${sel.hora_protocolo}` : ''}</div>}
                 <div className="text-muted-foreground text-xs">Origem: {origemDe(sel)}</div>
+                {sel.observacoes && (
+                  <div className="text-muted-foreground text-xs mt-1">
+                    <span className="font-medium text-foreground/80">Observação do interessado:</span> {sel.observacoes}
+                  </div>
+                )}
                 {sel.arquivo_url && (
                   <a href={sel.arquivo_url} target="_blank" rel="noreferrer" className="text-primary text-xs inline-flex items-center gap-1 hover:underline mt-1">
                     <FileText size={12} /> Abrir documento anexado
@@ -241,8 +247,8 @@ export default function GestaoProtocolos({ origens, titulo, descricao, vazioLabe
                 </Select>
               </div>
               <div>
-                <label className="text-sm font-medium mb-1.5 block">Observações</label>
-                <Textarea value={obs} onChange={e => setObs(e.target.value)} rows={3} placeholder="Anotações internas / resposta ao interessado..." />
+                <label className="text-sm font-medium mb-1.5 block">Atualizações (andamento)</label>
+                <Textarea value={atualizacoes} onChange={e => setAtualizacoes(e.target.value)} rows={3} placeholder="Escreva uma atualização sobre o andamento do protocolo (visível ao interessado na consulta)..." />
               </div>
 
               {/* Histórico */}

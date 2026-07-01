@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import FileUpload from '@/components/FileUpload';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import PageHeader from '@/components/PageHeader';
@@ -117,6 +118,7 @@ export default function Audiencias() {
               </Select>
             </div>
             <div><label className="text-sm font-medium mb-1.5 block">Ata</label><Textarea value={form.ata} onChange={e => setForm(f => ({ ...f, ata: e.target.value }))} rows={5} placeholder="Registro da audiência..." /></div>
+            <FileUpload value={form.ata_arquivo_url} onUploaded={url => setForm(f => ({ ...f, ata_arquivo_url: url }))} label="Anexar ata (arquivo)" />
           </div>
           {errorMsg && <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">{errorMsg}</p>}
           <DialogFooter>

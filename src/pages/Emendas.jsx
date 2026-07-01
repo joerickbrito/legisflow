@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import FileUpload from "@/components/FileUpload";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FileDiff, Plus } from "lucide-react";
 import StatusBadge from "@/components/StatusBadge";
@@ -138,6 +139,7 @@ export default function Emendas() {
             <div><label className="text-xs text-muted-foreground">Ementa</label><Input value={form.ementa} onChange={e => setForm(f => ({ ...f, ementa: e.target.value }))} /></div>
             <div><label className="text-xs text-muted-foreground">Texto</label><Textarea rows={3} value={form.texto} onChange={e => setForm(f => ({ ...f, texto: e.target.value }))} /></div>
             <div><label className="text-xs text-muted-foreground">Justificativa</label><Textarea rows={2} value={form.justificativa} onChange={e => setForm(f => ({ ...f, justificativa: e.target.value }))} /></div>
+            <FileUpload value={form.arquivo_url} onUploaded={url => setForm(f => ({ ...f, arquivo_url: url }))} label="Anexar arquivo" />
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs text-muted-foreground">Autor</label>

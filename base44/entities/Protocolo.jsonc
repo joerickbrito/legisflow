@@ -101,6 +101,12 @@
     "observacoes": {
       "type": "string"
     },
+    "atualizacoes": {
+      "type": "string"
+    },
+    "enviado_por": {
+      "type": "string"
+    },
     "arquivo_url": {
       "type": "string"
     },

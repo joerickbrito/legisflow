@@ -265,10 +265,10 @@ export default function Parlamentares() {
               {/* Avatar */}
               <div className="relative flex-shrink-0">
                 {p.foto_url ? (
-                  <img src={p.foto_url} alt={p.nome_parlamentar || p.nome} className="w-14 h-14 rounded-xl object-cover object-top border border-border" />
+                  <img src={p.foto_url} alt={p.nome_parlamentar || p.nome} className="w-20 h-20 rounded-xl object-cover object-top border border-border" />
                 ) : (
-                  <div className="w-14 h-14 rounded-xl bg-accent flex items-center justify-center">
-                    <span className="text-xl font-heading font-bold text-primary/50">{(p.nome_parlamentar || p.nome)?.charAt(0)}</span>
+                  <div className="w-20 h-20 rounded-xl bg-accent flex items-center justify-center">
+                    <span className="text-2xl font-heading font-bold text-primary/50">{(p.nome_parlamentar || p.nome)?.charAt(0)}</span>
                   </div>
                 )}
                 {vinculado && (

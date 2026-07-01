@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
         status: p.status,
         data_protocolo: p.data_protocolo,
         hora_protocolo: p.hora_protocolo,
-        observacoes: p.observacoes || '',
+        atualizacoes: p.atualizacoes || '',
         historico_tramitacao: Array.isArray(p.historico_tramitacao) ? p.historico_tramitacao : [],
       },
     });

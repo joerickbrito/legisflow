@@ -127,8 +127,8 @@ export default function PautasSessoes() {
           </DialogHeader>
           <div className="grid grid-cols-2 gap-4 mt-2">
             <div className="col-span-2">
-              <label className="text-sm font-medium">Número *</label>
-              <Input value={form.numero || ''} onChange={e => set('numero', e.target.value)} placeholder="001" />
+              <label className="text-sm font-medium">Nome *</label>
+              <Input value={form.numero || ''} onChange={e => set('numero', e.target.value)} placeholder="Ex.: 13ª Pauta" />
             </div>
             <div className="col-span-2">
               <label className="text-sm font-medium">Sessão Plenária</label>

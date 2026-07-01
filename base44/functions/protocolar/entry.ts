@@ -130,6 +130,7 @@ Deno.serve(async (req) => {
       telefone_interessado,
       observacoes,
       arquivo_url,
+      enviado_por,
     } = body || {};
 
     // ── Validação ──
@@ -201,6 +202,7 @@ Deno.serve(async (req) => {
         hora_protocolo: hora,
         status: 'Recebido',
         observacoes: observacoes || '',
+        enviado_por: enviado_por || '',
         arquivo_url: arquivo_url || '',
         usuario_protocolo,
         historico_tramitacao: [

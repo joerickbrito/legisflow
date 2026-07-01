@@ -217,10 +217,10 @@ function ConsultarProtocolo({ camaraId }) {
                 </div>
               ))}
           </div>
-          {proto.observacoes && (
+          {proto.atualizacoes && (
             <div className="mt-4 pt-4 border-t border-border">
-              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Observações da câmara</div>
-              <p className="text-sm text-foreground">{proto.observacoes}</p>
+              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Atualizações da câmara</div>
+              <p className="text-sm text-foreground whitespace-pre-line">{proto.atualizacoes}</p>
             </div>
           )}
         </div>

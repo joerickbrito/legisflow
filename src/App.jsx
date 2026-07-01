@@ -25,7 +25,6 @@ import Pareceres from '@/pages/Pareceres';
 import Audiencias from '@/pages/Audiencias';
 import Sessoes from '@/pages/Sessoes';
 import Normas from '@/pages/Normas';
-import Documentos from '@/pages/Documentos';
 import Transparencia from '@/pages/Transparencia';
 import ProtocolarPrefeitura from '@/pages/ProtocolarPrefeitura';
 import ProtocolosPublicos from '@/pages/ProtocolosPublicos';
@@ -35,7 +34,6 @@ import TelaoPage from '@/pages/TelaoPage.jsx';
 import Quorum from '@/pages/Quorum.jsx';
 import Emendas from '@/pages/Emendas.jsx';
 import ReuniaoComissao from '@/pages/ReuniaoComissao.jsx';
-import Oficios from '@/pages/Oficios.jsx';
 import ProjetosLei from '@/pages/ProjetosLei';
 import Leis from '@/pages/Leis';
 import Resolucoes from '@/pages/Resolucoes';
@@ -110,13 +108,11 @@ const AuthenticatedApp = () => {
           <Route path="/audiencias" element={<Audiencias />} />
           <Route path="/sessoes" element={<Sessoes />} />
           <Route path="/normas" element={<Normas />} />
-          <Route path="/documentos" element={<Documentos />} />
           <Route path="/relatorios" element={<Relatorios />} />
           <Route path="/painel-eletronico" element={<PainelEletronico />} />
           <Route path="/quorum" element={<Quorum />} />
           <Route path="/emendas" element={<Emendas />} />
           <Route path="/reuniao-comissao" element={<ReuniaoComissao />} />
-          <Route path="/oficios" element={<Oficios />} />
           <Route path="/projetos-lei" element={<ProjetosLei />} />
           <Route path="/leis" element={<Leis />} />
           <Route path="/resolucoes" element={<Resolucoes />} />

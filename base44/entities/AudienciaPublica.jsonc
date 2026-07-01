@@ -64,6 +64,9 @@
     "ata": {
       "type": "string"
     },
+    "ata_arquivo_url": {
+      "type": "string"
+    },
     "lista_presenca_url": {
       "type": "string"
     },

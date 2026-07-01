@@ -412,7 +412,6 @@ export default function Transparencia() {
     { key: 'resolucoes',    label: 'Resoluções', icon: Scale, n: resolucoesFiltradas.length },
     { key: 'decretos',      label: 'Decretos', icon: Stamp, n: decretosFiltrados.length },
     { key: 'portarias',     label: 'Portarias', icon: BookMarked, n: portariasFiltradas.length },
-    { key: 'sessoes',       label: 'Sessões', icon: Calendar, n: sessoesFiltradas.length },
     { key: 'atas',          label: 'Atas', icon: BookOpen, n: atasFiltradas.length },
     { key: 'pautas',        label: 'Pautas', icon: ClipboardList, n: pautasFiltradas.length },
     { key: 'emendas',       label: 'Emendas Imp.', icon: DollarSign, n: emendasPorVereador.length },
@@ -577,7 +576,7 @@ export default function Transparencia() {
                   return (
                     <div key={p.id} className="group relative bg-card border border-border rounded-2xl p-4 flex items-center gap-3 hover:border-blue-300/60 hover:shadow-[0_15px_35px_-15px_rgba(37,99,235,0.35)] hover:-translate-y-0.5 transition-all">
                       {p.foto_url
-                        ? <img src={p.foto_url} alt={nome} className="w-14 h-14 rounded-2xl object-cover ring-2 ring-white shadow flex-shrink-0" />
+                        ? <img src={p.foto_url} alt={nome} className="w-16 h-16 rounded-2xl object-cover object-top ring-2 ring-white shadow flex-shrink-0" />
                         : <div className="w-14 h-14 rounded-2xl flex items-center justify-center font-heading font-bold text-white text-xl flex-shrink-0 bg-gradient-to-br from-blue-500 to-blue-700">{nome?.charAt(0)}</div>}
                       <div className="min-w-0 flex-1">
                         <div className="font-semibold text-sm text-foreground truncate">{nome}</div>
@@ -661,39 +660,12 @@ export default function Transparencia() {
             )}
           </TabsContent>
 
-          {/* SESSÕES */}
-          <TabsContent value="sessoes" className="mt-5">
-            <TipoFilter tipos={['Ordinária', 'Extraordinária', 'Solene', 'Especial']} filtroTipo={filtroTipo} setFiltroTipo={setFiltroTipo} label="Tipo de sessão" />
-            {loading ? <LoadingMsg /> : sessoesFiltradas.length === 0 ? <EmptyMsg label="sessões" /> : (
-              <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
-                <div className="divide-y divide-border">
-                  {sessoesFiltradas.map(s => (
-                    <div key={s.id} className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50/70 dark:hover:bg-muted/20 transition-colors">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-100 to-amber-50 dark:from-amber-950/40 dark:to-amber-900/20 ring-1 ring-amber-200/60 dark:ring-amber-900/40 flex items-center justify-center flex-shrink-0">
-                        <Calendar size={15} className="text-amber-700 dark:text-amber-300" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-foreground">
-                          {s.numero ? `${s.numero}ª ` : ''}Sessão {s.tipo}
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-0.5">
-                          {s.data}{s.hora_inicio ? ` às ${s.hora_inicio}` : ''}{s.local ? ` · ${s.local}` : ''}
-                        </div>
-                      </div>
-                      <StatusBadge status={s.status} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </TabsContent>
-
           {/* ATAS */}
           <TabsContent value="atas" className="mt-5">
             {loading ? <LoadingMsg /> : atasFiltradas.length === 0 ? <EmptyMsg label="atas" /> : (
               <NormaList items={atasFiltradas.map(a => ({
                 id: a.id, icon: BookOpen,
-                label: `Ata nº ${a.numero}`,
+                label: a.numero || 'Ata',
                 ementa: a.observacoes || 'Ata da sessão',
                 arquivo_url: a.arquivo_url,
                 data: a.data,
@@ -707,7 +679,7 @@ export default function Transparencia() {
             {loading ? <LoadingMsg /> : pautasFiltradas.length === 0 ? <EmptyMsg label="pautas" /> : (
               <NormaList items={pautasFiltradas.map(p => ({
                 id: p.id, icon: ClipboardList,
-                label: `Pauta nº ${p.numero}`,
+                label: p.numero || 'Pauta',
                 ementa: p.observacoes || 'Pauta da sessão',
                 arquivo_url: p.arquivo_url,
                 extra: p.sessao_numero ? `Sessão ${p.sessao_numero}` : null,
