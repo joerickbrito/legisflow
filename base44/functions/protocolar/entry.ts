@@ -63,7 +63,13 @@ async function enviarEmailProtocolo(base44, { to, nomeCamara, numero, codigo, ti
     `andamento do seu protocolo no Portal da Transparência. Não compartilhe esse código.\n\n` +
     `${nomeCamara}`;
 
-  const from = Deno.env.get('PROTOCOLO_EMAIL_FROM');
+  // PROTOCOLO_EMAIL_FROM é GLOBAL (vale para todas as câmaras). Pode ser só o
+  // endereço ("protocolo@legiscam.com") ou "Nome <endereço>". Extraímos só o
+  // endereço e usamos o NOME DA CÂMARA de cada protocolo como remetente exibido.
+  const fromEnv = Deno.env.get('PROTOCOLO_EMAIL_FROM') || '';
+  const enderecoMatch = fromEnv.match(/<([^>]+)>/);
+  const endereco = (enderecoMatch ? enderecoMatch[1] : fromEnv).trim();
+  const from = endereco ? `${nomeCamara} <${endereco}>` : '';
   const resendKey = Deno.env.get('RESEND_API_KEY');
   const sendgridKey = Deno.env.get('SENDGRID_API_KEY');
 
@@ -79,9 +85,8 @@ async function enviarEmailProtocolo(base44, { to, nomeCamara, numero, codigo, ti
   }
 
   // 2) SendGrid
-  if (sendgridKey && from) {
-    const m = from.match(/^\s*(.*?)\s*<\s*([^>]+)\s*>\s*$/);
-    const fromObj = m ? { name: m[1], email: m[2] } : { email: from };
+  if (sendgridKey && endereco) {
+    const fromObj = { name: nomeCamara, email: endereco };
     const r = await fetch('https://api.sendgrid.com/v3/mail/send', {
       method: 'POST',
       headers: { Authorization: `Bearer ${sendgridKey}`, 'Content-Type': 'application/json' },
