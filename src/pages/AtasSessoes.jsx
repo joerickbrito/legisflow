@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { fmtData } from '@/lib/datas';
 import { sislegisEntities } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
 import { useAuth } from '@/lib/AuthContext';
@@ -102,7 +103,7 @@ export default function AtasSessoes() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-semibold text-sm">Ata nº {item.numero}</span>
-                  {item.data && <span className="text-xs text-muted-foreground">{item.data}</span>}
+                  {item.data && <span className="text-xs text-muted-foreground">{fmtData(item.data)}</span>}
                 </div>
                 {item.sessao_numero && <p className="text-sm text-muted-foreground">Sessão: {item.sessao_numero}</p>}
                 {item.observacoes && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{item.observacoes}</p>}
@@ -156,13 +157,4 @@ export default function AtasSessoes() {
           </div>
           {errorMsg && <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md mt-2">{errorMsg}</p>}
           <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={() => { setOpen(false); setErrorMsg(''); }}>Cancelar</Button>
-            <Button onClick={save} disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {dialogExclusao}
-    </div>
-  );
-}
+            <Button variant="out

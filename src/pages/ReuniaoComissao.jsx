@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { fmtData } from '@/lib/datas';
 import { sislegisEntities } from "@/lib/sislegisApi";
 import { useTenant } from "@/lib/TenantContext";
 import { useAuth } from "@/lib/AuthContext";
@@ -78,7 +79,7 @@ export default function ReuniaoComissao() {
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <p className="font-medium text-sm">{r.comissao_nome} — Reunião nº {r.numero}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{r.data} {r.hora_inicio && `às ${r.hora_inicio}`} | {r.local}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{fmtData(r.data)} {r.hora_inicio && `às ${r.hora_inicio}`} | {r.local}</p>
                 </div>
                 <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                   <Badge variant={statusColor[r.status] || "secondary"}>{r.status}</Badge>
@@ -122,14 +123,4 @@ export default function ReuniaoComissao() {
             <div><label className="text-xs text-muted-foreground">Ata</label><Textarea rows={3} value={form.ata} onChange={e => setForm(f => ({ ...f, ata: e.target.value }))} /></div>
             <div><label className="text-xs text-muted-foreground">Observações</label><Input value={form.observacoes} onChange={e => setForm(f => ({ ...f, observacoes: e.target.value }))} /></div>
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-              <Button onClick={handleSave}>Salvar</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {dialogExclusao}
-    </div>
-  );
-}
+              <Bu

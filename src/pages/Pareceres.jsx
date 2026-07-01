@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { fmtData } from '@/lib/datas';
 import { sislegisEntities } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
 import { useAuth } from '@/lib/AuthContext';
@@ -111,7 +112,7 @@ export default function Pareceres() {
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium text-foreground line-clamp-2">{p.materia_ementa}</div>
                   <div className="text-xs text-muted-foreground mt-1">
-                    Relator: {p.relator_nome} {p.comissao_nome ? `· ${p.comissao_nome}` : ''} {p.data ? `· ${p.data}` : ''}
+                    Relator: {p.relator_nome} {p.comissao_nome ? `· ${p.comissao_nome}` : ''} {p.data ? `· ${fmtData(p.data)}` : ''}
                   </div>
                   {p.texto && <div className="text-xs text-muted-foreground mt-1.5 italic line-clamp-2">{p.texto}</div>}
                 </div>
@@ -159,14 +160,4 @@ export default function Pareceres() {
               <div><label className="text-sm font-medium mb-1.5 block">Data</label><Input type="date" value={form.data} onChange={e => setForm(f => ({ ...f, data: e.target.value }))} /></div>
             </div>
             <div><label className="text-sm font-medium mb-1.5 block">Texto do Parecer</label><Textarea value={form.texto} onChange={e => setForm(f => ({ ...f, texto: e.target.value }))} rows={5} /></div>
-            <FileUpload value={form.arquivo_url} onUploaded={url => setForm(f => ({ ...f, arquivo_url: url }))} label="Anexar arquivo" />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
-            <Button onClick={salvar} disabled={!form.materia_id || !form.tipo}>Salvar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
+            <FileUpload value={form.arquivo_url} onUploaded={url => setForm(f => ({ ...f, arquivo_url: url }))

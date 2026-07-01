@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { fmtData } from '@/lib/datas';
 import { sislegisEntities } from '@/lib/sislegisApi';
 import { Users, Plus, MapPin, Clock } from 'lucide-react';
 import { useTenant } from '@/lib/TenantContext';
@@ -87,7 +88,7 @@ export default function Audiencias() {
               <div className="font-heading font-semibold text-foreground leading-tight">{a.tema}</div>
               {a.descricao && <div className="text-sm text-muted-foreground mt-1 line-clamp-2">{a.descricao}</div>}
               <div className="mt-3 space-y-1.5">
-                {a.data && <div className="flex items-center gap-2 text-xs text-muted-foreground"><Clock size={12} /> {a.data} {a.hora ? `às ${a.hora}` : ''}</div>}
+                {a.data && <div className="flex items-center gap-2 text-xs text-muted-foreground"><Clock size={12} /> {fmtData(a.data)} {a.hora ? `às ${a.hora}` : ''}</div>}
                 {a.local && <div className="flex items-center gap-2 text-xs text-muted-foreground"><MapPin size={12} /> {a.local}</div>}
               </div>
             </div>
@@ -120,13 +121,4 @@ export default function Audiencias() {
             <div><label className="text-sm font-medium mb-1.5 block">Ata</label><Textarea value={form.ata} onChange={e => setForm(f => ({ ...f, ata: e.target.value }))} rows={5} placeholder="Registro da audiência..." /></div>
             <FileUpload value={form.ata_arquivo_url} onUploaded={url => setForm(f => ({ ...f, ata_arquivo_url: url }))} label="Anexar ata (arquivo)" />
           </div>
-          {errorMsg && <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">{errorMsg}</p>}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setShowForm(false); setErrorMsg(''); }}>Cancelar</Button>
-            <Button onClick={salvar} disabled={!form.tema || !form.data || saving}>{saving ? 'Salvando...' : 'Salvar'}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
+          {errorMsg && <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">{errorMsg}

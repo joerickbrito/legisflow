@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { fmtData } from '@/lib/datas';
 import { sislegisEntities } from '@/lib/sislegisApi';
 import { BookOpen, Plus, Trash2, Pencil, AlertTriangle, Loader2 } from 'lucide-react';
 import { useTenant } from '@/lib/TenantContext';
@@ -185,8 +186,8 @@ export default function Legislaturas() {
                     <div>
                       <div className="font-semibold text-foreground">{l.numero}ª Legislatura{(l.ano_inicio && l.ano_fim) ? ` — ${l.ano_inicio}/${l.ano_fim}` : ''}</div>
                       <div className="text-xs text-muted-foreground">
-                        {l.data_eleicao && <span>Eleição: {l.data_eleicao} · </span>}
-                        {l.data_inicio && `${l.data_inicio} a ${l.data_fim}`}
+                        {l.data_eleicao && <span>Eleição: {fmtData(l.data_eleicao)} · </span>}
+                        {l.data_inicio && `${fmtData(l.data_inicio)} a ${fmtData(l.data_fim)}`}
                       </div>
                       {l.descricao && <div className="text-xs text-muted-foreground italic">{l.descricao}</div>}
                     </div>
@@ -332,14 +333,4 @@ export default function Legislaturas() {
             ) : (
               <>
                 <Button variant="outline" onClick={() => setDel(null)} disabled={delExcluindo || delChecando}>Cancelar</Button>
-                <Button variant="destructive" onClick={confirmarExclusao} disabled={delExcluindo || delChecando}>
-                  {delExcluindo ? <><Loader2 size={14} className="animate-spin mr-1.5" /> Excluindo...</> : 'Excluir'}
-                </Button>
-              </>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
+                <Button variant="destructive" onClick={confirmarExclusao} disabled={
