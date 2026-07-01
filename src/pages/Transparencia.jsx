@@ -242,15 +242,12 @@ function TipoFilter({ tipos, filtroTipo, setFiltroTipo, label = 'Tipo' }) {
 }
 
 export default function Transparencia() {
-  // A câmara vem do link direto (?c=ID) OU da última escolhida (localStorage).
-  // Não carregamos a lista de câmaras — a seleção é por busca (não expõe a carteira).
+  // A câmara vem SOMENTE do link direto (?c=ID). Sem esse parâmetro, mostramos a
+  // busca — assim o acesso genérico (ex.: botão na tela de login) sempre pede a
+  // câmara, e não reabre a última automaticamente.
   const [camaraId, setCamaraId] = useState(() => {
-    try {
-      const url = new URLSearchParams(window.location.search);
-      return url.get('c') || localStorage.getItem('portal_camara_id') || null;
-    } catch {
-      return localStorage.getItem('portal_camara_id') || null;
-    }
+    try { return new URLSearchParams(window.location.search).get('c') || null; }
+    catch { return null; }
   });
 
   const [busca, setBusca] = useState('');
