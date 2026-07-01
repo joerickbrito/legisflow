@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { sislegisEntities } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
+import { useAuth } from '@/lib/AuthContext';
 import PageHeader from '@/components/PageHeader';
 import EmptyState from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
@@ -16,6 +17,10 @@ const empty = { numero: '', sessao_id: '', sessao_numero: '', observacoes: '', a
 
 export default function PautasSessoes() {
   const { tenant, withTenant, canQuery } = useTenant();
+  const { pode } = useAuth();
+  const podeCriar = pode('pautas_criar');
+  const podeEditar = pode('pautas_editar');
+  const podeExcluir = pode('pautas_excluir');
   const [items, setItems] = useState([]);
   const [sessoes, setSessoes] = useState([]);
   const [search, setSearch] = useState('');
@@ -76,7 +81,7 @@ export default function PautasSessoes() {
         icon={ClipboardList}
         title="Pautas das Sessões"
         subtitle="Registro de pautas das sessões plenárias"
-        action={<Button onClick={openNew}><Plus size={16} className="mr-1" /> Nova Pauta</Button>}
+        action={podeCriar && <Button onClick={openNew}><Plus size={16} className="mr-1" /> Nova Pauta</Button>}
       />
 
       <div className="mb-4">
@@ -89,7 +94,7 @@ export default function PautasSessoes() {
       {loading ? (
         <LoadingState label="Carregando pautas..." />
       ) : filtered.length === 0 ? (
-        <EmptyState icon={ClipboardList} title="Nenhuma pauta encontrada" description="Cadastre a primeira pauta de sessão." onAdd={openNew} addLabel="Nova Pauta" />
+        <EmptyState icon={ClipboardList} title="Nenhuma pauta encontrada" description="Cadastre a primeira pauta de sessão." onAdd={podeCriar ? openNew : undefined} addLabel="Nova Pauta" />
       ) : (
         <div className="space-y-3">
           {filtered.map(item => (
@@ -107,8 +112,8 @@ export default function PautasSessoes() {
                 )}
               </div>
               <div className="flex gap-1 flex-shrink-0">
-                <Button size="icon" variant="ghost" onClick={() => openEdit(item)}><Pencil size={14} /></Button>
-                <Button size="icon" variant="ghost" className="text-destructive" onClick={() => pedirExclusao('PautaSessao', item, `Pauta nº ${item.numero || ''}`)}><Trash2 size={14} /></Button>
+                {podeEditar && <Button size="icon" variant="ghost" onClick={() => openEdit(item)}><Pencil size={14} /></Button>}
+                {podeExcluir && <Button size="icon" variant="ghost" className="text-destructive" onClick={() => pedirExclusao('PautaSessao', item, `Pauta nº ${item.numero || ''}`)}><Trash2 size={14} /></Button>}
               </div>
             </div>
           ))}

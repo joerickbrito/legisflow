@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { sislegisEntities } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
+import { useAuth } from '@/lib/AuthContext';
 import { FolderOpen, Plus, Search } from 'lucide-react';
 import FileUpload from '@/components/FileUpload';
 import { Button } from '@/components/ui/button';
@@ -18,6 +19,8 @@ const STATUS_OPTS = ['Rascunho', 'Emitido', 'Entregue', 'Arquivado'];
 
 export default function Documentos() {
   const { withTenant, canQuery, tenantId } = useTenant();
+  const { pode } = useAuth();
+  const podeCriar = pode('documentos_criar');
   const [documentos, setDocumentos] = useState([]);
   const [busca, setBusca] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -58,7 +61,7 @@ export default function Documentos() {
   return (
     <div className="p-6 md:p-8 max-w-5xl mx-auto space-y-6">
       <PageHeader icon={FolderOpen} title="Documentos Administrativos" subtitle="Ofícios, memorandos, portarias e despachos"
-        action={<Button onClick={() => { setEditando(null); setForm({ tipo: 'Ofício', numero: '', ano: new Date().getFullYear(), assunto: '', texto: '', remetente: '', destinatario: '', data: '', status: 'Rascunho' }); setShowForm(true); }} className="gap-2"><Plus size={16} /> Novo Documento</Button>}
+        action={podeCriar && <Button onClick={() => { setEditando(null); setForm({ tipo: 'Ofício', numero: '', ano: new Date().getFullYear(), assunto: '', texto: '', remetente: '', destinatario: '', data: '', status: 'Rascunho' }); setShowForm(true); }} className="gap-2"><Plus size={16} /> Novo Documento</Button>}
       />
 
       <div className="relative">
@@ -69,7 +72,7 @@ export default function Documentos() {
       {loading ? (
         <LoadingState label="Carregando documentos..." />
       ) : filtrados.length === 0 ? (
-        <EmptyState icon={FolderOpen} title="Nenhum documento cadastrado" onAdd={() => setShowForm(true)} addLabel="Criar Documento" />
+        <EmptyState icon={FolderOpen} title="Nenhum documento cadastrado" onAdd={podeCriar ? () => setShowForm(true) : undefined} addLabel="Criar Documento" />
       ) : (
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <div className="divide-y divide-border">

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { sislegisEntities } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
+import { useAuth } from '@/lib/AuthContext';
 import { Plus, Building2, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +17,8 @@ import LoadingState from '@/components/LoadingState';
 
 export default function Comissoes() {
   const { tenantId, withTenant, canQuery, isAdminCamara } = useTenant();
+  const { pode } = useAuth();
+  const podeCriar = pode('comissoes_criar');
   const [comissoes, setComissoes] = useState([]);
   const [parlamentares, setParlamentares] = useState([]);
   const [showForm, setShowForm] = useState(false);
@@ -86,7 +89,7 @@ export default function Comissoes() {
         icon={Building2}
         title="Comissões"
         subtitle={`${comissoes.filter(c => c.ativa !== false).length} ativa(s)`}
-        action={isAdminCamara && <Button onClick={openNew} className="gap-2 shadow-lg shadow-primary/20"><Plus size={16} /> Nova Comissão</Button>}
+        action={podeCriar && <Button onClick={openNew} className="gap-2 shadow-lg shadow-primary/20"><Plus size={16} /> Nova Comissão</Button>}
       />
 
       {loading ? (
@@ -95,7 +98,7 @@ export default function Comissoes() {
         <div className="bg-card border border-border rounded-3xl p-12 text-center">
           <Building2 size={40} className="mx-auto text-muted-foreground mb-3" />
           <p className="text-muted-foreground">Nenhuma comissão cadastrada.</p>
-          {isAdminCamara && <Button onClick={openNew} variant="outline" className="mt-4 gap-2"><Plus size={16} /> Criar comissão</Button>}
+          {podeCriar && <Button onClick={openNew} variant="outline" className="mt-4 gap-2"><Plus size={16} /> Criar comissão</Button>}
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">

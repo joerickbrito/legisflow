@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { sislegisEntities } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
+import { useAuth } from '@/lib/AuthContext';
 import PageHeader from '@/components/PageHeader';
 import EmptyState from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,10 @@ const empty = { numero: '', ano: new Date().getFullYear(), data: '', objeto: '',
 
 export default function EmendasImpositivas() {
   const { tenant, withTenant, canQuery } = useTenant();
+  const { pode } = useAuth();
+  const podeCriar = pode('emendas_impositivas_criar');
+  const podeEditar = pode('emendas_impositivas_editar');
+  const podeExcluir = pode('emendas_impositivas_excluir');
   const [items, setItems] = useState([]);
   const [parlamentares, setParlamentares] = useState([]);
   const [search, setSearch] = useState('');
@@ -90,7 +95,7 @@ export default function EmendasImpositivas() {
         icon={DollarSign}
         title="Emendas Impositivas"
         subtitle="Gestão de emendas impositivas ao orçamento"
-        action={<Button onClick={openNew}><Plus size={16} className="mr-1" /> Nova Emenda</Button>}
+        action={podeCriar && <Button onClick={openNew}><Plus size={16} className="mr-1" /> Nova Emenda</Button>}
       />
 
       <FilterBar
@@ -106,7 +111,7 @@ export default function EmendasImpositivas() {
       {loading ? (
         <LoadingState label="Carregando emendas..." />
       ) : filtered.length === 0 ? (
-        <EmptyState icon={DollarSign} title="Nenhuma emenda encontrada" description="Cadastre a primeira emenda impositiva." onAdd={openNew} addLabel="Nova Emenda" />
+        <EmptyState icon={DollarSign} title="Nenhuma emenda encontrada" description="Cadastre a primeira emenda impositiva." onAdd={podeCriar ? openNew : undefined} addLabel="Nova Emenda" />
       ) : (
         <div className="space-y-3">
           {filtered.map(item => (
@@ -125,8 +130,8 @@ export default function EmendasImpositivas() {
                 )}
               </div>
               <div className="flex gap-1 flex-shrink-0">
-                <Button size="icon" variant="ghost" onClick={() => openEdit(item)}><Pencil size={14} /></Button>
-                <Button size="icon" variant="ghost" className="text-destructive" onClick={() => pedirExclusao('EmendaImpositiva', item, `Emenda nº ${item.numero || ''}/${item.ano || ''}`)}><Trash2 size={14} /></Button>
+                {podeEditar && <Button size="icon" variant="ghost" onClick={() => openEdit(item)}><Pencil size={14} /></Button>}
+                {podeExcluir && <Button size="icon" variant="ghost" className="text-destructive" onClick={() => pedirExclusao('EmendaImpositiva', item, `Emenda nº ${item.numero || ''}/${item.ano || ''}`)}><Trash2 size={14} /></Button>}
               </div>
             </div>
           ))}

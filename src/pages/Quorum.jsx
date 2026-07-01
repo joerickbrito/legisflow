@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { sislegisEntities } from "@/lib/sislegisApi";
 import { useTenant } from "@/lib/TenantContext";
+import { useAuth } from "@/lib/AuthContext";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +14,8 @@ import LoadingState from "@/components/LoadingState";
 
 export default function Quorum() {
   const { withTenant, canQuery, tenantId } = useTenant();
+  const { pode } = useAuth();
+  const podeGerenciar = pode('quorum_presenca');
   const [registros, setRegistros] = useState([]);
   const [sessoes, setSessoes] = useState([]);
   const [parlamentares, setParlamentares] = useState([]);
@@ -97,7 +100,7 @@ export default function Quorum() {
         icon={UserCheck}
         title="Controle de Quórum"
         subtitle="Registro de presenças e verificação de quórum"
-        action={<Button onClick={() => setOpen(true)}><Plus className="w-4 h-4 mr-2" />Novo Registro</Button>}
+        action={podeGerenciar && <Button onClick={() => setOpen(true)}><Plus className="w-4 h-4 mr-2" />Novo Registro</Button>}
       />
 
       <div className="space-y-4">

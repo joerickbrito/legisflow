@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { sislegisEntities } from "@/lib/sislegisApi";
+import { temPermissao } from "@/lib/perfis";
 import { CheckCircle2, XCircle, MinusCircle, Vote, Clock, Scale } from "lucide-react";
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -95,7 +96,12 @@ export default function InterfaceVereador({ votacaoAtiva, user, onRefresh, isPre
   const semVotacao = !votacao || (votacao.status !== "Em Votação" && votacao.status !== "Aguardando Desempate");
   const empate = detectarEmpate(votacao);
   const aguardandoDesempate = votacao?.status === "Aguardando Desempate";
-  const podeVotar = !isPresidente || empate || aguardandoDesempate;
+  const emDesempate = empate || aguardandoDesempate;
+  // Respeita os checkboxes: presidente só desempata com 'painel_desempate';
+  // demais votam com 'painel_votar'. Sem a permissão, os botões ficam desativados.
+  const podeVotar = isPresidente
+    ? (emDesempate && temPermissao(user, 'painel_desempate'))
+    : temPermissao(user, 'painel_votar');
 
   const nomeVotante = user?.nome || user?.full_name || "Parlamentar";
   const inicialVotante = nomeVotante.charAt(0);

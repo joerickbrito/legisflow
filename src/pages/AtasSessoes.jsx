@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { sislegisEntities } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
+import { useAuth } from '@/lib/AuthContext';
 import PageHeader from '@/components/PageHeader';
 import EmptyState from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
@@ -16,6 +17,10 @@ const empty = { numero: '', data: '', sessao_id: '', sessao_numero: '', observac
 
 export default function AtasSessoes() {
   const { tenant, withTenant, canQuery } = useTenant();
+  const { pode } = useAuth();
+  const podeCriar = pode('atas_criar');
+  const podeEditar = pode('atas_editar');
+  const podeExcluir = pode('atas_excluir');
   const [items, setItems] = useState([]);
   const [sessoes, setSessoes] = useState([]);
   const [search, setSearch] = useState('');
@@ -76,7 +81,7 @@ export default function AtasSessoes() {
         icon={BookOpen}
         title="Atas das Sessões"
         subtitle="Registro de atas das sessões plenárias"
-        action={<Button onClick={openNew}><Plus size={16} className="mr-1" /> Nova Ata</Button>}
+        action={podeCriar && <Button onClick={openNew}><Plus size={16} className="mr-1" /> Nova Ata</Button>}
       />
 
       <div className="mb-4">
@@ -89,7 +94,7 @@ export default function AtasSessoes() {
       {loading ? (
         <LoadingState label="Carregando atas..." />
       ) : filtered.length === 0 ? (
-        <EmptyState icon={BookOpen} title="Nenhuma ata encontrada" description="Cadastre a primeira ata de sessão." onAdd={openNew} addLabel="Nova Ata" />
+        <EmptyState icon={BookOpen} title="Nenhuma ata encontrada" description="Cadastre a primeira ata de sessão." onAdd={podeCriar ? openNew : undefined} addLabel="Nova Ata" />
       ) : (
         <div className="space-y-3">
           {filtered.map(item => (
@@ -108,8 +113,8 @@ export default function AtasSessoes() {
                 )}
               </div>
               <div className="flex gap-1 flex-shrink-0">
-                <Button size="icon" variant="ghost" onClick={() => openEdit(item)}><Pencil size={14} /></Button>
-                <Button size="icon" variant="ghost" className="text-destructive" onClick={() => pedirExclusao('AtaSessao', item, `Ata nº ${item.numero || ''}`)}><Trash2 size={14} /></Button>
+                {podeEditar && <Button size="icon" variant="ghost" onClick={() => openEdit(item)}><Pencil size={14} /></Button>}
+                {podeExcluir && <Button size="icon" variant="ghost" className="text-destructive" onClick={() => pedirExclusao('AtaSessao', item, `Ata nº ${item.numero || ''}`)}><Trash2 size={14} /></Button>}
               </div>
             </div>
           ))}

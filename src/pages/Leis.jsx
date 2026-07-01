@@ -9,6 +9,7 @@ export default function Leis() {
       title="Leis"
       subtitle="Gestão de leis ordinárias e complementares"
       addLabel="Nova Lei"
+      permKey="leis"
     />
   );
 }

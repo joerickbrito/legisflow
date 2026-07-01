@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Link } from 'react-router-dom';
 import TramitacaoTimeline from '@/components/TramitacaoTimeline';
 import { useTenant } from '@/lib/TenantContext';
+import { useAuth } from '@/lib/AuthContext';
 import { format } from 'date-fns';
 import LoadingState from '@/components/LoadingState';
 
@@ -18,6 +19,7 @@ const REGIMES = ['Normal', 'Urgência', 'Urgência Urgentíssima'];
 
 export default function Materias() {
   const { tenantId, withTenant, canQuery, isAdminCamara, userRole } = useTenant();
+  const { pode } = useAuth();
   const [materias, setMaterias] = useState([]);
   const [parlamentares, setParlamentares] = useState([]);
   const [tiposMateria, setTiposMateria] = useState(TIPOS_DEFAULT);
@@ -32,8 +34,10 @@ export default function Materias() {
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Apenas admin e secretaria podem criar matérias diretamente
-  const canCreateDirect = ['SUPER_ADMIN', 'ADMIN_CAMARA', 'SECRETARIA_LEGISLATIVA'].includes(userRole);
+  // Criar matérias diretamente respeita o checkbox de permissão.
+  const canCreateDirect = pode('materias_criar');
+  const podeEditar = pode('materias_editar');
+  const podeExcluir = pode('materias_excluir');
 
   useEffect(() => {
     if (canQuery) loadData();

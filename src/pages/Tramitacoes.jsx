@@ -3,6 +3,7 @@ import { sislegisEntities } from '@/lib/sislegisApi';
 import { GitMerge, Plus } from 'lucide-react';
 import FilterBar, { TODOS } from '@/components/FilterBar';
 import { useTenant } from '@/lib/TenantContext';
+import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -19,6 +20,8 @@ const TURNOS = ['Único', '1º Turno', '2º Turno', '3º Turno'];
 
 export default function Tramitacoes() {
   const { tenantId, withTenant, canQuery } = useTenant();
+  const { pode } = useAuth();
+  const podeCriar = pode('tramitacoes_criar');
   const [tramitacoes, setTramitacoes] = useState([]);
   const [materias, setMaterias] = useState([]);
   const [busca, setBusca] = useState('');
@@ -73,7 +76,7 @@ export default function Tramitacoes() {
   return (
     <div className="p-6 md:p-8 max-w-5xl mx-auto space-y-6">
       <PageHeader icon={GitMerge} title="Tramitações" subtitle="Workflow legislativo — rastreamento completo"
-        action={<Button onClick={() => { setForm({ materia_id: '', materia_ementa: '', materia_numero: '', unidade_tramitacao_origem: '', unidade_tramitacao_destino: '', data: format(new Date()), hora: '', status: 'Em Tramitação', texto_acao: '', urgente: false, turno: 'Único' }); setShowForm(true); }} className="gap-2"><Plus size={16} /> Nova Tramitação</Button>}
+        action={podeCriar && <Button onClick={() => { setForm({ materia_id: '', materia_ementa: '', materia_numero: '', unidade_tramitacao_origem: '', unidade_tramitacao_destino: '', data: format(new Date()), hora: '', status: 'Em Tramitação', texto_acao: '', urgente: false, turno: 'Único' }); setShowForm(true); }} className="gap-2"><Plus size={16} /> Nova Tramitação</Button>}
       />
 
       <FilterBar
@@ -89,7 +92,7 @@ export default function Tramitacoes() {
       {loading ? (
         <LoadingState label="Carregando tramitações..." />
       ) : filtradas.length === 0 ? (
-        <EmptyState icon={GitMerge} title="Nenhuma tramitação registrada" description="Registre movimentos para rastrear o workflow legislativo." onAdd={() => setShowForm(true)} addLabel="Nova Tramitação" />
+        <EmptyState icon={GitMerge} title="Nenhuma tramitação registrada" description="Registre movimentos para rastrear o workflow legislativo." onAdd={podeCriar ? () => setShowForm(true) : undefined} addLabel="Nova Tramitação" />
       ) : (
         <div className="space-y-2">
           {filtradas.map(t => (

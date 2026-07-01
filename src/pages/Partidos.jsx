@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { sislegisEntities } from '@/lib/sislegisApi';
 import { Scale, Plus, Users } from 'lucide-react';
 import { useTenant } from '@/lib/TenantContext';
+import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -13,6 +14,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 export default function Partidos() {
   const { tenantId, withTenant, canQuery } = useTenant();
+  const { pode } = useAuth();
+  const podeCriar = pode('partidos_criar');
   const [partidos, setPartidos] = useState([]);
   const [bancadas, setBancadas] = useState([]);
   const [parlamentares, setParlamentares] = useState([]);
@@ -96,14 +99,14 @@ export default function Partidos() {
 
         <TabsContent value="partidos" className="mt-4">
           <div className="flex justify-end mb-4">
-            <Button onClick={() => { setEditando(null); setForm({ nome: '', sigla: '', numero: '', data_fundacao: '', ativo: true }); setShowForm(true); }} className="gap-2">
+            {podeCriar && <Button onClick={() => { setEditando(null); setForm({ nome: '', sigla: '', numero: '', data_fundacao: '', ativo: true }); setShowForm(true); }} className="gap-2">
               <Plus size={16} /> Novo Partido
-            </Button>
+            </Button>}
           </div>
           {loading ? (
             <LoadingState label="Carregando partidos..." />
           ) : partidos.length === 0 ? (
-            <EmptyState icon={Scale} title="Nenhum partido cadastrado" onAdd={() => setShowForm(true)} addLabel="Cadastrar Partido" />
+            <EmptyState icon={Scale} title="Nenhum partido cadastrado" onAdd={podeCriar ? () => setShowForm(true) : undefined} addLabel="Cadastrar Partido" />
           ) : (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {partidos.map(p => (
@@ -130,14 +133,14 @@ export default function Partidos() {
 
         <TabsContent value="bancadas" className="mt-4">
           <div className="flex justify-end mb-4">
-            <Button onClick={() => { setBancadaForm({ nome: '', sigla: '', tipo: 'Partidária', membros: [] }); setShowBancada(true); }} className="gap-2">
+            {podeCriar && <Button onClick={() => { setBancadaForm({ nome: '', sigla: '', tipo: 'Partidária', membros: [] }); setShowBancada(true); }} className="gap-2">
               <Plus size={16} /> Nova Bancada
-            </Button>
+            </Button>}
           </div>
           {loading ? (
             <LoadingState label="Carregando..." />
           ) : bancadas.length === 0 ? (
-            <EmptyState icon={Users} title="Nenhuma bancada cadastrada" onAdd={() => setShowBancada(true)} addLabel="Criar Bancada" />
+            <EmptyState icon={Users} title="Nenhuma bancada cadastrada" onAdd={podeCriar ? () => setShowBancada(true) : undefined} addLabel="Criar Bancada" />
           ) : (
             <div className="grid sm:grid-cols-2 gap-3">
               {bancadas.map(b => (

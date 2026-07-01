@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { criarUsuario, listarUsuariosSislegis, atualizarUsuarioSislegis, sislegisEntities, validarSenhaForte } from "@/lib/sislegisApi";
 import { useTenant } from "@/lib/TenantContext";
+import { useAuth } from "@/lib/AuthContext";
 import { PERFIS_ORDER, PERFIL_LABELS, PERFIL_DESCRIPTIONS, DEFAULT_PERMISSIONS, PERMISSION_SECTIONS, ACAO_LABEL, ALL_PERM_KEYS, PERFIS_PARTIDO_OBRIGATORIO, PERFIS_FOTO_OBRIGATORIA } from "@/lib/perfis";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -47,6 +48,7 @@ const FormField = ({ label, required, children }) => (
 
 export default function GerenciarUsuarios() {
   const { isAdminCamara, isSuperAdmin, isInChamberContext, tenantId, withTenant } = useTenant();
+  const { pode } = useAuth();
   const [usuarios, setUsuarios] = useState([]);
   const [camaras, setCamaras] = useState([]);
   const [partidos, setPartidos] = useState([]);
@@ -348,7 +350,7 @@ export default function GerenciarUsuarios() {
         title={isInChamberContext ? "Usuários da Câmara" : "Usuários"}
         subtitle={`${usuarios.length} usuário(s) cadastrado(s)`}
         action={
-          (isInChamberContext || isSuperAdmin) && (
+          (isInChamberContext || isSuperAdmin) && pode('usuarios_criar') && (
             <Button onClick={openNew}><Plus className="w-4 h-4 mr-2" />Novo Usuário</Button>
           )
         }

@@ -28,7 +28,7 @@ const STATUS_CONFIG = {
 
 export default function Proposicoes() {
   const { tenantId, withTenant, canQuery, hasPermission, ROLES, userRole } = useTenant();
-  const { user } = useAuth();
+  const { user, pode } = useAuth();
   const [proposicoes, setProposicoes] = useState([]);
   const [parlamentares, setParlamentares] = useState([]);
   const [tiposMateria, setTiposMateria] = useState([]);
@@ -45,7 +45,7 @@ export default function Proposicoes() {
   const [loading, setLoading] = useState(true);
 
   const canReceive = ['SUPER_ADMIN', 'ADMIN_CAMARA', 'SECRETARIA_LEGISLATIVA', 'PROTOCOLO'].includes(userRole);
-  const canCreate = !['CONSULTA_PUBLICA'].includes(userRole);
+  const canCreate = pode('proposicoes_criar');
 
   useEffect(() => { if (canQuery) load(); }, [tenantId, canQuery]);
 

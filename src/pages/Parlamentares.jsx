@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { sislegisEntities, criarUsuario, validarSenhaForte } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
+import { useAuth } from '@/lib/AuthContext';
 import { Plus, Users, Search, Upload, Camera, UserPlus, Link, Unlink, ExternalLink, Key, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +21,9 @@ const PARLAMENTAR_ROLES = ['VEREADOR', 'PRESIDENTE'];
 
 export default function Parlamentares() {
   const { tenantId, withTenant, canQuery, isAdminCamara } = useTenant();
+  const { pode } = useAuth();
+  const podeCriar = pode('parlamentares_criar');
+  const podeExcluir = pode('parlamentares_excluir');
   const [parlamentares, setParlamentares] = useState([]);
   const [partidos, setPartidos] = useState([]);
   const [legislaturas, setLegislaturas] = useState([]);
@@ -229,7 +233,7 @@ export default function Parlamentares() {
         icon={Users}
         title="Parlamentares"
         subtitle={`${parlamentares.filter(p => p.situacao === 'Ativo' || p.ativo !== false).length} ativos`}
-        action={isAdminCamara && <Button onClick={openNew} className="gap-2 shadow-lg shadow-primary/20"><Plus size={16} /> Novo Parlamentar</Button>}
+        action={podeCriar && <Button onClick={openNew} className="gap-2 shadow-lg shadow-primary/20"><Plus size={16} /> Novo Parlamentar</Button>}
       />
 
       <div className="relative">
@@ -243,7 +247,7 @@ export default function Parlamentares() {
         <div className="bg-card border border-border rounded-3xl p-12 text-center">
           <Users size={40} className="mx-auto text-muted-foreground mb-3" />
           <p className="text-muted-foreground">Nenhum parlamentar cadastrado ainda.</p>
-          {isAdminCamara && <Button onClick={openNew} variant="outline" className="mt-4 gap-2"><Plus size={16} /> Cadastrar parlamentar</Button>}
+          {podeCriar && <Button onClick={openNew} variant="outline" className="mt-4 gap-2"><Plus size={16} /> Cadastrar parlamentar</Button>}
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
@@ -302,7 +306,7 @@ export default function Parlamentares() {
               </div>
 
               {/* Botão excluir */}
-              {isAdminCamara && (
+              {podeExcluir && (
                 <button
                   onClick={(e) => { e.stopPropagation(); pedirExclusao('Parlamentar', p, p.nome_parlamentar || p.nome); }}
                   className="flex-shrink-0 w-8 h-8 rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-500 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"

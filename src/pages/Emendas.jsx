@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { sislegisEntities } from "@/lib/sislegisApi";
 import { useTenant } from "@/lib/TenantContext";
+import { useAuth } from "@/lib/AuthContext";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,6 +20,8 @@ const STATUS = ["Em análise", "Aprovada", "Rejeitada", "Retirada"];
 
 export default function Emendas() {
   const { withTenant, canQuery, tenantId } = useTenant();
+  const { pode } = useAuth();
+  const podeCriar = pode('emendas_criar');
   const [emendas, setEmendas] = useState([]);
   const [materias, setMaterias] = useState([]);
   const [parlamentares, setParlamentares] = useState([]);
@@ -76,7 +79,7 @@ export default function Emendas() {
         icon={FileDiff}
         title="Emendas"
         subtitle="Gestão de emendas a matérias legislativas"
-        action={<Button onClick={openNew}><Plus className="w-4 h-4 mr-2" />Nova Emenda</Button>}
+        action={podeCriar && <Button onClick={openNew}><Plus className="w-4 h-4 mr-2" />Nova Emenda</Button>}
       />
 
       <FilterBar

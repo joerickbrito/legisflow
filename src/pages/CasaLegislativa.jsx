@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { sislegisEntities } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
+import { useAuth } from '@/lib/AuthContext';
 import { Building2, Save, Pencil, Sun, Moon, LayoutDashboard, Check, Palette } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +14,8 @@ const ESTADOS = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG
 
 export default function CasaLegislativa() {
   const { withTenant, canQuery, tenantId, camara } = useTenant();
+  const { pode } = useAuth();
+  const podeEditar = pode('casa_legislativa_editar');
   const tema = useTema();
   const [paletaSel, setPaletaSel] = useState('azul');
   const [salvandoPaleta, setSalvandoPaleta] = useState(false);
@@ -229,7 +232,7 @@ export default function CasaLegislativa() {
               </Button>
             </>
           ) : (
-            <Button onClick={() => setEditando(true)} className="gap-2">
+            podeEditar && <Button onClick={() => setEditando(true)} className="gap-2">
               <Pencil size={16} /> Editar Dados
             </Button>
           )}

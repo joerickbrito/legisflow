@@ -9,6 +9,7 @@ export default function Resolucoes() {
       title="Resoluções"
       subtitle="Gestão de resoluções da câmara"
       addLabel="Nova Resolução"
+      permKey="resolucoes"
     />
   );
 }

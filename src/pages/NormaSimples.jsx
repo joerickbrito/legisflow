@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { sislegisEntities } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
+import { useAuth } from '@/lib/AuthContext';
 import PageHeader from '@/components/PageHeader';
 import EmptyState from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
@@ -23,8 +24,12 @@ const statusColors = {
   'Não Vigente': 'bg-gray-100 text-gray-800',
 };
 
-export default function NormaSimples({ tipo, icon: Icon, title, subtitle, addLabel }) {
+export default function NormaSimples({ tipo, icon: Icon, title, subtitle, addLabel, permKey }) {
   const { tenantId, withTenant, canQuery } = useTenant();
+  const { pode } = useAuth();
+  const podeCriar = permKey ? pode(`${permKey}_criar`) : true;
+  const podeEditar = permKey ? pode(`${permKey}_editar`) : true;
+  const podeExcluir = permKey ? pode(`${permKey}_excluir`) : true;
   const [items, setItems] = useState([]);
   const [search, setSearch] = useState('');
   const [filtros, setFiltros] = useState({});
@@ -86,7 +91,7 @@ export default function NormaSimples({ tipo, icon: Icon, title, subtitle, addLab
         icon={Icon}
         title={title}
         subtitle={subtitle}
-        action={<Button onClick={openNew}><Plus size={16} className="mr-1" /> {addLabel}</Button>}
+        action={podeCriar && <Button onClick={openNew}><Plus size={16} className="mr-1" /> {addLabel}</Button>}
       />
 
       <FilterBar
@@ -105,7 +110,7 @@ export default function NormaSimples({ tipo, icon: Icon, title, subtitle, addLab
       {loading ? (
         <LoadingState label="Carregando..." />
       ) : filtered.length === 0 ? (
-        <EmptyState icon={Icon} title={`Nenhum registro encontrado`} description={`Cadastre o primeiro registro.`} onAdd={openNew} addLabel={addLabel} />
+        <EmptyState icon={Icon} title={`Nenhum registro encontrado`} description={`Cadastre o primeiro registro.`} onAdd={podeCriar ? openNew : undefined} addLabel={addLabel} />
       ) : (
         <div className="space-y-3">
           {filtered.map(item => (
@@ -124,8 +129,8 @@ export default function NormaSimples({ tipo, icon: Icon, title, subtitle, addLab
                 )}
               </div>
               <div className="flex gap-1 flex-shrink-0">
-                <Button size="icon" variant="ghost" onClick={() => openEdit(item)}><Pencil size={14} /></Button>
-                <Button size="icon" variant="ghost" className="text-destructive" onClick={() => pedirExclusao('NormaJuridica', item, `${item.tipo} nº ${item.numero || ''}/${item.ano || ''}`)}><Trash2 size={14} /></Button>
+                {podeEditar && <Button size="icon" variant="ghost" onClick={() => openEdit(item)}><Pencil size={14} /></Button>}
+                {podeExcluir && <Button size="icon" variant="ghost" className="text-destructive" onClick={() => pedirExclusao('NormaJuridica', item, `${item.tipo} nº ${item.numero || ''}/${item.ano || ''}`)}><Trash2 size={14} /></Button>}
               </div>
             </div>
           ))}

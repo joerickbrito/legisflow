@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { sislegisEntities } from "@/lib/sislegisApi";
 import { useTenant } from "@/lib/TenantContext";
+import { useAuth } from "@/lib/AuthContext";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,6 +18,9 @@ const STATUS = ["Agendada", "Realizada", "Cancelada"];
 
 export default function ReuniaoComissao() {
   const { withTenant, canQuery, tenantId } = useTenant();
+  const { pode } = useAuth();
+  const podeCriar = pode('reuniao_comissao_criar');
+  const podeExcluir = pode('reuniao_comissao_excluir');
   const [reunioes, setReunioes] = useState([]);
   const [comissoes, setComissoes] = useState([]);
   const [open, setOpen] = useState(false);
@@ -62,7 +66,7 @@ export default function ReuniaoComissao() {
         icon={UsersRound}
         title="Reuniões de Comissão"
         subtitle="Agendamento e registro de reuniões das comissões"
-        action={<Button onClick={openNew}><Plus className="w-4 h-4 mr-2" />Nova Reunião</Button>}
+        action={podeCriar && <Button onClick={openNew}><Plus className="w-4 h-4 mr-2" />Nova Reunião</Button>}
       />
 
       <div className="space-y-3">
@@ -78,9 +82,11 @@ export default function ReuniaoComissao() {
                 </div>
                 <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                   <Badge variant={statusColor[r.status] || "secondary"}>{r.status}</Badge>
+                  {podeExcluir && (
                   <button onClick={() => pedirExclusao('ReuniaoComissao', r, `Reunião nº ${r.numero || ''}${r.comissao_nome ? ' — ' + r.comissao_nome : ''}`)} className="p-1.5 rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-500 transition-colors" title="Excluir reunião">
                     <Trash2 size={14} />
                   </button>
+                  )}
                 </div>
               </div>
             </CardContent>

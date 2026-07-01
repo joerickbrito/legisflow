@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { sislegisEntities } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
+import { useAuth } from '@/lib/AuthContext';
 import PageHeader from '@/components/PageHeader';
 import EmptyState from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
@@ -32,6 +33,10 @@ const empty = { tipo: 'Projeto de Lei', numero: '', ano: new Date().getFullYear(
 
 export default function ProjetosLei() {
   const { tenantId, withTenant, canQuery } = useTenant();
+  const { pode } = useAuth();
+  const podeCriar = pode('projetos_lei_criar');
+  const podeEditar = pode('projetos_lei_editar');
+  const podeExcluir = pode('projetos_lei_excluir');
   const [items, setItems] = useState([]);
   const [search, setSearch] = useState('');
   const [filtros, setFiltros] = useState({});
@@ -104,7 +109,7 @@ export default function ProjetosLei() {
         icon={FileText}
         title="Projetos de Lei"
         subtitle="Gestão de projetos de lei e projetos de lei complementar"
-        action={<Button onClick={openNew}><Plus size={16} className="mr-1" /> Novo Projeto</Button>}
+        action={podeCriar && <Button onClick={openNew}><Plus size={16} className="mr-1" /> Novo Projeto</Button>}
       />
 
       <FilterBar
@@ -124,7 +129,7 @@ export default function ProjetosLei() {
       {loading ? (
         <LoadingState label="Carregando projetos..." />
       ) : filtered.length === 0 ? (
-        <EmptyState icon={FileText} title="Nenhum projeto encontrado" description="Cadastre o primeiro projeto de lei." onAdd={openNew} addLabel="Novo Projeto" />
+        <EmptyState icon={FileText} title="Nenhum projeto encontrado" description="Cadastre o primeiro projeto de lei." onAdd={podeCriar ? openNew : undefined} addLabel="Novo Projeto" />
       ) : (
         <div className="space-y-3">
           {filtered.map(item => (
@@ -144,8 +149,8 @@ export default function ProjetosLei() {
                 )}
               </div>
               <div className="flex gap-1 flex-shrink-0">
-                <Button size="icon" variant="ghost" onClick={() => openEdit(item)}><Pencil size={14} /></Button>
-                <Button size="icon" variant="ghost" className="text-destructive" onClick={() => pedirExclusao('Materia', item, `${item.tipo} ${item.numero}/${item.ano}`)}><Trash2 size={14} /></Button>
+                {podeEditar && <Button size="icon" variant="ghost" onClick={() => openEdit(item)}><Pencil size={14} /></Button>}
+                {podeExcluir && <Button size="icon" variant="ghost" className="text-destructive" onClick={() => pedirExclusao('Materia', item, `${item.tipo} ${item.numero}/${item.ano}`)}><Trash2 size={14} /></Button>}
               </div>
             </div>
           ))}

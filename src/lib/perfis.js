@@ -283,7 +283,10 @@ export function canShowMenuItem(user, path) {
  */
 export function temPermissao(user, key) {
   if (!user) return false;
-  if (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_CAMARA') return true;
+  // Apenas o master global tem acesso irrestrito. Os demais (inclusive
+  // ADMIN_CAMARA) respeitam as permissões marcadas: usa o valor explícito;
+  // se a chave não existir no registro, cai no padrão do perfil.
+  if (user.role === 'SUPER_ADMIN') return true;
   const p = user.permissoes || {};
   if (p[key] !== undefined) return !!p[key];
   return !!(DEFAULT_PERMISSIONS[user.role] || {})[key];

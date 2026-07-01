@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { sislegisEntities } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
+import { useAuth } from '@/lib/AuthContext';
 import { MessageSquare, Plus } from 'lucide-react';
 import FilterBar, { TODOS } from '@/components/FilterBar';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,8 @@ const TIPOS = ['Favorável', 'Contrário', 'Favorável com Emendas', 'Pela Incon
 
 export default function Pareceres() {
   const { tenantId, withTenant, canQuery, hasPermission, ROLES } = useTenant();
+  const { pode } = useAuth();
+  const podeCriar = pode('pareceres_criar');
   const [pareceres, setPareceres] = useState([]);
   const [materias, setMaterias] = useState([]);
   const [comissoes, setComissoes] = useState([]);
@@ -81,7 +84,7 @@ export default function Pareceres() {
   return (
     <div className="p-6 md:p-8 max-w-5xl mx-auto space-y-6">
       <PageHeader icon={MessageSquare} title="Pareceres" subtitle="Pareceres emitidos pelas comissões"
-        action={<Button onClick={() => { setForm({ materia_id: '', comissao_id: '', relator_id: '', tipo: 'Favorável', texto: '', data: '' }); setShowForm(true); }} className="gap-2"><Plus size={16} /> Novo Parecer</Button>}
+        action={podeCriar && <Button onClick={() => { setForm({ materia_id: '', comissao_id: '', relator_id: '', tipo: 'Favorável', texto: '', data: '' }); setShowForm(true); }} className="gap-2"><Plus size={16} /> Novo Parecer</Button>}
       />
 
       <FilterBar
@@ -97,7 +100,7 @@ export default function Pareceres() {
       {loading ? (
         <LoadingState label="Carregando pareceres..." />
       ) : filtrados.length === 0 ? (
-        <EmptyState icon={MessageSquare} title="Nenhum parecer emitido" onAdd={() => setShowForm(true)} addLabel="Emitir Parecer" />
+        <EmptyState icon={MessageSquare} title="Nenhum parecer emitido" onAdd={podeCriar ? () => setShowForm(true) : undefined} addLabel="Emitir Parecer" />
       ) : (
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <div className="divide-y divide-border">

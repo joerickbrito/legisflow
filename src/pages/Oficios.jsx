@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { sislegisEntities } from "@/lib/sislegisApi";
 import { useTenant } from "@/lib/TenantContext";
+import { useAuth } from "@/lib/AuthContext";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,6 +20,8 @@ const DIRECOES = ["Enviado", "Recebido"];
 
 export default function Oficios() {
   const { withTenant, canQuery, tenantId } = useTenant();
+  const { pode } = useAuth();
+  const podeCriar = pode('oficios_criar');
   const [oficios, setOficios] = useState([]);
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
@@ -69,7 +72,7 @@ export default function Oficios() {
         icon={Mail}
         title="Ofícios"
         subtitle="Gestão de ofícios enviados e recebidos"
-        action={<Button onClick={openNew}><Plus className="w-4 h-4 mr-2" />Novo Ofício</Button>}
+        action={podeCriar && <Button onClick={openNew}><Plus className="w-4 h-4 mr-2" />Novo Ofício</Button>}
       />
 
       <div className="relative">

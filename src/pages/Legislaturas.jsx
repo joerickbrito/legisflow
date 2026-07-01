@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { sislegisEntities } from '@/lib/sislegisApi';
 import { BookOpen, Plus, Trash2, Pencil, AlertTriangle, Loader2 } from 'lucide-react';
 import { useTenant } from '@/lib/TenantContext';
+import { useAuth } from '@/lib/AuthContext';
 import { verificarVinculos } from '@/lib/dependencias';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +15,10 @@ import LoadingState from '@/components/LoadingState';
 
 export default function Legislaturas() {
   const { tenantId, withTenant, canQuery } = useTenant();
+  const { pode } = useAuth();
+  const podeCriar = pode('legislaturas_criar');
+  const podeEditar = pode('legislaturas_editar');
+  const podeExcluir = pode('legislaturas_excluir');
   const [legislaturas, setLegislaturas] = useState([]);
   const [sessoesLeg, setSessoesLeg] = useState([]);
   const [showForm, setShowForm] = useState(false);
@@ -152,7 +157,7 @@ export default function Legislaturas() {
     <div className="p-6 md:p-8 max-w-5xl mx-auto space-y-6">
       <PageHeader icon={BookOpen} title="Legislaturas & Sessões Legislativas"
         subtitle="Controle de mandatos e anos legislativos"
-        action={
+        action={podeCriar && (
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => setShowSessaoForm(true)} className="gap-1">
               <Plus size={15} /> Sessão Legislativa
@@ -161,13 +166,13 @@ export default function Legislaturas() {
               <Plus size={15} /> Legislatura
             </Button>
           </div>
-        }
+        )}
       />
 
       {loading ? (
         <LoadingState label="Carregando legislaturas..." />
       ) : legislaturas.length === 0 ? (
-        <EmptyState icon={BookOpen} title="Nenhuma legislatura cadastrada" description="Cadastre a legislatura atual para começar." onAdd={() => setShowForm(true)} addLabel="Cadastrar Legislatura" />
+        <EmptyState icon={BookOpen} title="Nenhuma legislatura cadastrada" description="Cadastre a legislatura atual para começar." onAdd={podeCriar ? () => setShowForm(true) : undefined} addLabel="Cadastrar Legislatura" />
       ) : (
         <div className="space-y-4">
           {legislaturas.map((l) => {
@@ -188,13 +193,13 @@ export default function Legislaturas() {
                   </div>
                   <div className="flex items-center gap-2">
                     <StatusBadge status={l.status} />
-                    <Button variant="outline" size="sm" onClick={() => { setEditando(l); setForm({ numero: l.numero, ano_inicio: l.ano_inicio || '', ano_fim: l.ano_fim || '', data_inicio: l.data_inicio || '', data_fim: l.data_fim || '', data_eleicao: l.data_eleicao || '', descricao: l.descricao || '', status: l.status }); setShowForm(true); }}>
+                    {podeEditar && <Button variant="outline" size="sm" onClick={() => { setEditando(l); setForm({ numero: l.numero, ano_inicio: l.ano_inicio || '', ano_fim: l.ano_fim || '', data_inicio: l.data_inicio || '', data_fim: l.data_fim || '', data_eleicao: l.data_eleicao || '', descricao: l.descricao || '', status: l.status }); setShowForm(true); }}>
                       Editar
-                    </Button>
-                    <Button variant="outline" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10 px-2"
+                    </Button>}
+                    {podeExcluir && <Button variant="outline" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10 px-2"
                       onClick={() => pedirExclusao('Legislatura', l, `${l.numero}ª Legislatura`)} title="Excluir legislatura">
                       <Trash2 size={15} />
-                    </Button>
+                    </Button>}
                   </div>
                 </div>
                 {sessoes.length > 0 && (

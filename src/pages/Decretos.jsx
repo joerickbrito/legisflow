@@ -9,6 +9,7 @@ export default function Decretos() {
       title="Decretos Legislativos"
       subtitle="Gestão de decretos legislativos"
       addLabel="Novo Decreto"
+      permKey="decretos"
     />
   );
 }

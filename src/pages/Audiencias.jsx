@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { sislegisEntities } from '@/lib/sislegisApi';
 import { Users, Plus, MapPin, Clock } from 'lucide-react';
 import { useTenant } from '@/lib/TenantContext';
+import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -14,6 +15,8 @@ import LoadingState from '@/components/LoadingState';
 
 export default function Audiencias() {
   const { tenantId, withTenant, canQuery } = useTenant();
+  const { pode } = useAuth();
+  const podeCriar = pode('audiencias_criar');
   const [audiencias, setAudiencias] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editando, setEditando] = useState(null);
@@ -63,13 +66,13 @@ export default function Audiencias() {
   return (
     <div className="p-6 md:p-8 max-w-5xl mx-auto space-y-6">
       <PageHeader icon={Users} title="Audiências Públicas" subtitle="Gestão de audiências e participação popular"
-        action={<Button onClick={() => { setEditando(null); setForm({ tema: '', descricao: '', data: '', hora: '', local: '', status: 'Agendada', ata: '' }); setShowForm(true); }} className="gap-2"><Plus size={16} /> Nova Audiência</Button>}
+        action={podeCriar && <Button onClick={() => { setEditando(null); setForm({ tema: '', descricao: '', data: '', hora: '', local: '', status: 'Agendada', ata: '' }); setShowForm(true); }} className="gap-2"><Plus size={16} /> Nova Audiência</Button>}
       />
 
       {loading ? (
         <LoadingState label="Carregando audiências..." />
       ) : audiencias.length === 0 ? (
-        <EmptyState icon={Users} title="Nenhuma audiência cadastrada" onAdd={() => setShowForm(true)} addLabel="Agendar Audiência" />
+        <EmptyState icon={Users} title="Nenhuma audiência cadastrada" onAdd={podeCriar ? () => setShowForm(true) : undefined} addLabel="Agendar Audiência" />
       ) : (
         <div className="grid sm:grid-cols-2 gap-4">
           {audiencias.map(a => (

@@ -9,6 +9,7 @@ export default function Portarias() {
       title="Portarias"
       subtitle="Gestão de portarias da câmara"
       addLabel="Nova Portaria"
+      permKey="portarias"
     />
   );
 }

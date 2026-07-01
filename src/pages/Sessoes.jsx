@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { sislegisEntities } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
+import { useAuth } from '@/lib/AuthContext';
 import { Calendar, Clock, Users, Plus, Pencil, CheckCircle2, Trash2 } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 import LoadingState from '@/components/LoadingState';
@@ -32,6 +33,7 @@ const emptyForm = {
 
 export default function Sessoes() {
   const { tenantId, withTenant, canQuery, isOperadorGeral, isPresidente } = useTenant();
+  const { pode } = useAuth();
   const [sessoes, setSessoes] = useState([]);
   const [parlamentares, setParlamentares] = useState([]);
   const [materias, setMaterias] = useState([]);
@@ -45,7 +47,7 @@ export default function Sessoes() {
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(true);
 
-  const podeGerenciar = isOperadorGeral || isPresidente;
+  const podeGerenciar = pode('sessoes_criar') || pode('sessoes_editar') || pode('sessoes_excluir');
 
   useEffect(() => { if (canQuery) loadData(); }, [tenantId, canQuery]);
 

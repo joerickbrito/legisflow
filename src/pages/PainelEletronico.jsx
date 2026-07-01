@@ -15,7 +15,7 @@ import { useExclusaoSegura } from "@/components/ExclusaoSegura";
 
 export default function PainelEletronico() {
   const { tenantId, withTenant, canQuery, userRole, camara, isOperadorGeral } = useTenant();
-  const { user } = useAuth();
+  const { user, pode } = useAuth();
   const tema = useTema();
   const [votacaoAtiva, setVotacaoAtiva] = useState(null);
   const [historico, setHistorico] = useState([]);
@@ -277,12 +277,12 @@ export default function PainelEletronico() {
               <ExternalLink size={15} /> Abrir Telão
             </Button>
           )}
-          {isOperadorGeral && !votacaoAtiva && (
+          {pode('painel_operar') && !votacaoAtiva && (
             <Button onClick={() => setShowConfig(true)} className="gap-2 shadow-lg shadow-primary/20">
               <Plus size={18} /> Iniciar Votação
             </Button>
           )}
-          {isOperadorGeral && votacaoAtiva && (
+          {pode('painel_operar') && votacaoAtiva && (
             <Button onClick={encerrarVotacao} variant="destructive" className="gap-2" disabled={saving}>
               {saving ? 'Encerrando...' : <><StopCircle size={16} /> Encerrar Votação</>}
             </Button>

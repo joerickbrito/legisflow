@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { getSessionUser, getSessionToken, clearSession } from '@/lib/sislegisApi';
+import { temPermissao } from '@/lib/perfis';
 
 const AuthContext = createContext();
 
@@ -88,6 +89,10 @@ export const AuthProvider = ({ children }) => {
     window.location.href = '/login';
   };
 
+  // Verifica uma permissão de ação do usuário logado (respeita os checkboxes;
+  // SUPER_ADMIN tem acesso total). Use nos botões: {pode('projetos_lei_criar') && ...}
+  const pode = (key) => temPermissao(user, key);
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -100,6 +105,7 @@ export const AuthProvider = ({ children }) => {
       navigateToLogin,
       checkAppState,
       refreshUser,
+      pode,
     }}>
       {children}
     </AuthContext.Provider>

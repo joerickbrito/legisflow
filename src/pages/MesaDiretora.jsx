@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { sislegisEntities } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
+import { useAuth } from '@/lib/AuthContext';
 import { Gavel, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +16,8 @@ const CARGOS = ['Presidente', 'Vice-Presidente', '1º Secretário', '2º Secret�
 
 export default function MesaDiretora() {
   const { withTenant, canQuery, tenantId } = useTenant();
+  const { pode } = useAuth();
+  const podeCriar = pode('mesa_diretora_criar');
   const [mesas, setMesas] = useState([]);
   const [parlamentares, setParlamentares] = useState([]);
   const [legislaturas, setLegislaturas] = useState([]);
@@ -88,13 +91,13 @@ export default function MesaDiretora() {
   return (
     <div className="p-6 md:p-8 max-w-4xl mx-auto space-y-6">
       <PageHeader icon={Gavel} title="Mesa Diretora" subtitle="Composição e histórico da Mesa Diretora"
-        action={<Button onClick={() => { setEditando(null); setForm({ legislatura_id: '', legislatura_numero: '', sessao_legislativa_id: '', data_inicio: '', data_fim: '', presidente_id: '', presidente_nome: '', vice_presidente_id: '', vice_presidente_nome: '', primeiro_secretario_id: '', primeiro_secretario_nome: '', segundo_secretario_id: '', segundo_secretario_nome: '', status: 'Ativa' }); setShowForm(true); }} className="gap-2"><Plus size={16} /> Nova Mesa</Button>}
+        action={podeCriar && <Button onClick={() => { setEditando(null); setForm({ legislatura_id: '', legislatura_numero: '', sessao_legislativa_id: '', data_inicio: '', data_fim: '', presidente_id: '', presidente_nome: '', vice_presidente_id: '', vice_presidente_nome: '', primeiro_secretario_id: '', primeiro_secretario_nome: '', segundo_secretario_id: '', segundo_secretario_nome: '', status: 'Ativa' }); setShowForm(true); }} className="gap-2"><Plus size={16} /> Nova Mesa</Button>}
       />
 
       {loading ? (
         <LoadingState label="Carregando mesa diretora..." />
       ) : mesas.length === 0 ? (
-        <EmptyState icon={Gavel} title="Nenhuma Mesa Diretora cadastrada" onAdd={() => setShowForm(true)} addLabel="Cadastrar Mesa Diretora" />
+        <EmptyState icon={Gavel} title="Nenhuma Mesa Diretora cadastrada" onAdd={podeCriar ? () => setShowForm(true) : undefined} addLabel="Cadastrar Mesa Diretora" />
       ) : (
         <div className="space-y-4">
           {mesas.map(m => (
