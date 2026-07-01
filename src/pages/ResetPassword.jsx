@@ -14,7 +14,7 @@ export default function ResetPassword() {
             <Mail className="w-6 h-6 text-blue-400" />
           </div>
           <p className="text-slate-300 text-sm mb-6">
-            A redefinição de senha no SisLegis é feita pelo administrador da sua Câmara Municipal.
+            A redefinição de senha no LegisCam é feita pelo administrador da sua Câmara Municipal.
             Entre em contato com o administrador do sistema para solicitar uma nova senha temporária.
           </p>
           <Link to="/login" className="inline-block text-blue-400 hover:text-blue-300 text-sm hover:underline">

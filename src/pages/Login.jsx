@@ -41,7 +41,7 @@ export default function Login() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-600 shadow-lg mb-4">
             <Scale className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-heading font-bold text-white">SisLegis</h1>
+          <h1 className="text-3xl font-heading font-bold text-white">LegisCam</h1>
           <p className="text-blue-300 text-sm mt-1">Sistema Legislativo Municipal</p>
         </div>
 
@@ -127,7 +127,7 @@ export default function Login() {
         </div>
 
         <p className="text-center text-slate-600 text-xs mt-6">
-          © {new Date().getFullYear()} SisLegis — Plataforma Legislativa Municipal
+          © {new Date().getFullYear()} LegisCam — Plataforma Legislativa Municipal
         </p>
       </div>
     </div>

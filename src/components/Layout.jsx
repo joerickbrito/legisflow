@@ -199,7 +199,7 @@ export default function Layout() {
               )}
               <div className="min-w-0">
                 <div className="text-sidebar-foreground font-heading font-bold text-sm leading-tight line-clamp-2">
-                  {isInChamberContext ? (camara?.nome || camara?.sigla || 'SisLegis') : 'SisLegis'}
+                  {isInChamberContext ? (camara?.nome || camara?.sigla || 'LegisCam') : 'LegisCam'}
                 </div>
                 <div className="text-sidebar-foreground/45 text-[10px] font-body mt-0.5 truncate uppercase tracking-wider">
                   {isInChamberContext ? 'Sistema Legislativo' : 'Super Admin'}
@@ -338,7 +338,7 @@ export default function Layout() {
           <button onClick={() => setMobileOpen(true)} className="p-2 rounded-lg hover:bg-muted">
             <Menu size={20} />
           </button>
-          <span className="font-heading font-semibold text-foreground text-sm truncate max-w-[220px]">{(isInChamberContext && (camara?.sigla || camara?.nome)) || 'SisLegis'}</span>
+          <span className="font-heading font-semibold text-foreground text-sm truncate max-w-[220px]">{(isInChamberContext && (camara?.sigla || camara?.nome)) || 'LegisCam'}</span>
           <div className="w-8" />
         </header>
         <main className="flex-1 overflow-y-auto">
