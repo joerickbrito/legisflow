@@ -217,6 +217,13 @@ export async function consultarProtocolo(camara_id, codigo) {
   return response.data?.data;
 }
 
+// Exclui um protocolo (exige sessão + permissão; validado no backend).
+export async function excluirProtocolo(protocolo_id) {
+  const response = await base44.functions.invoke('excluirProtocolo', withAuth({ protocolo_id }));
+  if (response.data?.error) throw new Error(response.data.error);
+  return response.data?.data;
+}
+
 export async function listarUsuariosSislegis(query = {}, sort, limit) {
   return operarEntidade('UsuarioSislegis', 'filter', { query, sort, limit });
 }

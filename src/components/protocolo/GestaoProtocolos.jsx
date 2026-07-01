@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { sislegisEntities, protocolar } from '@/lib/sislegisApi';
-import { Inbox, Search, Mail, Phone, Clock, Lock, FileText, Plus } from 'lucide-react';
+import { sislegisEntities, protocolar, excluirProtocolo } from '@/lib/sislegisApi';
+import { Inbox, Search, Mail, Phone, Clock, Lock, FileText, Plus, Trash2 } from 'lucide-react';
 import { useTenant } from '@/lib/TenantContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,7 +32,7 @@ const ORIGEM_COLOR = {
 // origemDe: protocolos antigos (sem origem) contam como "Interno".
 const origemDe = (p) => p.origem || 'Interno';
 
-export default function GestaoProtocolos({ origens, titulo, descricao, vazioLabel, permiteProtocolar = false }) {
+export default function GestaoProtocolos({ origens, titulo, descricao, vazioLabel, permiteProtocolar = false, permiteExcluir = false }) {
   const { tenantId, withTenant, canQuery } = useTenant();
   const [protocolos, setProtocolos] = useState([]);
   const [busca, setBusca] = useState('');
@@ -87,6 +87,22 @@ export default function GestaoProtocolos({ origens, titulo, descricao, vazioLabe
     setSel(p);
     setStatus(p.status || 'Recebido');
     setObs(p.observacoes || '');
+  }
+
+  const [excluindo, setExcluindo] = useState(false);
+  async function excluir() {
+    if (!sel) return;
+    if (!window.confirm(`Excluir o protocolo ${numeroFmt(sel)}? Esta ação não pode ser desfeita.`)) return;
+    setExcluindo(true);
+    try {
+      await excluirProtocolo(sel.id);
+      setSel(null);
+      loadData();
+    } catch (e) {
+      alert(e?.message || 'Erro ao excluir o protocolo.');
+    } finally {
+      setExcluindo(false);
+    }
   }
 
   async function salvar() {
@@ -249,9 +265,17 @@ export default function GestaoProtocolos({ origens, titulo, descricao, vazioLabe
               )}
             </div>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setSel(null)}>Fechar</Button>
-            <Button onClick={salvar} disabled={salvando}>{salvando ? 'Salvando...' : 'Salvar'}</Button>
+          <DialogFooter className="sm:justify-between gap-2">
+            {permiteExcluir ? (
+              <Button variant="ghost" onClick={excluir} disabled={excluindo}
+                className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-2">
+                <Trash2 size={15} /> {excluindo ? 'Excluindo...' : 'Excluir'}
+              </Button>
+            ) : <span />}
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setSel(null)}>Fechar</Button>
+              <Button onClick={salvar} disabled={salvando}>{salvando ? 'Salvando...' : 'Salvar'}</Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>

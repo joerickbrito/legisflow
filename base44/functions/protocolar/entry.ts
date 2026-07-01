@@ -43,6 +43,64 @@ function pad3(n: number): string {
   return String(n).padStart(3, '0');
 }
 
+/**
+ * Envia o e-mail de comprovante do protocolo.
+ * Ordem de preferência (a 1ª configurada vence):
+ *   1) Resend  — precisa de env RESEND_API_KEY + PROTOCOLO_EMAIL_FROM (dom. autenticado)
+ *   2) SendGrid — precisa de env SENDGRID_API_KEY + PROTOCOLO_EMAIL_FROM
+ *   3) Base44 SendEmail (fallback genérico; pode cair em spam)
+ * PROTOCOLO_EMAIL_FROM no formato: "Câmara Municipal <protocolo@dominio.gov.br>"
+ */
+async function enviarEmailProtocolo(base44, { to, nomeCamara, numero, codigo, tipo, assunto }) {
+  const subject = `Protocolo ${numero} — ${nomeCamara}`;
+  const texto =
+    `Seu protocolo foi registrado com sucesso.\n\n` +
+    `Número: ${numero}\n` +
+    `Código de acompanhamento: ${codigo}\n` +
+    `Tipo: ${tipo}\n` +
+    `Assunto: ${assunto}\n\n` +
+    `Guarde o CÓDIGO DE ACOMPANHAMENTO — é com ele que você consulta o ` +
+    `andamento do seu protocolo no Portal da Transparência. Não compartilhe esse código.\n\n` +
+    `${nomeCamara}`;
+
+  const from = Deno.env.get('PROTOCOLO_EMAIL_FROM');
+  const resendKey = Deno.env.get('RESEND_API_KEY');
+  const sendgridKey = Deno.env.get('SENDGRID_API_KEY');
+
+  // 1) Resend
+  if (resendKey && from) {
+    const r = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from, to: [to], subject, text: texto }),
+    });
+    if (!r.ok) throw new Error(`Resend ${r.status}: ${await r.text().catch(() => '')}`);
+    return true;
+  }
+
+  // 2) SendGrid
+  if (sendgridKey && from) {
+    const m = from.match(/^\s*(.*?)\s*<\s*([^>]+)\s*>\s*$/);
+    const fromObj = m ? { name: m[1], email: m[2] } : { email: from };
+    const r = await fetch('https://api.sendgrid.com/v3/mail/send', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${sendgridKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        personalizations: [{ to: [{ email: to }] }],
+        from: fromObj,
+        subject,
+        content: [{ type: 'text/plain', value: texto }],
+      }),
+    });
+    if (!r.ok) throw new Error(`SendGrid ${r.status}: ${await r.text().catch(() => '')}`);
+    return true;
+  }
+
+  // 3) Fallback: SendEmail nativo do Base44
+  await base44.integrations.Core.SendEmail({ to, subject, body: texto });
+  return true;
+}
+
 async function getUsuario(base44, token) {
   if (!token) return null;
   try {
@@ -157,21 +215,14 @@ Deno.serve(async (req) => {
       try {
         const nomeCamara = (await base44.asServiceRole.entities.Camara
           .filter({ id: camara_id }, '-created_date', 1).catch(() => []))?.[0]?.nome || 'Câmara Municipal';
-        await base44.integrations.Core.SendEmail({
+        emailEnviado = await enviarEmailProtocolo(base44, {
           to: email_interessado,
-          subject: `Protocolo ${criado.numero} — ${nomeCamara}`,
-          body:
-            `Seu protocolo foi registrado com sucesso.\n\n` +
-            `Número: ${criado.numero}\n` +
-            `Código de acompanhamento: ${criado.codigo_consulta}\n` +
-            `Tipo: ${tipo}\n` +
-            `Assunto: ${criado.assunto}\n\n` +
-            `Guarde o CÓDIGO DE ACOMPANHAMENTO — é com ele que você consulta o ` +
-            `andamento do seu protocolo no Portal da Transparência. ` +
-            `Não compartilhe esse código.\n\n` +
-            `${nomeCamara}`,
+          nomeCamara,
+          numero: criado.numero,
+          codigo: criado.codigo_consulta,
+          tipo,
+          assunto: criado.assunto,
         });
-        emailEnviado = true;
       } catch (e) {
         // Serviço de e-mail ausente/indisponível — segue só com o código na tela.
         console.error('protocolar: falha ao enviar e-mail:', e?.message);

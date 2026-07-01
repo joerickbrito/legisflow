@@ -105,8 +105,8 @@ export const PERMISSION_SECTIONS = [
     label: 'Documentos',
     itens: [
       { id: 'audiencias', label: 'Audiências Públicas', path: '/audiencias', acoes: ['visualizar', 'criar', 'editar', 'excluir'] },
-      { id: 'protocolo', label: 'Protocolo', path: '/protocolo', acoes: ['visualizar', 'protocolar', 'tramitar'] },
-      { id: 'protocolos_publicos', label: 'Protocolos Públicos', path: '/protocolos-publicos', acoes: ['visualizar', 'tramitar'] },
+      { id: 'protocolo', label: 'Protocolo', path: '/protocolo', acoes: ['visualizar', 'protocolar', 'tramitar', 'excluir'] },
+      { id: 'protocolos_publicos', label: 'Protocolos Públicos', path: '/protocolos-publicos', acoes: ['visualizar', 'tramitar', 'excluir'] },
       { id: 'documentos', label: 'Documentos Administrativos', path: '/documentos', acoes: ['visualizar', 'criar', 'editar', 'excluir'] },
       { id: 'oficios', label: 'Ofícios', path: '/oficios', acoes: ['visualizar', 'criar', 'editar', 'excluir'] },
     ],

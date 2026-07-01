@@ -27,7 +27,9 @@ Deno.serve(async (req) => {
       .filter(filtro, '-created_date', 1).catch(() => []);
 
     if (!achados || !achados.length) {
-      return Response.json({ error: 'Protocolo não encontrado. Verifique o código informado.' }, { status: 404 });
+      return Response.json({
+        error: 'Nenhum protocolo encontrado com esse código. Verifique se digitou corretamente — o código pode não existir (ainda não foi gerado) ou o protocolo pode ter sido removido.',
+      }, { status: 404 });
     }
 
     const p = achados[0];

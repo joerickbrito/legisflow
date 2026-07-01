@@ -14,6 +14,7 @@ export default function Protocolo() {
       descricao="Documentos recebidos da Prefeitura"
       vazioLabel="protocolo"
       permiteProtocolar={temPermissao(user, 'protocolo_protocolar')}
+      permiteExcluir={temPermissao(user, 'protocolo_excluir')}
     />
   );
 }
