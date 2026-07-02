@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { fmtData, fmtDataHora } from '@/lib/datas';
 import { sislegisEntities, protocolar, excluirProtocolo } from '@/lib/sislegisApi';
 import { Inbox, Search, Mail, Phone, Clock, Lock, FileText, Plus, Trash2 } from 'lucide-react';
 import { useTenant } from '@/lib/TenantContext';
@@ -194,7 +193,7 @@ export default function GestaoProtocolos({ origens, titulo, descricao, vazioLabe
                   </div>
                   <div className="text-sm font-medium text-foreground mt-0.5 line-clamp-1">{p.assunto}</div>
                   <div className="text-xs text-muted-foreground mt-0.5">
-                    De: {p.interessado}{p.data_protocolo ? ` · ${fmtData(p.data_protocolo)}` : ''}
+                    De: {p.interessado}{p.data_protocolo ? ` · ${p.data_protocolo}` : ''}
                   </div>
                 </div>
                 <span className={`text-xs px-2.5 py-1 rounded-full font-semibold flex-shrink-0 ${STATUS_COLOR[p.status] || 'bg-muted text-muted-foreground'}`}>{p.status}</span>
@@ -225,7 +224,7 @@ export default function GestaoProtocolos({ origens, titulo, descricao, vazioLabe
                 {sel.enviado_por && <div className="text-muted-foreground text-xs">Enviado por: {sel.enviado_por}</div>}
                 {sel.email_interessado && <div className="text-muted-foreground text-xs flex items-center gap-1"><Mail size={11} /> {sel.email_interessado}</div>}
                 {sel.telefone_interessado && <div className="text-muted-foreground text-xs flex items-center gap-1"><Phone size={11} /> {sel.telefone_interessado}</div>}
-                {sel.data_protocolo && <div className="text-muted-foreground text-xs">Protocolado em {fmtData(sel.data_protocolo)}{sel.hora_protocolo ? ` às ${sel.hora_protocolo}` : ''}</div>}
+                {sel.data_protocolo && <div className="text-muted-foreground text-xs">Protocolado em {sel.data_protocolo}{sel.hora_protocolo ? ` às ${sel.hora_protocolo}` : ''}</div>}
                 <div className="text-muted-foreground text-xs">Origem: {origemDe(sel)}</div>
                 {sel.observacoes && (
                   <div className="text-muted-foreground text-xs mt-1">
@@ -263,7 +262,7 @@ export default function GestaoProtocolos({ origens, titulo, descricao, vazioLabe
                         <div>
                           <span className="font-medium text-foreground">{h.status}</span>
                           {h.observacao ? ` — ${h.observacao}` : ''}
-                          {h.data && <span className="text-muted-foreground/70"> · {fmtDataHora(h.data)}</span>}
+                          {h.data && <span className="text-muted-foreground/70"> · {new Date(h.data).toLocaleString('pt-BR')}</span>}
                         </div>
                       </div>
                     ))}
@@ -328,4 +327,35 @@ export default function GestaoProtocolos({ origens, titulo, descricao, vazioLabe
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium mb-1.5 block">E-mail (opcional)</label>
-                  <Input type="email" value={novo.email_interessado} onChange={e => setNovo(n => ({ ...n, email_interessado: e.target
+                  <Input type="email" value={novo.email_interessado} onChange={e => setNovo(n => ({ ...n, email_interessado: e.target.value }))} placeholder="para enviar comprovante" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-1.5 block">Telefone</label>
+                  <Input value={novo.telefone_interessado} onChange={e => setNovo(n => ({ ...n, telefone_interessado: e.target.value }))} />
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1.5 block">Observações</label>
+                <Textarea value={novo.observacoes} onChange={e => setNovo(n => ({ ...n, observacoes: e.target.value }))} rows={3} />
+              </div>
+              <FileUpload value={novo.arquivo_url} onUploaded={(url) => setNovo(n => ({ ...n, arquivo_url: url }))} label="Anexar documento" />
+            </div>
+          )}
+          <DialogFooter>
+            {novoResultado ? (
+              <>
+                <Button variant="outline" onClick={() => { setNovoResultado(null); setNovo(NOVO_VAZIO); setNovoErro(''); }}>Novo</Button>
+                <Button onClick={fecharNovo}>Concluir</Button>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" onClick={fecharNovo}>Cancelar</Button>
+                <Button onClick={salvarNovo} disabled={salvandoNovo}>{salvandoNovo ? 'Registrando...' : 'Protocolar'}</Button>
+              </>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

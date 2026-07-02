@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { fmtData } from '@/lib/datas';
 import { sislegisEntities } from '@/lib/sislegisApi';
 import { Plus, Search, FileText, ChevronDown, GitMerge, AlertCircle, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -198,7 +197,7 @@ export default function Materias() {
                     <div className="text-sm font-medium text-foreground mt-0.5 line-clamp-2">{m.ementa}</div>
                     <div className="text-xs text-muted-foreground mt-1">
                       {m.autor_nome && `Autor: ${m.autor_nome}`}
-                      {m.data_apresentacao && ` · ${fmtData(m.data_apresentacao)}`}
+                      {m.data_apresentacao && ` · ${m.data_apresentacao}`}
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
@@ -280,4 +279,16 @@ export default function Materias() {
             </div>
             <div>
               <label className="text-sm font-medium mb-1.5 block">Observações</label>
-              <Textarea value={form.observacoes} onChange={e => setForm(f => ({ ...f, observac
+              <Textarea value={form.observacoes} onChange={e => setForm(f => ({ ...f, observacoes: e.target.value }))} rows={2} />
+            </div>
+          </div>
+          {errorMsg && <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">{errorMsg}</p>}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setShowForm(false); setErrorMsg(''); }}>Cancelar</Button>
+            <Button onClick={salvar} disabled={!form.ementa || saving}>{saving ? 'Salvando...' : 'Salvar'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

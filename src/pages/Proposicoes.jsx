@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { fmtData } from '@/lib/datas';
 import { sislegisEntities } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
 import { useAuth } from '@/lib/AuthContext';
@@ -234,8 +233,8 @@ export default function Proposicoes() {
                     <p className="text-sm font-medium text-foreground line-clamp-2">{p.ementa}</p>
                     <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
                       {p.autor_nome && <span>Autor: {p.autor_nome}</span>}
-                      {p.data_apresentacao && <span>{fmtData(p.data_apresentacao)}</span>}
-                      {p.data_protocolo && <span>Protocolada: {fmtData(p.data_protocolo)}</span>}
+                      {p.data_apresentacao && <span>{p.data_apresentacao}</span>}
+                      {p.data_protocolo && <span>Protocolada: {p.data_protocolo}</span>}
                     </div>
                   </div>
                   <div className="flex flex-col gap-1.5 flex-shrink-0">
@@ -360,4 +359,13 @@ export default function Proposicoes() {
             </div>
           )}
           <DialogFooter>
-            <Button variant="ou
+            <Button variant="outline" onClick={() => setShowReceber(false)}>Cancelar</Button>
+            <Button onClick={processarRecepcao} className={receberForm.acao === 'transformar' ? 'bg-green-600 hover:bg-green-700' : receberForm.acao === 'rejeitar' ? 'bg-destructive hover:bg-destructive/90' : ''}>
+              {receberForm.acao === 'transformar' ? '✓ Transformar em Matéria' : receberForm.acao === 'rejeitar' ? 'Rejeitar' : 'Confirmar Recebimento'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

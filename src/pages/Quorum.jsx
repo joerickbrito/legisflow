@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { fmtData } from '@/lib/datas';
 import { sislegisEntities } from "@/lib/sislegisApi";
 import { useTenant } from "@/lib/TenantContext";
 import { useAuth } from "@/lib/AuthContext";
@@ -114,7 +113,7 @@ export default function Quorum() {
               <CardContent className="pt-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium">Sessão {sessao?.numero || r.sessao_id} — {fmtData(r.data)}</p>
+                    <p className="font-medium">Sessão {sessao?.numero || r.sessao_id} — {r.data}</p>
                     <p className="text-sm text-muted-foreground">{r.presentes}/{r.total_parlamentares} presentes | Mínimo: {r.quorum_minimo}</p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -139,7 +138,7 @@ export default function Quorum() {
             <select className="w-full border rounded-md px-3 py-2 text-sm bg-background" value={form.sessao_id}
               onChange={e => initPresencas(e.target.value)}>
               <option value="">Selecione a sessão...</option>
-              {sessoes.map(s => <option key={s.id} value={s.id}>Sessão {s.numero} — {fmtData(s.data)}</option>)}
+              {sessoes.map(s => <option key={s.id} value={s.id}>Sessão {s.numero} — {s.data}</option>)}
             </select>
             <div className="grid grid-cols-2 gap-3">
               <div><label className="text-xs text-muted-foreground">Total Parlamentares</label>
@@ -164,4 +163,13 @@ export default function Quorum() {
             <Input placeholder="Observações" value={form.observacoes} onChange={e => setForm(f => ({ ...f, observacoes: e.target.value }))} />
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-              <Button onClick={handleSave} disabled={!form.sessao_id}
+              <Button onClick={handleSave} disabled={!form.sessao_id}>Salvar</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {dialogExclusao}
+    </div>
+  );
+}

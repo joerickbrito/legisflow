@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { fmtData } from '@/lib/datas';
 import { sislegisEntities } from '@/lib/sislegisApi';
 import { GitMerge, Plus } from 'lucide-react';
 import FilterBar, { TODOS } from '@/components/FilterBar';
@@ -104,7 +103,7 @@ export default function Tramitacoes() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-semibold text-muted-foreground">{fmtData(t.data)} {t.hora}</span>
+                  <span className="text-xs font-semibold text-muted-foreground">{t.data} {t.hora}</span>
                   {t.urgente && <span className="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-bold">URGENTE</span>}
                   <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">{t.turno}</span>
                 </div>
@@ -174,4 +173,10 @@ export default function Tramitacoes() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
-            <Button onClick={salvar} disabled
+            <Button onClick={salvar} disabled={!form.materia_id || !form.unidade_tramitacao_destino}>Salvar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

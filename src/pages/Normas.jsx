@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { fmtData } from '@/lib/datas';
 import { sislegisEntities } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
 import { Plus, ScrollText, Search, ExternalLink } from 'lucide-react';
@@ -127,7 +126,7 @@ export default function Normas() {
                     {n.numero && <span className="text-xs bg-muted px-2 py-0.5 rounded font-mono">nº {n.numero}/{n.ano}</span>}
                   </div>
                   <div className="text-sm font-medium text-foreground mt-0.5 line-clamp-1">{n.ementa}</div>
-                  {n.data_publicacao && <div className="text-xs text-muted-foreground mt-0.5">Publicada em: {fmtData(n.data_publicacao)}</div>}
+                  {n.data_publicacao && <div className="text-xs text-muted-foreground mt-0.5">Publicada em: {n.data_publicacao}</div>}
                 </div>
                 <div className="flex items-center gap-2">
                   {n.arquivo_url && (

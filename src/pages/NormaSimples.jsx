@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { fmtData } from '@/lib/datas';
 import { sislegisEntities } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
 import { useAuth } from '@/lib/AuthContext';
@@ -122,7 +121,7 @@ export default function NormaSimples({ tipo, icon: Icon, title, subtitle, addLab
                   <Badge className={statusColors[item.situacao] || 'bg-gray-100 text-gray-800'}>{item.situacao}</Badge>
                 </div>
                 <p className="text-sm text-muted-foreground line-clamp-2">{item.ementa}</p>
-                {item.data_publicacao && <p className="text-xs text-muted-foreground mt-1">Publicação: {fmtData(item.data_publicacao)}</p>}
+                {item.data_publicacao && <p className="text-xs text-muted-foreground mt-1">Publicação: {item.data_publicacao}</p>}
                 {item.arquivo_url && (
                   <a href={item.arquivo_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary flex items-center gap-1 mt-1">
                     <ExternalLink size={12} /> Ver PDF
@@ -172,4 +171,14 @@ export default function NormaSimples({ tipo, icon: Icon, title, subtitle, addLab
             </div>
           </div>
           {errorMsg && <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md mt-2">{errorMsg}</p>}
-          <div cla
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => { setOpen(false); setErrorMsg(''); }}>Cancelar</Button>
+            <Button onClick={save} disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {dialogExclusao}
+    </div>
+  );
+}

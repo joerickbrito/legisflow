@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { fmtData } from '@/lib/datas';
 import { sislegisEntities } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
 import { useAuth } from '@/lib/AuthContext';
@@ -108,7 +107,7 @@ export default function MesaDiretora() {
                   <div className="font-heading font-semibold text-foreground">
                     Mesa Diretora {m.legislatura_numero ? `— ${m.legislatura_numero}ª Legislatura` : ''}
                   </div>
-                  <div className="text-xs text-muted-foreground">{fmtData(m.data_inicio)} {m.data_fim ? `até ${fmtData(m.data_fim)}` : ''}</div>
+                  <div className="text-xs text-muted-foreground">{m.data_inicio} {m.data_fim ? `até ${m.data_fim}` : ''}</div>
                 </div>
                 <div className="flex items-center gap-3">
                   <StatusBadge status={m.status} />
@@ -173,4 +172,10 @@ export default function MesaDiretora() {
           {errorMsg && <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">{errorMsg}</p>}
           <DialogFooter>
             <Button variant="outline" onClick={() => { setShowForm(false); setErrorMsg(''); }}>Cancelar</Button>
-            <Button onClic
+            <Button onClick={salvar} disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { fmtData } from '@/lib/datas';
 import { sislegisEntities } from '@/lib/sislegisApi';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -42,7 +41,7 @@ export default function TramitacaoTimeline({ materiaId }) {
               </div>
               {t.texto_acao && <p className="text-xs text-muted-foreground mt-1">{t.texto_acao}</p>}
               <p className="text-[10px] text-muted-foreground/60 mt-1">
-                {fmtData(t.data)} {t.hora} {t.usuario_nome && `· ${t.usuario_nome}`}
+                {t.data} {t.hora} {t.usuario_nome && `· ${t.usuario_nome}`}
               </p>
             </div>
             <div className="flex-shrink-0 pt-1">
