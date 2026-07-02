@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { fmtData } from '@/lib/datas';
 import { sislegisEntities } from '@/lib/sislegisApi';
 import { useTenant } from '@/lib/TenantContext';
 import { useAuth } from '@/lib/AuthContext';
@@ -111,7 +112,7 @@ export default function Pareceres() {
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium text-foreground line-clamp-2">{p.materia_ementa}</div>
                   <div className="text-xs text-muted-foreground mt-1">
-                    Relator: {p.relator_nome} {p.comissao_nome ? `· ${p.comissao_nome}` : ''} {p.data ? `· ${p.data}` : ''}
+                    Relator: {p.relator_nome} {p.comissao_nome ? `· ${p.comissao_nome}` : ''} {p.data ? `· ${fmtData(p.data)}` : ''}
                   </div>
                   {p.texto && <div className="text-xs text-muted-foreground mt-1.5 italic line-clamp-2">{p.texto}</div>}
                 </div>

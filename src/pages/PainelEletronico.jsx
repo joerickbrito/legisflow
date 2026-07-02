@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { fmtData } from '@/lib/datas';
 import { base44 } from "@/api/base44Client";
 import { useTenant } from "@/lib/TenantContext";
 import { useAuth } from "@/lib/AuthContext";
@@ -342,7 +343,7 @@ export default function PainelEletronico() {
                     <p className="text-sm font-medium truncate">{v.materia_ementa || v.materia_tipo || 'Votação'}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {v.tipo_votacao} · {v.votos_sim ?? 0} sim · {v.votos_nao ?? 0} não · {v.abstencoes ?? 0} abst.
-                      {v.data_hora_inicio ? ` · ${new Date(v.data_hora_inicio).toLocaleDateString('pt-BR')}` : ''}
+                      {v.data_hora_inicio ? ` · ${fmtData(v.data_hora_inicio)}` : ''}
                     </p>
                   </div>
                   <span className={`text-[11px] px-2.5 py-1 rounded-full font-semibold whitespace-nowrap ${cor}`}>{v.resultado || v.status}</span>
@@ -380,7 +381,7 @@ export default function PainelEletronico() {
                   {sessoes.length === 0 && <SelectItem value="none" disabled>Nenhuma sessão Em Andamento</SelectItem>}
                   {sessoes.map(s => (
                     <SelectItem key={s.id} value={s.id}>
-                      {s.numero ? `${s.numero}ª` : ''} Sessão {s.tipo} — {s.data}
+                      {s.numero ? `${s.numero}ª` : ''} Sessão {s.tipo} — {fmtData(s.data)}
                     </SelectItem>
                   ))}
                 </SelectContent>

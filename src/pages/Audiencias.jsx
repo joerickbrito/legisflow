@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { fmtData } from '@/lib/datas';
 import { sislegisEntities } from '@/lib/sislegisApi';
 import { Users, Plus, MapPin, Clock } from 'lucide-react';
 import { useTenant } from '@/lib/TenantContext';
@@ -87,7 +88,7 @@ export default function Audiencias() {
               <div className="font-heading font-semibold text-foreground leading-tight">{a.tema}</div>
               {a.descricao && <div className="text-sm text-muted-foreground mt-1 line-clamp-2">{a.descricao}</div>}
               <div className="mt-3 space-y-1.5">
-                {a.data && <div className="flex items-center gap-2 text-xs text-muted-foreground"><Clock size={12} /> {a.data} {a.hora ? `às ${a.hora}` : ''}</div>}
+                {a.data && <div className="flex items-center gap-2 text-xs text-muted-foreground"><Clock size={12} /> {fmtData(a.data)} {a.hora ? `às ${a.hora}` : ''}</div>}
                 {a.local && <div className="flex items-center gap-2 text-xs text-muted-foreground"><MapPin size={12} /> {a.local}</div>}
               </div>
             </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { fmtData } from '@/lib/datas';
 import { sislegisEntities } from "@/lib/sislegisApi";
 import { useTenant } from "@/lib/TenantContext";
 import { useAuth } from "@/lib/AuthContext";
@@ -78,7 +79,7 @@ export default function ReuniaoComissao() {
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <p className="font-medium text-sm">{r.comissao_nome} — Reunião nº {r.numero}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{r.data} {r.hora_inicio && `às ${r.hora_inicio}`} | {r.local}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{fmtData(r.data)} {r.hora_inicio && `às ${r.hora_inicio}`} | {r.local}</p>
                 </div>
                 <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                   <Badge variant={statusColor[r.status] || "secondary"}>{r.status}</Badge>
